@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dashboard</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --bg:#FCFCFB;
+    --wash:#F9F9F7;
+    --ink:#2E2C27;
+    --ink-soft:#6B6A63;
+    --ink-grey:#B4B3A8;
+    --hairline:#E4E3DC;
+    --clay:#C6613F;
+    --clay-hover:#AE5133;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);min-height:100%;}
+  body{
+    font-family:'Lexend Deca','Lexend',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--ink-soft);
+    -webkit-font-smoothing:antialiased;
+  }
+  .headline-font{ font-family:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif; }
+
+  /* ---------- gate (signed out) ---------- */
+  #gate{
+    max-width:420px;margin:18vh auto 0;padding:0 24px;text-align:center;
+  }
+  #gate h1{ font-family:'Fraunces',Georgia,serif; font-size:28px; color:var(--ink); margin:0 0 8px; }
+  #gate p{ font-size:14px; color:var(--ink-soft); margin:0 0 24px; }
+  #gate input{
+    width:100%; padding:11px 14px; border:1px solid var(--hairline); border-radius:8px;
+    font-size:14px; font-family:inherit; margin-bottom:12px; background:var(--wash); color:var(--ink);
+  }
+  #gate button, .btn{
+    display:inline-block; background:var(--clay); color:var(--bg); font-weight:500; font-size:13px;
+    border:1px solid var(--clay); border-radius:8px; padding:9px 16px; cursor:pointer; text-decoration:none;
+    font-family:inherit;
+  }
+  #gate button:hover, .btn:hover{ background:var(--clay-hover); border-color:var(--clay-hover); }
+  #gate .msg{ font-size:13px; margin-top:14px; color:var(--ink-soft); min-height:18px; }
+
+  /* ---------- app shell ---------- */
+  #app{display:none;}
+  .toolbar{
+    max-width:860px;margin:0 auto;padding:16px 32px 0;display:flex;justify-content:space-between;align-items:center;
+  }
+  .toggle{ display:flex; gap:8px; }
+  .toggle button{
+    background:none;border:1px solid var(--hairline);border-radius:8px;padding:6px 14px;
+    font-family:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer;
+  }
+  .toggle button.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .signout{ font-size:12px; color:var(--ink-grey); background:none; border:none; cursor:pointer; text-decoration:underline; font-family:inherit; }
+
+  .band{width:100%;}
+  .band-top{background:var(--wash);border-bottom:1px solid var(--hairline);}
+  .band-bottom{background:var(--bg);}
+  .wrap{max-width:860px;margin:0 auto;padding:32px 32px 48px;}
+  .wrap.bottom{padding:44px 32px 64px;}
+
+  .day-date{ font-size:13px; letter-spacing:.02em; color:var(--ink-soft); margin-bottom:18px; }
+  h1.headline{ font-weight:600; font-size:40px; line-height:1.25; color:var(--ink); margin:0 0 34px; max-width:680px; }
+
+  .drawing{width:100%;height:auto;display:block;margin-bottom:8px;}
+
+  .acts{ display:flex; margin-top:6px; }
+  .act{ flex:1; padding:18px 24px; border-left:1px solid var(--hairline); }
+  .act:first-child{border-left:none;padding-left:0;}
+  .act:last-child{padding-right:0;}
+  .act-time{ font-weight:600; font-size:13px; color:var(--ink); margin-bottom:8px; }
+  .act-note{ font-size:14px; line-height:1.5; color:var(--ink-soft); }
+
+  .quiet-line{ font-size:16px; color:var(--ink-soft); padding:6px 0 8px; }
+
+  h2.section-heading{
+    font-family:'Lexend Deca',sans-serif; font-weight:600; font-size:15px; letter-spacing:.02em;
+    color:var(--ink); margin:38px 0 16px;
+  }
+  h2.section-heading:first-of-type{margin-top:0;}
+
+  .item{ display:flex; gap:16px; padding:16px 0; border-top:1px solid var(--hairline); }
+  .item:first-of-type{border-top:none;}
+  .item-num{ font-size:14px; color:var(--ink-grey); min-width:16px; padding-top:2px; }
+  .item-body{flex:1;}
+  .item-title{ font-weight:600; font-size:15px; color:var(--ink); margin:0 0 6px; }
+  .item-title a{ color:var(--ink); text-decoration:underline; text-decoration-color:var(--ink-soft); text-underline-offset:2px; }
+  .item-sentence{ font-size:14px; line-height:1.55; color:var(--ink-soft); }
+  .item-sentence .src{ text-decoration:underline; text-decoration-color:var(--ink-soft); text-underline-offset:2px; }
+  .item-path{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; color:var(--ink-soft);
+    background:var(--wash); padding:1px 5px; border-radius:4px;
+  }
+  .item .btn{ margin-top:10px; }
+
+  .empty-state{ max-width:860px;margin:0 auto;padding:80px 32px;text-align:center;color:var(--ink-soft);font-size:15px; }
+
+  @media (max-width:640px){
+    h1.headline{font-size:30px;}
+    .acts{flex-direction:column;}
+    .act{border-left:none;border-top:1px solid var(--hairline);padding:16px 0;}
+    .act:first-child{border-top:none;padding-top:0;}
+    .toolbar{flex-direction:column;align-items:flex-start;gap:10px;padding-top:20px;}
+  }
+</style>
+</head>
+<body>
+
+  <div id="gate">
+    <h1 class="headline-font">Dashboard</h1>
+    <p>Sign in with your email to see the briefing.</p>
+    <input id="email-input" type="email" placeholder="you@example.com" autocomplete="email">
+    <br>
+    <button id="send-link-btn">Send magic link</button>
+    <div class="msg" id="gate-msg"></div>
+  </div>
+
+  <div id="app">
+    <div class="toolbar">
+      <div class="toggle">
+        <button id="toggle-morning" class="active">Morning</button>
+        <button id="toggle-evening">Evening</button>
+      </div>
+      <button class="signout" id="signout-btn">Sign out</button>
+    </div>
+    <div id="brief-root"></div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
