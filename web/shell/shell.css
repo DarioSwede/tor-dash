@@ -1,0 +1,132 @@
+/* Shared shell chrome: gate, toolbar/nav, and the generic list/item
+   primitives every module reuses (band/wrap/item/section-heading/btn).
+   Module-specific rules belong in that module's own module.css, nested
+   under .module-<id> — this file is the shared surface only. */
+
+/* ================= gate (signed out) ================= */
+#gate{
+  position:fixed; inset:0; overflow:hidden;
+  background:var(--gate-bg);
+  display:flex; align-items:center; justify-content:center;
+}
+#gate .gate-vignette{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  opacity:.09; pointer-events:none;
+  filter:grayscale(1);
+}
+#gate .gate-vignette svg{ width:min(70vw,640px); height:auto; color:var(--gate-vignette-skull); }
+#gate::after{
+  /* soft radial vignette, darkens the edges further */
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%);
+}
+#gate .gate-content{
+  position:relative; z-index:1;
+  width:100%; max-width:360px; padding:0 24px; text-align:center;
+  animation:gate-fade-in .6s ease-out;
+}
+@keyframes gate-fade-in{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+#gate .gate-eyebrow{
+  font-family:var(--font-headline); font-weight:500; font-size:15px;
+  letter-spacing:.28em; text-transform:uppercase; color:var(--gate-text);
+  margin:0 0 40px;
+}
+#gate .gate-btn-primary{
+  display:block; width:100%; background:var(--gate-accent); color:var(--gate-bg);
+  font-weight:500; font-size:13px; letter-spacing:.02em; font-family:inherit;
+  border:1px solid var(--gate-accent); border-radius:6px; padding:12px 18px; cursor:pointer;
+}
+#gate .gate-btn-primary:hover{ background:var(--gate-accent-hover); border-color:var(--gate-accent-hover); }
+#gate .gate-msg{ font-size:12.5px; margin-top:16px; color:var(--gate-text-soft); min-height:16px; }
+#gate .gate-fallback{ margin-top:28px; text-align:center; }
+#gate .gate-fallback summary{
+  font-size:12px; color:var(--gate-text-soft); cursor:pointer; letter-spacing:.02em;
+  list-style:none;
+}
+#gate .gate-fallback summary::-webkit-details-marker{ display:none; }
+#gate .gate-fallback[open] summary{ margin-bottom:14px; }
+#gate .gate-fallback input{
+  width:100%; padding:10px 12px; border:1px solid var(--gate-line); border-radius:6px;
+  font-size:13px; font-family:inherit; margin-bottom:10px;
+  background:var(--gate-bg-soft); color:var(--gate-text);
+}
+#gate .gate-fallback input::placeholder{ color:var(--gate-text-soft); }
+#gate .gate-btn-secondary{
+  display:block; width:100%; background:none; color:var(--gate-text-soft);
+  font-size:12.5px; font-family:inherit; border:1px solid var(--gate-line); border-radius:6px;
+  padding:9px 16px; cursor:pointer;
+}
+#gate .gate-btn-secondary:hover{ color:var(--gate-text); border-color:var(--gate-text-soft); }
+
+/* ================= app shell (signed in) ================= */
+#app{display:none;}
+.toolbar{
+  max-width:860px;margin:0 auto;padding:16px 32px 0;display:flex;justify-content:space-between;align-items:center;
+}
+.toolbar-right{ display:flex; align-items:center; gap:16px; }
+.nav{ display:flex; gap:8px; }
+.nav button{
+  background:none;border:1px solid var(--hairline);border-radius:8px;padding:6px 14px;
+  font-family:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer;
+}
+.nav button.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+.signout, .security-link{
+  font-size:12px; color:var(--ink-grey); background:none; border:none; cursor:pointer;
+  text-decoration:underline; font-family:inherit;
+}
+
+.btn{
+  display:inline-block; background:var(--clay); color:var(--bg); font-weight:500; font-size:13px;
+  border:1px solid var(--clay); border-radius:8px; padding:9px 16px; cursor:pointer; text-decoration:none;
+  font-family:inherit;
+}
+.btn:hover{ background:var(--clay-hover); border-color:var(--clay-hover); }
+
+.band{width:100%;}
+.band-top{background:var(--wash);border-bottom:1px solid var(--hairline);}
+.band-bottom{background:var(--bg);}
+.wrap{max-width:860px;margin:0 auto;padding:32px 32px 48px;}
+.wrap.bottom{padding:44px 32px 64px;}
+
+h2.section-heading{
+  font-family:var(--font-body); font-weight:600; font-size:15px; letter-spacing:.02em;
+  color:var(--ink); margin:38px 0 16px;
+}
+h2.section-heading:first-of-type{margin-top:0;}
+
+.item{ display:flex; gap:16px; padding:16px 0; border-top:1px solid var(--hairline); }
+.item:first-of-type{border-top:none;}
+.item-num{ font-size:14px; color:var(--ink-grey); min-width:16px; padding-top:2px; }
+.item-body{flex:1;}
+.item-title{ font-weight:600; font-size:15px; color:var(--ink); margin:0 0 6px; }
+.item-title a{ color:var(--ink); text-decoration:underline; text-decoration-color:var(--ink-soft); text-underline-offset:2px; }
+.item-sentence{ font-size:14px; line-height:1.55; color:var(--ink-soft); }
+.item .btn{ margin-top:10px; }
+
+.empty-state{ max-width:860px;margin:0 auto;padding:80px 32px;text-align:center;color:var(--ink-soft);font-size:15px; }
+.module-error{ max-width:860px;margin:0 auto;padding:40px 32px;color:var(--clay-hover);font-size:14px; }
+
+/* ---- security panel (passkey enrollment, once signed in) ---- */
+.security-panel{
+  position:fixed; top:0; right:0; bottom:0; width:320px; max-width:90vw;
+  background:var(--bg); border-left:1px solid var(--hairline); padding:24px;
+  transform:translateX(100%); transition:transform .2s ease; z-index:20;
+  overflow-y:auto;
+}
+.security-panel.open{ transform:none; }
+.security-panel h2{ font-family:var(--font-headline); font-size:18px; margin:0 0 4px; color:var(--ink); }
+.security-panel p{ font-size:13px; color:var(--ink-soft); margin:0 0 18px; }
+.security-panel .device-row{
+  display:flex; justify-content:space-between; align-items:center; font-size:13px;
+  padding:10px 0; border-top:1px solid var(--hairline);
+}
+.security-panel .close-btn{
+  position:absolute; top:16px; right:16px; background:none; border:none; cursor:pointer;
+  font-size:18px; color:var(--ink-grey); line-height:1;
+}
+
+@media (max-width:640px){
+  .toolbar{flex-direction:column;align-items:flex-start;gap:10px;padding-top:20px;}
+  .security-panel{width:100%;}
+}
