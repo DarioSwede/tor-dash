@@ -1,6 +1,7 @@
-// Bootstrap: wires auth, the security/encryption panel, and the module
-// registry together. This file owns the top-level page structure only —
-// all per-module rendering logic lives under modules/.
+// Bootstrap: wires auth, the settings panel (appearance + security/
+// encryption), and the module registry together. This file owns the
+// top-level page structure only — all per-module rendering logic lives
+// under modules/.
 
 import { supabase, configOk } from "./supabase-client.js";
 import { wireGate, wireSecurityPanel } from "./auth.js";
@@ -8,27 +9,20 @@ import { hasDeviceKey, setupEncryption, decryptPayload } from "./crypto.js";
 import { isSafeSvg } from "./svg-sanitize.js";
 import { el, renderItem } from "./dom-utils.js";
 import { initModules } from "./module-registry.js";
+import { loadGateBackground, wireAppearancePicker } from "./appearance.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
 const gateMsg = document.getElementById("gate-msg");
 const navEl = document.getElementById("module-nav");
 const contentEl = document.getElementById("module-content");
-const securityPanel = document.getElementById("security-panel");
-
-// Own, trusted static asset (not user/gathered content) — safe to inject
-// as markup, unlike payload.svg which is gated by isSafeSvg(). Kept as a
-// separate file rather than inlined in index.html so the vignette can be
-// swapped or redesigned without touching any other markup.
-fetch("shell/gate-skull.svg")
-  .then((r) => r.text())
-  .then((svg) => { document.querySelector("#gate .gate-vignette").innerHTML = svg; })
-  .catch(() => {});
+const settingsPanel = document.getElementById("settings-panel");
 
 if (!configOk) {
   gateMsg.textContent =
     "config.js is not set up yet — copy config.example.js to config.js and fill in your Supabase project values.";
 } else {
+  loadGateBackground(supabase);
   boot();
 }
 
@@ -58,15 +52,20 @@ function boot() {
     },
     onSignedOut: () => {
       contentEl.innerHTML = "";
-      securityPanel.classList.remove("open");
+      settingsPanel.classList.remove("open");
     },
   });
 
   wireSecurityPanel(supabase, {
-    panelEl: securityPanel,
-    openBtn: document.getElementById("open-security-btn"),
-    closeBtn: securityPanel.querySelector(".close-btn"),
+    panelEl: settingsPanel,
+    openBtn: document.getElementById("open-settings-btn"),
+    closeBtn: settingsPanel.querySelector(".close-btn"),
     onEnroll: refreshDeviceList,
+  });
+
+  wireAppearancePicker(supabase, {
+    pickerEl: document.getElementById("bg-picker"),
+    msgEl: document.getElementById("appearance-msg"),
   });
 }
 

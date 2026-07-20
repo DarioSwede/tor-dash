@@ -126,6 +126,16 @@ h2.section-heading:first-of-type{margin-top:0;}
   font-size:18px; color:var(--ink-grey); line-height:1;
 }
 
+/* ---- appearance / background picker (in the settings panel) ---- */
+.bg-picker{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.bg-option{
+  aspect-ratio:1; border:1px solid var(--hairline); border-radius:8px; background:var(--wash);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; padding:6px;
+  font-size:11px; color:var(--ink-soft); font-family:inherit;
+}
+.bg-option img{ width:100%; height:100%; object-fit:contain; }
+.bg-option.selected{ border-color:var(--clay); background:var(--wash); box-shadow:0 0 0 1px var(--clay); }
+
 @media (max-width:640px){
   .toolbar{flex-direction:column;align-items:flex-start;gap:10px;padding-top:20px;}
   .security-panel{width:100%;}

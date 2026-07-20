@@ -1,0 +1,14 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+  <!-- outer frame ring, matching the other gate variants -->
+  <circle cx="150" cy="150" r="132" />
+  <circle cx="150" cy="150" r="122" />
+
+  <!-- wireframe globe: sphere outline + meridians + parallels, empty center -->
+  <circle cx="150" cy="150" r="100" />
+  <line x1="150" y1="50" x2="150" y2="250" />
+  <line x1="50" y1="150" x2="250" y2="150" />
+  <ellipse cx="150" cy="150" rx="60" ry="100" />
+  <ellipse cx="150" cy="150" rx="30" ry="100" />
+  <ellipse cx="150" cy="150" rx="100" ry="60" />
+  <ellipse cx="150" cy="150" rx="100" ry="30" />
+</svg>

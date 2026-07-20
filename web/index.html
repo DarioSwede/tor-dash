@@ -31,18 +31,27 @@
     <div class="toolbar">
       <nav class="nav" id="module-nav"></nav>
       <div class="toolbar-right">
-        <button class="security-link" id="open-security-btn">Security</button>
+        <button class="security-link" id="open-settings-btn">Settings</button>
         <button class="signout" id="signout-btn">Sign out</button>
       </div>
     </div>
     <div id="module-content"></div>
   </div>
 
-  <!-- security panel: sign-in method + this device's encryption key -->
-  <div id="security-panel" class="security-panel">
+  <!-- settings panel: appearance + sign-in method + this device's encryption key -->
+  <div id="settings-panel" class="security-panel">
     <button class="close-btn" aria-label="Close">×</button>
-    <h2 class="headline-font">Security</h2>
-    <p>Manage how you sign in, and this device's local decryption key.</p>
+    <h2 class="headline-font">Settings</h2>
+
+    <h2 class="headline-font" style="font-size:15px;margin-top:8px;">Appearance</h2>
+    <p style="margin-bottom:10px;">Background shown on the sign-in screen — applies everywhere you sign in.</p>
+    <div class="bg-picker" id="bg-picker">
+      <button class="bg-option" data-variant="skull" title="Skull"><img src="shell/gate-backgrounds/skull.svg" alt="Skull"></button>
+      <button class="bg-option" data-variant="compass" title="Compass"><img src="shell/gate-backgrounds/compass.svg" alt="Compass"></button>
+      <button class="bg-option" data-variant="globe" title="Globe"><img src="shell/gate-backgrounds/globe.svg" alt="Globe"></button>
+      <button class="bg-option" data-variant="none" title="Plain">None</button>
+    </div>
+    <div id="appearance-msg" style="font-size:12.5px;color:var(--ink-soft);margin-top:8px;"></div>
 
     <h2 class="headline-font" style="font-size:15px;margin-top:28px;">Sign-in</h2>
     <p style="margin-bottom:10px;">Add a passkey (security key, Touch ID, Face ID) for this browser.</p>
