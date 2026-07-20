@@ -8,7 +8,7 @@
 // is called on module switch. A module that throws during mount renders
 // its own inline error and does not affect nav or other modules.
 
-import { MODULES } from "../modules/manifest.js";
+import { MODULES, MODULES_BASE_URL } from "../modules/manifest.js";
 
 const registry = new Map(); // id -> module object
 let activeId = null;
@@ -17,13 +17,18 @@ let navEl = null;
 let ctx = null;
 
 async function loadModule(entry) {
+  // Resolved relative to manifest.js's own location, not relative to this
+  // file (module-registry.js lives in shell/, one level away from
+  // modules/) — dynamic import() otherwise resolves a relative specifier
+  // against the *calling* module's URL, which silently 404s here.
+  const jsUrl = new URL(entry.path, MODULES_BASE_URL).href;
   if (entry.css) {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = entry.css;
+    link.href = new URL(entry.css, MODULES_BASE_URL).href;
     document.head.appendChild(link);
   }
-  const mod = await import(entry.path);
+  const mod = await import(jsUrl);
   registry.set(entry.id, mod.default);
 }
 
@@ -73,7 +78,22 @@ export async function initModules(navElement, contentElement, sharedCtx) {
   contentEl = contentElement;
   ctx = sharedCtx;
 
-  await Promise.all(MODULES.map(loadModule));
+  // Load each module independently — one bad module (a 404, a syntax
+  // error) must not take down nav or every other module with it. This is
+  // the difference between "one broken module" and "a blank page."
+  const results = await Promise.allSettled(MODULES.map(loadModule));
+  results.forEach((r, i) => {
+    if (r.status === "rejected") console.error(`Failed to load module "${MODULES[i].id}":`, r.reason);
+  });
+
+  if (!registry.size) {
+    contentEl.innerHTML = "";
+    const errEl = document.createElement("div");
+    errEl.className = "module-error";
+    errEl.textContent = "No sections could be loaded. Check the console for details.";
+    contentEl.appendChild(errEl);
+    return;
+  }
 
   window.addEventListener("hashchange", () => {
     const id = location.hash.replace(/^#/, "");

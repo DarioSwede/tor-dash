@@ -36,15 +36,25 @@ function boot() {
   wireGate(supabase, {
     gateEl, appEl, gateMsg,
     onAuthenticated: async (session) => {
-      await refreshDeviceList();
-      await initModules(navEl, contentEl, {
-        supabase,
-        session,
-        el,
-        renderItem,
-        isSafeSvg,
-        decryptPayload,
-      });
+      try {
+        await refreshDeviceList();
+        await initModules(navEl, contentEl, {
+          supabase,
+          session,
+          el,
+          renderItem,
+          isSafeSvg,
+          decryptPayload,
+        });
+      } catch (e) {
+        // Last-resort net: anything unexpected here previously meant a
+        // silently blank page (an unhandled rejection inside an
+        // onAuthStateChange callback surfaces nowhere in the UI). Now it
+        // at least says so.
+        console.error("Failed to initialize the dashboard after sign-in:", e);
+        contentEl.innerHTML = "";
+        contentEl.appendChild(el("div", "module-error", `Something went wrong loading the dashboard: ${e.message || e}`));
+      }
     },
     onSignedOut: () => {
       contentEl.innerHTML = "";
