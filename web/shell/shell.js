@@ -66,6 +66,7 @@ function boot() {
   wireAppearancePicker(supabase, {
     pickerEl: document.getElementById("bg-picker"),
     msgEl: document.getElementById("appearance-msg"),
+    uploadInputEl: document.getElementById("bg-upload-input"),
   });
 }
 

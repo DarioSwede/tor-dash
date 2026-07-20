@@ -16,6 +16,11 @@
   filter:grayscale(1);
 }
 #gate .gate-vignette svg{ width:min(70vw,640px); height:auto; color:var(--gate-vignette-skull); }
+/* An uploaded photo is meant to actually be seen, not hidden as a faint
+   line-art watermark like the built-in SVGs — full-bleed cover, higher
+   opacity, no forced grayscale. */
+#gate .gate-vignette.has-custom{ opacity:.55; filter:none; }
+#gate .gate-vignette.has-custom img{ width:100%; height:100%; object-fit:cover; }
 #gate::after{
   /* soft radial vignette, darkens the edges further */
   content:""; position:absolute; inset:0; pointer-events:none;
