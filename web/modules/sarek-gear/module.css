@@ -1,0 +1,83 @@
+/* Sarek packlist module — keeps its own dark "expedition" identity
+   (distinct from the Morning Brief's cream/serif look) rather than being
+   forced into the shell's default palette. Everything nested under
+   .module-sarek-gear so it can never leak into another module. */
+.module-sarek-gear{
+  --sk-bg:#071610; --sk-panel:#10251b; --sk-line:#284638; --sk-text:#f1f5ed;
+  --sk-muted:#9ab0a3; --sk-green:#8fe388; --sk-gold:#f0b84f; --sk-red:#ff7b72;
+  background:radial-gradient(circle at top left,#143321 0,#071610 34%,#06110d 100%);
+  color:var(--sk-text); margin:-32px; padding:0; min-height:calc(100vh - 60px);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+.module-sarek-gear button,.module-sarek-gear input,.module-sarek-gear select{ font:inherit; color:inherit; }
+.module-sarek-gear button{ cursor:pointer; }
+
+.sk-app{ display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 60px); }
+.sk-side{ border-right:1px solid var(--sk-line); padding:24px 18px; background:rgba(5,20,13,.82); }
+.sk-brand{ font-size:22px; font-weight:800; margin-bottom:20px; }
+.sk-nav{ display:block; width:100%; text-align:left; border:1px solid transparent; background:transparent;
+  color:var(--sk-text); padding:11px 12px; border-radius:9px; margin:6px 0; font-size:14px; }
+.sk-nav.active,.sk-nav:hover{ background:linear-gradient(90deg,#173a28,#11241b); border-color:#315b45; }
+.sk-side-bottom{ display:grid; gap:8px; margin-top:28px; }
+.sk-side-bottom button,.sk-import{ border:1px solid #315b45; background:#123223; color:var(--sk-text);
+  padding:10px; border-radius:9px; text-align:center; font-size:13px; }
+.sk-import input{ display:none; }
+.sk-save-tag{ font-size:12px; color:var(--sk-muted); text-align:center; }
+
+.sk-app main{ padding:26px; }
+.sk-top{ display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; }
+.sk-top small{ color:var(--sk-green); letter-spacing:.14em; text-transform:uppercase; font-size:11px; }
+.sk-top h1{ font-size:28px; margin:4px 0 0; }
+.sk-stats-top{ display:flex; gap:12px; flex-wrap:wrap; }
+.sk-stat{ background:rgba(20,45,34,.9); border:1px solid var(--sk-line); border-radius:12px; padding:10px 16px; min-width:100px; }
+.sk-stat span{ display:block; color:var(--sk-muted); font-size:11px; text-transform:uppercase; }
+.sk-stat b{ font-size:20px; }
+
+.sk-controls{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.sk-controls input,.sk-controls select{ background:#071610; color:var(--sk-text); border:1px solid #315b45;
+  border-radius:8px; padding:9px; font-size:13px; }
+.sk-num{ width:70px; }
+
+.sk-grid{ display:grid; grid-template-columns:minmax(560px,1fr) 300px; gap:16px; }
+.sk-card{ background:rgba(16,37,27,.88); border:1px solid var(--sk-line); border-radius:12px; padding:16px; }
+.sk-card h2{ font-size:13px; color:var(--sk-green); text-transform:uppercase; letter-spacing:.04em; margin:0 0 12px; }
+.sk-wide table{ width:100%; border-collapse:collapse; }
+.sk-wide th,.sk-wide td{ border-bottom:1px solid rgba(49,91,69,.58); padding:8px 6px; text-align:left; vertical-align:middle; font-size:13px; }
+.sk-wide th{ color:var(--sk-muted); font-weight:500; font-size:12px; }
+.sk-wide td input,.sk-wide td select{ background:#06130e; color:var(--sk-text); border:1px solid #244334; border-radius:6px; padding:6px; width:100%; }
+.sk-icon{ font-size:20px; width:30px; }
+.sk-rowname small{ display:block; color:var(--sk-muted); margin-top:3px; }
+.sk-ghost{ background:transparent; border:0; color:#ff9872; font-size:16px; }
+.sk-add{ width:100%; margin-top:10px; border:1px dashed #4a7d60; background:transparent; color:var(--sk-green); padding:10px; border-radius:8px; }
+.sk-table-footer{ display:flex; justify-content:space-between; padding:12px 4px 0; color:var(--sk-green); font-size:13px; }
+
+.sk-stack{ display:flex; flex-direction:column; gap:14px; }
+.sk-twostats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sk-twostats div{ background:#071610; border:1px solid #244334; border-radius:9px; padding:10px; font-size:12px; color:var(--sk-muted); }
+.sk-twostats b{ display:block; font-size:20px; margin-top:4px; color:var(--sk-text); }
+.sk-bar{ height:14px; background:#1d3b2c; border-radius:99px; overflow:hidden; margin:14px 0; }
+.sk-bar span{ display:block; height:100%; background:linear-gradient(90deg,var(--sk-green),#e4d85a,var(--sk-gold)); }
+.sk-note{ color:var(--sk-muted); line-height:1.45; font-size:12.5px; }
+.sk-cat{ display:grid; grid-template-columns:90px 1fr 60px; gap:8px; align-items:center; margin:9px 0; font-size:12px; }
+.sk-track{ height:8px; border-radius:99px; background:#1d3b2c; overflow:hidden; }
+.sk-track i{ display:block; height:100%; border-radius:99px; }
+.sk-chips{ display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+.sk-chips button{ background:#0b1d15; color:var(--sk-text); border:1px solid #315b45; border-radius:8px; padding:8px; font-size:12px; }
+.sk-chips button:hover{ border-color:var(--sk-green); }
+.sk-forecast-chart{ width:100%; height:auto; display:block; color:var(--sk-green); }
+.sk-badge{ display:inline-block; border:1px solid #315b45; border-radius:999px; padding:2px 8px; color:var(--sk-green); font-size:11px; }
+.sk-icon-input{ width:52px; text-align:center; }
+.sk-color-input{ width:48px; height:34px; padding:2px; }
+
+.sk-print-page{ background:#fff; color:#111; padding:20mm; margin:auto; max-width:210mm; }
+.sk-print-page table{ width:100%; border-collapse:collapse; font-size:12px; }
+.sk-print-page th,.sk-print-page td{ border-bottom:1px solid #bbb; padding:6px; text-align:left; }
+
+@media (max-width:900px){
+  .sk-app{ grid-template-columns:1fr; }
+  .sk-side{ border-right:0; border-bottom:1px solid var(--sk-line); }
+  .sk-grid{ grid-template-columns:1fr; }
+}
+@media print{
+  .module-sarek-gear .sk-side,.module-sarek-gear .sk-top,.module-sarek-gear .sk-controls{ display:none !important; }
+}

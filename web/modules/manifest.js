@@ -14,5 +14,9 @@ export const MODULES = [
     path: "./morning-brief/module.js",
     css: "./morning-brief/module.css",
   },
-  // { id: "sarek-gear", path: "./sarek-gear/module.js", css: "./sarek-gear/module.css" },
+  {
+    id: "sarek-gear",
+    path: "./sarek-gear/module.js",
+    css: "./sarek-gear/module.css",
+  },
 ];
