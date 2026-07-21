@@ -27,6 +27,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cache-bust shell assets
+        # GitHub Pages/Safari can keep serving a cached shell/*.js or
+        # shell/*.css from before a deploy even after index.html itself is
+        # fresh, since none of these URLs ever change -- which produces a
+        # broken mix of new markup with old script/style behavior (seen
+        # after the passkey/ghost-button/network-status change: new HTML,
+        # stale CSS and JS). Appending the commit SHA to every shell/
+        # asset reference -- both the <link>/<script> tags in index.html
+        # and the static `import ... from "./x.js"` specifiers inside
+        # shell/*.js -- gives each deploy a unique URL per file, so a
+        # fresh visit always gets the matching set. Source files on disk
+        # stay unversioned; this only touches the uploaded artifact.
+        # (modules/ dynamic import() isn't covered -- out of scope for
+        # this bug, and those files change far less often.)
+        run: |
+          VERSION="${GITHUB_SHA::8}"
+          sed -i "s#href=\"shell/tokens.css\"#href=\"shell/tokens.css?v=${VERSION}\"#" web/index.html
+          sed -i "s#href=\"shell/shell.css\"#href=\"shell/shell.css?v=${VERSION}\"#" web/index.html
+          sed -i "s#src=\"shell/shell.js\"#src=\"shell/shell.js?v=${VERSION}\"#" web/index.html
+          sed -i "s#src=\"config.js\"#src=\"config.js?v=${VERSION}\"#" web/index.html
+          sed -i -E "s#(from \"\.\.?/[A-Za-z0-9_./-]+\.js)\"#\1?v=${VERSION}\"#g" web/shell/*.js web/modules/manifest.js
+
       - name: Upload web/ as Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
