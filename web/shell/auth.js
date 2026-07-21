@@ -15,16 +15,26 @@
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 min of no interaction
 const BACKGROUND_TIMEOUT_MS = 5 * 60 * 1000; // 5 min hidden re-triggers a lock
 
+// Swipe-up-to-sign-in thresholds, tuned to read as a deliberate upward
+// swipe anywhere on the gate without fighting iOS's own edge gestures
+// (which own the bottom ~20px home-indicator strip regardless).
+const SWIPE_MIN_DISTANCE_PX = 80;
+const SWIPE_MAX_DRIFT_PX = 60;
+const SWIPE_MAX_DURATION_MS = 800;
+
 let idleTimer = null;
 let hiddenAt = null;
 let listenersWired = false;
 
 export function wireGate(supabase, { gateEl, appEl, gateMsg, onAuthenticated, onSignedOut }) {
-  document.getElementById("passkey-signin-btn").addEventListener("click", async () => {
+  const triggerPasskeySignIn = async () => {
     gateMsg.textContent = "Waiting for your security key…";
     const { error } = await supabase.auth.signInWithPasskey();
     gateMsg.textContent = error ? `Couldn't sign in: ${error.message}` : "";
-  });
+  };
+
+  document.getElementById("passkey-signin-btn").addEventListener("click", triggerPasskeySignIn);
+  wireSwipeToSignIn(gateEl, triggerPasskeySignIn);
 
   document.getElementById("signout-btn").addEventListener("click", () => supabase.auth.signOut());
 
@@ -94,4 +104,32 @@ function stopReauthGuard() {
   clearTimeout(idleTimer);
   idleTimer = null;
   hiddenAt = null;
+}
+
+// A single-touch swipe anywhere on the gate, mostly vertical and upward,
+// triggers the same sign-in the button does — the button stays as the
+// visible/accessible affordance, this is just a faster path for anyone
+// who knows it's there.
+function wireSwipeToSignIn(gateEl, onSwipeUp) {
+  let startX = 0, startY = 0, startT = 0, tracking = false;
+
+  gateEl.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    tracking = true;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    startT = Date.now();
+  }, { passive: true });
+
+  gateEl.addEventListener("touchend", (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const touch = e.changedTouches[0];
+    const dx = Math.abs(touch.clientX - startX);
+    const dy = startY - touch.clientY; // positive = moved up
+    const dt = Date.now() - startT;
+    if (dy > SWIPE_MIN_DISTANCE_PX && dx < SWIPE_MAX_DRIFT_PX && dt < SWIPE_MAX_DURATION_MS) {
+      onSwipeUp();
+    }
+  }, { passive: true });
 }

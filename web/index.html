@@ -14,11 +14,12 @@
   <!-- signed out -->
   <div id="gate">
     <div class="gate-vignette" aria-hidden="true"></div>
+    <div class="gate-network-status" id="gate-network-status"></div>
     <div class="gate-content">
-      <div class="gate-network-status" id="gate-network-status"></div>
-      <p class="gate-eyebrow">Dashboard</p>
+      <p class="gate-eyebrow" id="gate-eyebrow">Dashboard</p>
       <button id="passkey-signin-btn" class="gate-btn-primary">Sign in with security key</button>
       <div class="gate-msg" id="gate-msg"></div>
+      <p class="gate-swipe-hint">or swipe up to sign in</p>
     </div>
   </div>
 
@@ -57,6 +58,11 @@
       <input id="bg-upload-input" type="file" accept="image/*" style="display:none;">
     </label>
     <div id="appearance-msg" class="panel-msg"></div>
+
+    <label class="field-label" for="gate-title-input">Sign-in page text</label>
+    <input type="text" id="gate-title-input" class="text-input" placeholder="Dashboard" maxlength="60">
+    <p class="field-hint">Shown above the sign-in button. Leave empty to hide it entirely.</p>
+    <div id="gate-title-msg" class="panel-msg"></div>
 
     <h3 class="panel-subhead">Network status</h3>
     <p>Shows your public IPv4/IPv6 and a best-effort VPN guess (by ISP name) in small text at the top of the dashboard.</p>

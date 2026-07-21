@@ -35,22 +35,40 @@
 #gate .gate-eyebrow{
   /* Deliberately not --font-headline (Fraunces/Iowan) here — this is the
      one piece of type on the gate, and a plain formal serif reads more
-     like an institutional sign-in than a display face does. */
-  font-family:Georgia,'Times New Roman','Iowan Old Style',serif; font-weight:500; font-size:15px;
+     like an institutional sign-in than a display face does. Bold rather
+     than a mid weight: none of this stack ships real intermediate weights,
+     so anything between 400 and 700 just gets rounded to one of those two
+     by the browser anyway. */
+  font-family:Georgia,'Times New Roman','Iowan Old Style',serif; font-weight:700; font-size:15px;
   letter-spacing:.28em; text-transform:uppercase; color:var(--gate-text);
   margin:0 0 40px;
 }
 #gate .gate-btn-primary{
-  display:block; width:100%; background:var(--gate-accent); color:var(--gate-bg);
+  /* 90% transparent background (a "ghost" button) rather than fading the
+     whole element including its label — full-opacity text keeps it
+     legible against the dark gate background showing through. */
+  display:block; width:100%; background:rgba(140,106,74,.1); color:var(--gate-text);
   font-weight:500; font-size:13px; letter-spacing:.02em; font-family:inherit;
-  border:1px solid var(--gate-accent); border-radius:6px; padding:12px 18px; cursor:pointer;
+  border:1px solid rgba(140,106,74,.45); border-radius:6px; padding:12px 18px; cursor:pointer;
 }
-#gate .gate-btn-primary:hover{ background:var(--gate-accent-hover); border-color:var(--gate-accent-hover); }
+#gate .gate-btn-primary:hover{ background:rgba(140,106,74,.2); border-color:var(--gate-accent); }
 #gate .gate-msg{ font-size:12.5px; margin-top:16px; color:var(--gate-text-soft); min-height:16px; }
-#gate .gate-network-status{
-  font-size:11px; letter-spacing:.01em; color:var(--gate-text-soft);
-  margin:0 0 24px; word-break:break-word;
+#gate .gate-swipe-hint{
+  display:none; font-size:11px; color:var(--gate-text-soft); margin:20px 0 0; letter-spacing:.02em;
 }
+/* Only hinted on touch devices — swiping isn't a thing with a mouse. */
+@media (hover:none) and (pointer:coarse){
+  #gate .gate-swipe-hint{ display:block; }
+}
+/* Pinned to the very top of the gate, not just the top of the vertically
+   centered .gate-content block below it. */
+#gate .gate-network-status{
+  position:absolute; top:0; left:0; right:0; z-index:1;
+  padding:16px 24px 0; text-align:center;
+  font-size:11px; letter-spacing:.01em; color:var(--gate-text-soft);
+  word-break:break-word;
+}
+#gate .gate-network-status:empty{ display:none; }
 
 /* ================= app shell (signed in) ================= */
 #app{display:none;}
@@ -127,6 +145,15 @@ h2.section-heading:first-of-type{margin-top:0;}
   cursor:pointer; user-select:none;
 }
 .security-panel .toggle-row input{ width:15px; height:15px; accent-color:var(--clay); cursor:pointer; }
+.security-panel .field-label{
+  display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin:16px 0 6px;
+}
+.security-panel .text-input{
+  width:100%; padding:9px 12px; border:1px solid var(--hairline); border-radius:8px;
+  font-size:13.5px; font-family:inherit; color:var(--ink); background:var(--wash);
+}
+.security-panel .text-input:focus{ outline:none; border-color:var(--clay); }
+.security-panel .field-hint{ font-size:12px; color:var(--ink-soft); margin:6px 0 0; }
 .security-panel .device-list{ margin-top:6px; }
 .security-panel .device-row{
   display:flex; justify-content:space-between; align-items:center; font-size:13.5px;

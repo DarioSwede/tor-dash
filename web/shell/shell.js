@@ -11,6 +11,7 @@ import { el, renderItem } from "./dom-utils.js";
 import { initModules } from "./module-registry.js";
 import { loadGateBackground, wireAppearanceUpload } from "./appearance.js";
 import { renderNetworkStatus, fetchShowOnGate, wireNetworkSettingToggle } from "./network.js";
+import { loadGateTitle, wireGateTitleSetting } from "./gate-title.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -24,6 +25,7 @@ if (!configOk) {
     "config.js is not set up yet — copy config.example.js to config.js and fill in your Supabase project values.";
 } else {
   loadGateBackground(supabase);
+  loadGateTitle(supabase);
   fetchShowOnGate(supabase).then((show) => {
     if (show) renderNetworkStatus(document.getElementById("gate-network-status"));
   });
@@ -76,6 +78,11 @@ function boot() {
   wireNetworkSettingToggle(supabase, {
     checkboxEl: document.getElementById("show-network-gate-toggle"),
     msgEl: document.getElementById("network-settings-msg"),
+  });
+
+  wireGateTitleSetting(supabase, {
+    inputEl: document.getElementById("gate-title-input"),
+    msgEl: document.getElementById("gate-title-msg"),
   });
 }
 
