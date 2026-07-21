@@ -34,10 +34,13 @@ async function fetchValue(supabase) {
 }
 
 async function saveValue(supabase, value) {
+  // upsert rather than update: an update against a key that doesn't
+  // exist yet (migration not run, or the row was never seeded) silently
+  // matches zero rows and reports success anyway — this creates the row
+  // if it's missing instead of quietly no-op'ing.
   return supabase
     .from("app_settings")
-    .update({ value, updated_at: new Date().toISOString() })
-    .eq("key", "gate_background");
+    .upsert({ key: "gate_background", value, updated_at: new Date().toISOString() }, { onConflict: "key" });
 }
 
 function applyValue(value) {

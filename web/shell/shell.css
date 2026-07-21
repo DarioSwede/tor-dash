@@ -67,7 +67,12 @@
 #gate .gate-network-status:empty{ display:none; }
 
 /* ================= app shell (signed in) ================= */
-#app{display:none;}
+/* Bottom padding reserves room for .bottom-bar (fixed, so it takes no
+   space in flow on its own) — set here rather than on #module-content,
+   whose className gets fully replaced on every module switch (see
+   module-registry.js's activate()), which would wipe out anything put
+   there. */
+#app{display:none; padding-bottom:76px;}
 .network-status{
   position:sticky; top:0; z-index:15;
   width:100%; padding:9px 16px;
@@ -85,11 +90,16 @@
   font-family:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer;
 }
 .nav button.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
-/* ---- bottom bar (settings + sign out), sticky to the viewport bottom ---- */
+/* ---- bottom bar (settings + sign out) ----
+   position:fixed rather than sticky: sticky only pins once you've
+   scrolled far enough that its normal-flow position would go off-screen,
+   so on a short module (little to scroll) it just sits after the content
+   instead of reading as "stuck" to the viewport edge. Fixed guarantees
+   it's always visible at the bottom regardless of content height. */
 .bottom-bar{
-  position:sticky; bottom:0; z-index:15;
+  position:fixed; left:0; right:0; bottom:0; z-index:15;
   display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:24px;
-  padding:14px 32px; margin-top:24px;
+  padding:14px 32px;
   background:var(--bg); border-top:1px solid var(--hairline);
 }
 .signout, .security-link{
