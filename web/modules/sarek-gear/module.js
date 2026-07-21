@@ -41,6 +41,7 @@ export default {
     let tab = "pack";
     let saveTimer = null;
     let saveTag;
+    let alive = true; // flipped off by unmount() if a newer module instance supersedes this one mid-flight
 
     function catById(id) {
       return categories.find((c) => c.id === id) || categories.find((c) => c.id === "ovrigt") || categories[0];
@@ -97,16 +98,18 @@ export default {
       }
     }
     function scheduleSave() {
+      if (!alive) return;
       if (saveTag) saveTag.textContent = "Sparar…";
       clearTimeout(saveTimer);
       saveTimer = setTimeout(save, 700);
     }
     async function save() {
-      if (!rowId) return;
+      if (!alive || !rowId) return;
       const { error } = await supabase
         .from("sarek_packlist")
         .update({ data: { items, categories, settings }, updated_at: new Date().toISOString() })
         .eq("id", rowId);
+      if (!alive) return; // unmounted while the request was in flight
       if (saveTag) saveTag.textContent = error ? "Kunde inte spara" : "Sparat ✓";
     }
 
@@ -497,11 +500,29 @@ export default {
       root.append(side, main);
     }
 
+    // unmount() is a sibling method on this module's shared default export,
+    // not a closure over this specific mount() call -- stash this
+    // instance's cleanup on the container itself so the right instance's
+    // timer gets cleared even if another mount() has since run on the same
+    // container (see shell/module-registry.js's activation-token guard).
+    container._sarekCleanup = () => { alive = false; clearTimeout(saveTimer); };
+
     await load();
+    if (!alive) return; // superseded by a newer module instance while load() was in flight
     if (!rowId) {
       root.appendChild(el("div", "empty-state", "Kunde inte hämta packlistan. Kör migrationen supabase/migrations/0005_sarek_packlist.sql om du inte redan gjort det."));
       return;
     }
     renderTab();
+  },
+
+  unmount(container) {
+    // Called when a newer module instance supersedes this one (see
+    // shell/module-registry.js's activation-token guard) or on a normal tab
+    // switch. Stops the pending debounced autosave -- without this, a
+    // superseded instance's stale in-memory `items` could still fire save()
+    // a few hundred ms later and silently overwrite whatever the newer
+    // instance (or the user) just saved.
+    container._sarekCleanup?.();
   },
 };

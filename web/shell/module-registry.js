@@ -15,6 +15,7 @@ let activeId = null;
 let contentEl = null;
 let navEl = null;
 let ctx = null;
+let activationToken = 0; // guards against overlapping activate() calls (see below)
 
 async function loadModule(entry) {
   // Resolved relative to manifest.js's own location, not relative to this
@@ -50,6 +51,20 @@ async function activate(id) {
   const mod = registry.get(id) || registry.values().next().value;
   if (!mod) return;
 
+  // mount() awaits a real network round-trip (a module's own data load), so
+  // if the user switches tabs again before that resolves, a second activate()
+  // starts running concurrently with the first. The prevMod.unmount() call
+  // below runs synchronously at the top of *every* activate() -- including
+  // this newer one -- so it always cleans up whatever was still active
+  // (even a same-or-different module still mid-mount from an overlapping
+  // call), before that older mount() gets a chance to finish and clobber
+  // things. Without it, two live instances of the same module could end up
+  // fighting over one database row: the older one's delayed autosave firing
+  // after the newer one's, silently reverting edits, and its still-attached
+  // listeners producing what looks like "dead" buttons. `token` here only
+  // guards the catch-block below (skip showing a stale error banner).
+  const token = ++activationToken;
+
   const prevId = activeId;
   const prevMod = prevId ? registry.get(prevId) : null;
   if (prevMod && typeof prevMod.unmount === "function") {
@@ -64,13 +79,22 @@ async function activate(id) {
   try {
     await mod.mount(contentEl, ctx);
   } catch (e) {
+    if (token !== activationToken) return; // superseded while mount() was failing
     console.error(`mount(${mod.id}) failed:`, e);
     contentEl.innerHTML = "";
     const errEl = document.createElement("div");
     errEl.className = "module-error";
     errEl.textContent = `This section couldn't load: ${e.message || e}`;
     contentEl.appendChild(errEl);
+    return;
   }
+
+  // No extra cleanup needed here even if a newer activate() has since taken
+  // over: activeId/prevMod are captured synchronously at the top of every
+  // activate() call (before any await), so the newer call already unmounted
+  // whatever was active at that point -- including this instance, if it was
+  // still the active one. Doing it again here would target whatever the
+  // registry now considers "active", not necessarily this stale instance.
 }
 
 export async function initModules(navElement, contentElement, sharedCtx) {
