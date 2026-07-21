@@ -20,9 +20,9 @@ export const MODULES = [
     css: "./sarek-gear/module.css",
   },
   {
-    id: "stocks",
-    path: "./stocks/module.js",
-    css: "./stocks/module.css",
+    id: "portfolio",
+    path: "./portfolio/module.js",
+    css: "./portfolio/module.css",
   },
   {
     id: "access-log",

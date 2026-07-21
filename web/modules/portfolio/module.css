@@ -1,0 +1,204 @@
+/* Portfolio module -- keeps its own dark identity close to the original
+   FortPolio app's palette (near-black bg, gold accent, teal gain / red
+   loss), same precedent as Sarek's own bespoke theme. Everything nested
+   under .module-portfolio so it can never leak into another module.
+
+   Layout is a responsive CSS grid (auto-fit/minmax) instead of the
+   original's custom drag/resize masonry engine -- cards reflow to a
+   single column on narrow screens automatically, no JS layout math and
+   no fixed pixel widths to fight on mobile. */
+.module-portfolio{
+  --pf-bg:#0B0F14; --pf-surface:#131A22; --pf-surface-hi:#1A232D; --pf-border:#212A34;
+  --pf-text:#ECEFF2; --pf-text-muted:#7E8A96;
+  --pf-gain:#2FBF9D; --pf-loss:#E2574C; --pf-gold:#D6A756; --pf-warn:#D9B84A;
+  background:var(--pf-bg); color:var(--pf-text); margin:-32px; padding:0; min-height:calc(100vh - 60px);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+.module-portfolio button,.module-portfolio input,.module-portfolio textarea{ font:inherit; color:inherit; }
+.module-portfolio button{ cursor:pointer; }
+.module-portfolio ::placeholder{ color:var(--pf-text-muted); }
+
+.pf-app{ padding:24px; max-width:1400px; margin:0 auto; }
+
+/* ---- header ---- */
+.pf-header{ margin-bottom:22px; }
+.pf-header-total-row{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+.pf-header-total-value{ font-size:34px; font-weight:700; }
+.pf-hide-toggle{
+  background:none; border:1px solid var(--pf-border); border-radius:8px; padding:5px 12px;
+  font-size:12px; color:var(--pf-text-muted);
+}
+.pf-header-breakdown{ display:flex; gap:20px; margin-top:10px; }
+.pf-header-stat{ display:flex; flex-direction:column; gap:2px; font-size:12px; color:var(--pf-text-muted); }
+.pf-header-stat b{ font-size:16px; color:var(--pf-text); font-weight:600; }
+.pf-header-chart{ margin-top:14px; max-width:280px; }
+.pf-header-chart-change{ font-size:12px; color:var(--pf-text-muted); margin-top:4px; }
+.pf-market-indicator{
+  display:inline-flex; align-items:center; gap:8px; margin-top:14px; font-size:13px;
+  padding:6px 12px; border-radius:999px; background:var(--pf-surface); border:1px solid var(--pf-border);
+}
+.pf-market-indicator.open{ color:var(--pf-gain); border-color:var(--pf-gain); }
+.pf-market-flag{ filter:grayscale(0); }
+.pf-market-flag.closed{ filter:grayscale(1); opacity:.6; }
+
+/* ---- toolbar ---- */
+.pf-toolbar{ display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.pf-import-msg{ font-size:12px; color:var(--pf-text-muted); }
+
+/* ---- responsive grid ---- */
+.pf-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; align-items:start; }
+.pf-card-slot{ min-width:0; }
+.pf-card{ background:var(--pf-surface); border:1px solid var(--pf-border); border-radius:14px; overflow:hidden; }
+.pf-card-head{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-bottom:1px solid var(--pf-border); }
+.pf-section-title{ font-size:14px; font-weight:700; letter-spacing:.02em; margin:0; }
+.pf-card-body{ padding:16px 18px 18px; }
+.pf-module-refresh{ display:flex; align-items:center; gap:8px; }
+.pf-module-stamp{ font-size:11px; color:var(--pf-text-muted); }
+.pf-icon-btn{
+  background:var(--pf-surface-hi); border:1px solid var(--pf-border); border-radius:7px;
+  width:28px; height:28px; font-size:13px; display:inline-flex; align-items:center; justify-content:center;
+}
+.pf-icon-btn:disabled{ opacity:.5; }
+
+/* ---- rows / lists ---- */
+.pf-grid-list{ display:flex; flex-direction:column; gap:10px; }
+.pf-row{ background:var(--pf-surface-hi); border:1px solid var(--pf-border); border-radius:10px; padding:11px 13px; position:relative; }
+.pf-row-clickable{ cursor:pointer; }
+.pf-row-clickable:hover{ border-color:var(--pf-gold); }
+.pf-row-category{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--pf-text-muted); margin-bottom:3px; }
+.pf-row-name{ font-weight:600; font-size:13.5px; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pf-row-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.pf-ticker{ font-weight:600; font-size:13.5px; }
+.pf-price{ font-weight:600; font-size:13.5px; font-variant-numeric:tabular-nums; }
+.pf-row-sub{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:4px; font-size:12px; }
+.pf-name{ color:var(--pf-text-muted); }
+.pf-name-line{ display:flex; gap:6px; align-items:center; }
+.pf-value-amt{ font-weight:600; }
+.pf-unit-suffix{ font-size:11px; color:var(--pf-text-muted); }
+.pf-change{ font-size:12px; font-weight:600; white-space:nowrap; }
+.pf-change.pos{ color:var(--pf-gain); }
+.pf-change.neg{ color:var(--pf-loss); }
+.pf-change.flat{ color:var(--pf-text-muted); }
+.pf-badge{ display:inline-block; background:var(--pf-bg); border:1px solid var(--pf-border); border-radius:999px; padding:2px 9px; font-size:11px; }
+.pf-row-sparkline{ margin-top:8px; }
+.pf-meta{ display:flex; align-items:center; gap:8px; margin-top:8px; font-size:11px; color:var(--pf-text-muted); flex-wrap:wrap; }
+.pf-meta-text{ font-size:11px; color:var(--pf-text-muted); }
+.pf-empty-note{ font-size:13px; color:var(--pf-text-muted); padding:10px 0; }
+
+/* ---- overview bars (sector/geography inside Aktier) ---- */
+.pf-overview-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+.pf-dist-block{ min-width:0; }
+.pf-chip-group-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--pf-text-muted); margin-bottom:6px; }
+.pf-percent-bar{ display:flex; width:100%; border-radius:999px; overflow:hidden; }
+.pf-percent-bar span{ display:block; }
+.pf-bar-legend{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:11px; color:var(--pf-text-muted); }
+.pf-bar-legend-item{ display:inline-flex; align-items:center; gap:5px; }
+.pf-dot{ width:8px; height:8px; border-radius:999px; display:inline-block; }
+
+/* ---- chips / filters ---- */
+.pf-chip-row{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.pf-chip{
+  background:var(--pf-bg); border:1px solid var(--pf-border); border-radius:999px; padding:5px 12px;
+  font-size:11.5px; color:var(--pf-text-muted);
+}
+.pf-chip.active{ background:var(--pf-gold); color:#1A1400; border-color:var(--pf-gold); font-weight:600; }
+
+/* ---- forms ---- */
+.pf-text-box{ background:var(--pf-bg); border:1px solid var(--pf-border); border-radius:10px; padding:14px; margin-top:14px; }
+.pf-text-box h3{ margin:0 0 6px; font-size:12.5px; }
+.pf-text-box p{ font-size:11.5px; color:var(--pf-text-muted); margin:0 0 10px; line-height:1.5; }
+.pf-box-head{ display:flex; justify-content:space-between; align-items:center; }
+.pf-box-head h3{ margin:0; }
+.pf-row-inputs{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+.pf-field{
+  background:var(--pf-surface-hi); border:1px solid var(--pf-border); border-radius:7px; padding:8px 10px;
+  font-size:12.5px; flex:1; min-width:90px;
+}
+.pf-field-num{ max-width:110px; flex:none; }
+textarea.pf-field{ width:100%; min-height:70px; resize:vertical; }
+.pf-actions-row{ display:flex; justify-content:flex-end; margin-top:6px; }
+.pf-btn{
+  background:var(--pf-gold); color:#1A1400; border:1px solid var(--pf-gold); border-radius:8px;
+  padding:8px 16px; font-size:12.5px; font-weight:600;
+}
+.pf-btn-gold{ background:var(--pf-gold); color:#1A1400; }
+.pf-btn-small{ background:none; border:1px solid var(--pf-border); border-radius:7px; padding:4px 10px; font-size:10.5px; color:var(--pf-text-muted); }
+
+/* ---- allokering ---- */
+.pf-target-row{ display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--pf-border); flex-wrap:wrap; }
+.pf-target-row label{ font-size:12px; color:var(--pf-text-muted); }
+.pf-unit{ font-size:11px; color:var(--pf-text-muted); }
+.pf-mono{ font-family:"IBM Plex Mono", monospace; font-size:12px; }
+
+/* ---- valutor trend switch ---- */
+.pf-switch-row{ display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-bottom:10px; }
+.pf-hide-toggle-label{ font-size:11px; color:var(--pf-text-muted); }
+.pf-switch{ width:34px; height:19px; border-radius:999px; background:var(--pf-border); position:relative; cursor:pointer; }
+.pf-switch .pf-knob{ position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:999px; background:var(--pf-text); transition:left .15s ease; }
+.pf-switch.on{ background:var(--pf-gold); }
+.pf-switch.on .pf-knob{ left:17px; background:#1A1400; }
+
+/* ---- börsen ---- */
+.pf-market-status{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.pf-status-dot{ width:9px; height:9px; border-radius:999px; background:var(--pf-text-muted); }
+.pf-status-dot.open{ background:var(--pf-gain); }
+.pf-status-dot.closed{ background:var(--pf-loss); }
+.pf-status-text{ font-size:13px; }
+.pf-index-box{ display:flex; justify-content:space-between; align-items:center; background:var(--pf-bg); border:1px solid var(--pf-border); border-radius:10px; padding:12px 14px; margin-bottom:14px; }
+.pf-index-name{ font-weight:600; font-size:13px; }
+.pf-index-sub{ font-size:11px; color:var(--pf-text-muted); }
+.pf-index-val{ text-align:right; font-weight:600; }
+.pf-exch-row{ display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-top:1px solid var(--pf-border); font-size:12.5px; }
+.pf-exch-name{ display:flex; align-items:center; gap:6px; }
+.pf-exch-time{ font-family:"IBM Plex Mono", monospace; font-size:12px; color:var(--pf-text-muted); }
+.pf-hours-note{ font-size:10.5px; color:var(--pf-text-muted); margin-top:12px; line-height:1.5; }
+
+/* ---- movers ---- */
+.pf-mover-row{ display:flex; align-items:center; gap:8px; padding:6px 0; font-size:12.5px; }
+.pf-mover-rank{ color:var(--pf-text-muted); width:16px; }
+
+/* ---- redeye calendar ---- */
+.pf-cal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.pf-cal-title{ font-weight:600; font-size:13px; text-transform:capitalize; }
+.pf-cal-grid{ display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; }
+.pf-cal-weekdays{ margin-bottom:4px; }
+.pf-cal-weekday{ text-align:center; font-size:10px; color:var(--pf-text-muted); }
+.pf-cal-cell{
+  aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:8px; cursor:pointer; font-size:11px; background:var(--pf-bg); border:1px solid transparent;
+}
+.pf-cal-cell.empty{ visibility:hidden; cursor:default; }
+.pf-cal-cell.today{ border-color:var(--pf-gold); }
+.pf-cal-cell.selected{ background:var(--pf-gold); color:#1A1400; }
+.pf-cal-cell.has-entries:not(.selected) .pf-cal-dot{ background:var(--pf-gold); }
+.pf-cal-dot{ width:4px; height:4px; border-radius:999px; background:transparent; margin-top:2px; }
+.pf-cal-date-label{ font-size:13px; margin:16px 0 10px; text-transform:capitalize; }
+.pf-redeye-entry{ background:var(--pf-bg); border:1px solid var(--pf-border); border-radius:10px; padding:12px; margin-bottom:8px; }
+.pf-redeye-entry-title{ font-weight:600; font-size:12.5px; margin-bottom:6px; }
+.pf-redeye-entry-content{ font-size:12px; color:var(--pf-text-muted); line-height:1.5; }
+
+/* ---- stock detail overlay ---- */
+.pf-detail-overlay{
+  position:fixed; inset:0; z-index:30; display:none; align-items:flex-start; justify-content:center;
+  background:rgba(0,0,0,.6); padding:40px 16px; overflow-y:auto;
+}
+.pf-detail-overlay.open{ display:flex; }
+.pf-detail-panel{
+  background:var(--pf-surface); border:1px solid var(--pf-border); border-radius:14px; padding:24px;
+  max-width:420px; width:100%; position:relative;
+}
+.pf-detail-title{ margin:0 0 14px; font-size:17px; }
+.pf-close-btn{ position:absolute; top:14px; right:14px; background:none; border:none; font-size:20px; color:var(--pf-text-muted); }
+.pf-big-sparkline{ margin-bottom:14px; }
+.pf-settings-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--pf-border); font-size:12.5px; gap:10px; }
+.pf-settings-row:first-of-type{ border-top:none; }
+.pf-settings-row-col{ flex-direction:column; align-items:stretch; gap:6px; }
+.pf-detail-panel .pf-field{ width:100%; }
+.pf-detail-panel .pf-btn{ width:100%; margin-top:16px; background:none; border-color:var(--pf-loss); color:var(--pf-loss); }
+
+@media (max-width:640px){
+  .pf-app{ padding:16px; }
+  .pf-header-total-value{ font-size:26px; }
+  .pf-overview-row{ grid-template-columns:1fr; }
+  .pf-grid{ grid-template-columns:1fr; }
+}
