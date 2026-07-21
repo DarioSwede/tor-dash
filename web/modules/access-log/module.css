@@ -19,10 +19,19 @@
 .module-access-log .log-table th{
   color:var(--ink-soft); font-weight:500; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em;
 }
-.module-access-log .log-table td:last-child,
-.module-access-log .log-table th:last-child{ white-space:normal; }
+/* Detail + Lookup (last two columns) wrap instead of forcing the table
+   wider — error messages and lookup results are the two places long
+   text actually shows up. */
+.module-access-log .log-table td:nth-last-child(-n+2),
+.module-access-log .log-table th:nth-last-child(-n+2){ white-space:normal; }
 .module-access-log .log-row.log-signin_failure td{ color:var(--clay-hover); }
 .module-access-log .log-row.log-signin_success td:nth-child(2){ color:var(--ink); font-weight:600; }
+.module-access-log .lookup-btn{
+  font-size:12px; color:var(--ink-soft); background:none; border:1px solid var(--hairline);
+  border-radius:6px; padding:4px 10px; cursor:pointer; font-family:inherit;
+}
+.module-access-log .lookup-btn:hover{ border-color:var(--clay); color:var(--clay-hover); }
+.module-access-log .lookup-btn:disabled{ cursor:default; opacity:.6; }
 
 @media (max-width:640px){
   .module-access-log .log-table{ font-size:12px; }

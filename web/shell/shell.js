@@ -15,6 +15,7 @@ import { loadGateTitle, wireGateTitleSetting } from "./gate-title.js";
 import { loadGateButton, wireGateButtonSetting } from "./gate-button.js";
 import { renderPasskeyList } from "./passkeys.js";
 import { loadDashboardBackground, wireDashboardBackgroundSetting } from "./dashboard-background.js";
+import { lookupIp } from "./ip-lookup.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -52,6 +53,7 @@ function boot() {
           renderItem,
           isSafeSvg,
           decryptPayload,
+          lookupIp,
         });
       } catch (e) {
         // Last-resort net: anything unexpected here previously meant a

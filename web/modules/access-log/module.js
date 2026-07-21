@@ -22,7 +22,7 @@ export default {
   navLabel: "Log",
 
   async mount(container, ctx) {
-    const { supabase, el } = ctx;
+    const { supabase, el, lookupIp } = ctx;
 
     const toolbar = el("div", "log-toolbar");
     const allBtn = el("button", "active", "All");
@@ -57,7 +57,7 @@ export default {
       table.className = "log-table";
       const thead = document.createElement("thead");
       const headRow = document.createElement("tr");
-      ["When", "Event", "Method", "IP", "Network", "Detail"].forEach((h) => {
+      ["When", "Event", "Method", "IP", "Network", "Detail", "Lookup"].forEach((h) => {
         const th = document.createElement("th");
         th.textContent = h;
         headRow.appendChild(th);
@@ -82,6 +82,30 @@ export default {
           td.textContent = value;
           tr.appendChild(td);
         });
+
+        const lookupTd = document.createElement("td");
+        const lookupTarget = row.ip_v4 || row.ip_v6;
+        if (lookupTarget) {
+          const lookupBtn = document.createElement("button");
+          lookupBtn.className = "lookup-btn";
+          lookupBtn.textContent = "Lookup";
+          lookupBtn.addEventListener("click", async () => {
+            lookupBtn.disabled = true;
+            lookupBtn.textContent = "Looking up…";
+            const result = await lookupIp(lookupTarget);
+            const parts = [
+              result.hostname,
+              result.org || result.asn,
+              [result.city, result.country].filter(Boolean).join(", ") || null,
+            ].filter(Boolean);
+            lookupTd.textContent = parts.length ? parts.join(" · ") : "No data found.";
+          });
+          lookupTd.appendChild(lookupBtn);
+        } else {
+          lookupTd.textContent = "—";
+        }
+        tr.appendChild(lookupTd);
+
         tbody.appendChild(tr);
       }
       table.appendChild(tbody);
