@@ -29,15 +29,27 @@
 
   <!-- signed in -->
   <div id="app">
-    <div class="network-status" id="network-status"></div>
-    <div class="toolbar">
-      <nav class="nav" id="module-nav"></nav>
+    <div class="top-bar">
+      <div class="top-bar-group">
+        <button class="icon-btn" id="nav-toggle-btn" aria-label="Menu" aria-expanded="false" title="Menu">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <button class="icon-btn" id="open-settings-btn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+      <div class="network-status" id="network-status"></div>
+      <div class="top-bar-group">
+        <button class="icon-btn" id="signout-btn" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0L19 4m-3.5 3.5L19 11"/></svg>
+        </button>
+      </div>
     </div>
+    <div class="side-nav-backdrop" id="side-nav-backdrop"></div>
+    <nav class="side-nav" id="side-nav">
+      <div class="nav" id="module-nav"></div>
+    </nav>
     <div id="module-content"></div>
-    <div class="bottom-bar">
-      <button class="security-link" id="open-settings-btn">Settings</button>
-      <button class="signout" id="signout-btn">Sign out</button>
-    </div>
   </div>
 
   <!-- settings panel: sign-in method + this device's encryption key + appearance + network status -->

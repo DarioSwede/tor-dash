@@ -22,7 +22,14 @@
 /* An uploaded photo is meant to actually be seen, not hidden as a faint
    watermark — full-bleed cover, higher opacity, no forced grayscale. */
 #gate .gate-vignette.has-custom{ opacity:.55; filter:none; }
-#gate .gate-vignette.has-custom img{ width:100%; height:100%; object-fit:cover; }
+/* contain, not cover: this holds a seal/emblem with meaningful content
+   at every edge (a text ring, a crest), not a generic photo where
+   cropping the edges is harmless. cover crops top+bottom on a wide
+   desktop window and left+right on a narrow phone one -- contain shows
+   the whole design on any viewport shape, letterboxed by #gate's own
+   solid dark background (which already fills the full viewport via
+   position:fixed;inset:0) rather than a mismatched or missing color. */
+#gate .gate-vignette.has-custom img{ width:100%; height:100%; object-fit:contain; }
 #gate::after{
   /* soft radial vignette, darkens the edges further */
   content:""; position:absolute; inset:0; pointer-events:none;
@@ -71,45 +78,73 @@
 #gate .gate-network-status:empty{ display:none; }
 
 /* ================= app shell (signed in) ================= */
-/* Bottom padding reserves room for .bottom-bar (fixed, so it takes no
-   space in flow on its own) — set here rather than on #module-content,
-   whose className gets fully replaced on every module switch (see
-   module-registry.js's activate()), which would wipe out anything put
-   there. */
-#app{display:none; padding-bottom:76px;}
-.network-status{
+#app{display:none;}
+
+/* ---- top bar: menu + settings (left), network status (center),
+   sign out (right) — sticky so it, and the icons on it, stay reachable
+   while scrolling a long module, without needing a second fixed bar at
+   the bottom. ---- */
+.top-bar{
   position:sticky; top:0; z-index:15;
-  width:100%; padding:9px 16px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:12px 20px;
   background:var(--bg); border-bottom:1px solid var(--hairline);
+}
+.top-bar-group{ display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+.icon-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px; padding:0;
+  background:none; border:1px solid var(--hairline); border-radius:8px;
+  color:var(--ink-soft); cursor:pointer;
+}
+.icon-btn:hover{ border-color:var(--ink-soft); color:var(--ink); }
+
+.network-status{
+  flex:1; min-width:0;
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); text-align:center;
   word-break:break-word;
 }
-.network-status:empty{ display:none; border-bottom:none; padding:0; }
-.toolbar{
-  max-width:860px;margin:0 auto;padding:16px 32px;
+.network-status:empty{ display:none; }
+
+/* One soft-cornered frame around the whole IPv4/IPv6/VPN line, rather
+   than plain text — colors inherit via currentColor so this reads
+   correctly both here (light, on --ink-grey) and on the dark gate (see
+   #gate .gate-network-status below, on --gate-text-soft). */
+.net-pill{
+  display:inline-flex; flex-wrap:wrap; align-items:center; justify-content:center;
+  gap:4px 14px; padding:4px 14px;
+  border:1px solid currentColor; border-radius:999px; opacity:.82;
 }
+.net-item{ display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+.net-badge{ font-size:9px; font-weight:700; letter-spacing:.04em; opacity:.75; }
+.net-shield{ flex:0 0 auto; }
+.net-item.net-vpn{ color:#2f9e6e; }
+
+/* ---- side nav: hidden by default, slides in from the left ---- */
+.side-nav{
+  position:fixed; top:0; left:0; bottom:0; z-index:20;
+  width:260px; max-width:80vw;
+  background:var(--bg); border-right:1px solid var(--hairline);
+  padding:76px 20px 28px;
+  transform:translateX(-100%); transition:transform .2s ease;
+  overflow-y:auto;
+}
+.side-nav.open{ transform:none; }
+.side-nav-backdrop{
+  position:fixed; inset:0; z-index:19;
+  background:rgba(0,0,0,.25);
+  opacity:0; pointer-events:none; transition:opacity .2s ease;
+}
+.side-nav-backdrop.open{ opacity:1; pointer-events:auto; }
+
 .nav{ display:flex; flex-wrap:wrap; gap:8px; }
+.side-nav .nav{ flex-direction:column; flex-wrap:nowrap; }
 .nav button{
   background:none;border:1px solid var(--hairline);border-radius:8px;padding:6px 14px;
   font-family:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer;
 }
+.side-nav .nav button{ text-align:left; padding:10px 14px; }
 .nav button.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
-/* ---- bottom bar (settings + sign out) ----
-   position:fixed rather than sticky: sticky only pins once you've
-   scrolled far enough that its normal-flow position would go off-screen,
-   so on a short module (little to scroll) it just sits after the content
-   instead of reading as "stuck" to the viewport edge. Fixed guarantees
-   it's always visible at the bottom regardless of content height. */
-.bottom-bar{
-  position:fixed; left:0; right:0; bottom:0; z-index:15;
-  display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:24px;
-  padding:14px 32px;
-  background:var(--bg); border-top:1px solid var(--hairline);
-}
-.signout, .security-link{
-  font-size:12px; color:var(--ink-grey); background:none; border:none; cursor:pointer;
-  text-decoration:underline; font-family:inherit;
-}
 
 .btn{
   display:inline-block; background:var(--clay); color:var(--bg); font-weight:500; font-size:13.5px;
@@ -131,8 +166,8 @@
    readable, whenever a custom image is actually active. */
 body.has-custom-bg .band-top{background:rgba(249,249,247,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 body.has-custom-bg .band-bottom{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
-body.has-custom-bg .network-status{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
-body.has-custom-bg .bottom-bar{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+body.has-custom-bg .top-bar{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 
 h2.section-heading{
   font-family:var(--font-body); font-weight:600; font-size:15px; letter-spacing:.02em;

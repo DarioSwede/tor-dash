@@ -23,6 +23,22 @@ const gateMsg = document.getElementById("gate-msg");
 const navEl = document.getElementById("module-nav");
 const contentEl = document.getElementById("module-content");
 const settingsPanel = document.getElementById("settings-panel");
+const sideNav = document.getElementById("side-nav");
+const sideNavBackdrop = document.getElementById("side-nav-backdrop");
+const navToggleBtn = document.getElementById("nav-toggle-btn");
+
+function setSideNavOpen(open) {
+  sideNav.classList.toggle("open", open);
+  sideNavBackdrop.classList.toggle("open", open);
+  navToggleBtn.setAttribute("aria-expanded", String(open));
+}
+navToggleBtn.addEventListener("click", () => setSideNavOpen(!sideNav.classList.contains("open")));
+sideNavBackdrop.addEventListener("click", () => setSideNavOpen(false));
+// Closing on any nav button click (rather than wiring into
+// module-registry.js's buildNav) keeps the drawer's open/close state a
+// pure shell.js concern -- module-registry.js doesn't need to know the
+// nav it builds happens to live inside a collapsible drawer.
+navEl.addEventListener("click", (e) => { if (e.target.closest("button")) setSideNavOpen(false); });
 
 if (!configOk) {
   gateMsg.textContent =
