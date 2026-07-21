@@ -40,17 +40,33 @@ async function saveValue(supabase, value) {
     .upsert({ key: KEY, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
 }
 
+// A dedicated position:fixed layer behind everything, rather than setting
+// background-image + background-attachment:fixed directly on <body>.
+// The body-attachment approach only ever reliably covers the first
+// viewport-height's worth of page -- iOS Safari in particular does not
+// keep a `background-attachment:fixed` image sized to the full
+// document on a page taller than one screen, so anything the user
+// scrolled to (a second screenful of a module) showed plain white
+// beneath it. A real fixed, full-viewport element sized with
+// width/height:100% has no such limitation.
+function getBgLayer() {
+  let layer = document.getElementById("dashboard-bg-layer");
+  if (!layer) {
+    layer = document.createElement("div");
+    layer.id = "dashboard-bg-layer";
+    document.body.prepend(layer);
+  }
+  return layer;
+}
+
 function applyValue(value) {
-  document.body.style.backgroundColor = value.color || "";
+  const layer = getBgLayer();
+  layer.style.backgroundColor = value.color || "";
   const active = Boolean(value.showImage && value.imageUrl);
   if (active) {
-    document.body.style.backgroundImage = `url("${value.imageUrl}")`;
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundPosition = "center";
-    document.body.style.backgroundAttachment = "fixed";
-    document.body.style.backgroundRepeat = "no-repeat";
+    layer.style.backgroundImage = `url("${value.imageUrl}")`;
   } else {
-    document.body.style.backgroundImage = "";
+    layer.style.backgroundImage = "";
   }
   // Modules built on the shared .band-top/.band-bottom/.wrap primitives
   // (shell.css) paint their own opaque near-white surface across nearly
@@ -59,6 +75,13 @@ function applyValue(value) {
   // toolbar strip, defeating the point of setting one. This class lets
   // shell.css turn those surfaces semi-transparent (with a blur, so text
   // stays legible) only while a custom image is actually active.
+  // Toggled on <html> too, not just <body>: tokens.css sets a background
+  // on *both* (html,body{background:var(--bg)}), and whichever of the
+  // two still has an opaque one becomes the page's canvas background --
+  // a special bottom-most paint layer that sits behind even a
+  // position:fixed;z-index:-1 element, which made #dashboard-bg-layer
+  // invisible in testing even after body alone was made transparent.
+  document.documentElement.classList.toggle("has-custom-bg", active);
   document.body.classList.toggle("has-custom-bg", active);
 }
 
@@ -93,6 +116,43 @@ export async function uploadDashboardBackground(supabase, file) {
 
   applyValue(value);
   return value;
+}
+
+// ---- top bar layout: which side the menu+settings group vs. sign out
+// sits on. One toggle (swapped or not) rather than per-icon placement --
+// gives a real choice without a drag-and-drop layout editor for two
+// icon groups.
+const LAYOUT_KEY = "top_bar_layout";
+
+async function fetchLayoutSwapped(supabase) {
+  const { data } = await supabase
+    .from("dashboard_settings")
+    .select("value")
+    .eq("key", LAYOUT_KEY)
+    .maybeSingle();
+  return Boolean(data?.value?.swapped);
+}
+
+async function saveLayoutSwapped(supabase, swapped) {
+  return supabase
+    .from("dashboard_settings")
+    .upsert({ key: LAYOUT_KEY, value: { swapped }, updated_at: new Date().toISOString() }, { onConflict: "key" });
+}
+
+export async function loadTopBarLayout(supabase) {
+  document.body.classList.toggle("top-bar-swapped", await fetchLayoutSwapped(supabase));
+}
+
+export function wireTopBarLayoutSetting(supabase, { toggleEl, msgEl }) {
+  fetchLayoutSwapped(supabase).then((swapped) => { toggleEl.checked = swapped; });
+
+  toggleEl.addEventListener("change", async () => {
+    const swapped = toggleEl.checked;
+    document.body.classList.toggle("top-bar-swapped", swapped);
+    msgEl.textContent = "Saving…";
+    const { error } = await saveLayoutSwapped(supabase, swapped);
+    msgEl.textContent = error ? `Couldn't save: ${error.message}` : "Saved.";
+  });
 }
 
 export function wireDashboardBackgroundSetting(supabase, { colorInputEl, resetBtnEl, visibleToggleEl, uploadInputEl, msgEl }) {

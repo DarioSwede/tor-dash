@@ -87,6 +87,10 @@
   background:var(--bg); border-bottom:1px solid var(--hairline);
 }
 .top-bar-group{ display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+/* Lets the menu+settings group and sign-out swap which side they're on
+   (see the "Swap button sides" setting) -- the network status stays
+   centered regardless, since it's the middle flex child either way. */
+body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
 .icon-btn{
   display:inline-flex; align-items:center; justify-content:center;
   width:34px; height:34px; padding:0;
@@ -96,7 +100,7 @@
 .icon-btn:hover{ border-color:var(--ink-soft); color:var(--ink); }
 
 .network-status{
-  flex:1; min-width:0;
+  flex:0 1 320px; min-width:0; margin:0 auto;
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); text-align:center;
   word-break:break-word;
 }
@@ -158,14 +162,34 @@
 .wrap{max-width:860px;margin:0 auto;padding:32px 32px 48px;}
 .wrap.bottom{padding:44px 32px 64px;}
 
-/* A custom dashboard background (see shell/dashboard-background.js) is
-   otherwise only ever visible behind the toolbar strip, since every
-   surface below it is fully opaque -- make them translucent instead,
-   with a blur so body text set directly against a busy photo stays
-   readable, whenever a custom image is actually active. */
+/* Fixed, full-viewport layer behind everything -- see
+   shell/dashboard-background.js for why this is a real element rather
+   than a background-attachment:fixed style on <body> (the latter
+   doesn't reliably cover a page taller than one screen, especially on
+   iOS Safari). z-index:-1 keeps it behind #app without needing #app
+   itself to be positioned. */
+#dashboard-bg-layer{
+  position:fixed; inset:0; z-index:-1;
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+}
+/* html,body's own background (tokens.css) becomes the *canvas*
+   background when html has none set, which paints through/underneath
+   z-index:-1 content in a way that made #dashboard-bg-layer invisible in
+   testing despite correct stacking on paper -- make body transparent
+   itself whenever the layer is meant to be seen, so there's nothing
+   left to compete with it. */
+html.has-custom-bg, body.has-custom-bg{ background:transparent; }
+
+/* A custom dashboard background is otherwise only ever visible behind
+   the toolbar strip, since every surface below it is fully opaque --
+   make them translucent instead, with a blur so body text set directly
+   against a busy photo stays readable, whenever a custom image is
+   actually active. The top bar goes almost fully transparent (10%
+   opaque) since it has no body text of its own to protect, just icons
+   and a short status line. */
 body.has-custom-bg .band-top{background:rgba(249,249,247,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 body.has-custom-bg .band-bottom{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
-body.has-custom-bg .top-bar{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+body.has-custom-bg .top-bar{background:rgba(252,252,251,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom-color:rgba(228,227,220,.35);}
 body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 
 h2.section-heading{

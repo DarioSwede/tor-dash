@@ -14,7 +14,7 @@ import { renderNetworkStatus, fetchShowOnGate, wireNetworkSettingToggle } from "
 import { loadGateTitle, wireGateTitleSetting } from "./gate-title.js";
 import { loadGateButton, wireGateButtonSetting } from "./gate-button.js";
 import { renderPasskeyList } from "./passkeys.js";
-import { loadDashboardBackground, wireDashboardBackgroundSetting } from "./dashboard-background.js";
+import { loadDashboardBackground, wireDashboardBackgroundSetting, loadTopBarLayout, wireTopBarLayoutSetting } from "./dashboard-background.js";
 import { lookupIp } from "./ip-lookup.js";
 
 const gateEl = document.getElementById("gate");
@@ -59,6 +59,7 @@ function boot() {
     onAuthenticated: async (session) => {
       renderNetworkStatus(document.getElementById("network-status"));
       loadDashboardBackground(supabase);
+      loadTopBarLayout(supabase);
       try {
         await refreshDeviceList();
         await refreshPasskeyList();
@@ -121,6 +122,11 @@ function boot() {
     textInputEl: document.getElementById("gate-button-text-input"),
     hiddenToggleEl: document.getElementById("gate-button-hidden-toggle"),
     msgEl: document.getElementById("gate-button-msg"),
+  });
+
+  wireTopBarLayoutSetting(supabase, {
+    toggleEl: document.getElementById("top-bar-swap-toggle"),
+    msgEl: document.getElementById("top-bar-layout-msg"),
   });
 
   wireDashboardBackgroundSetting(supabase, {
