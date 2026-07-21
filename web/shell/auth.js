@@ -13,6 +13,7 @@
 // "No brief yet." messages. This version only ever subscribes once.
 
 import { logAccessEvent } from "./access-log.js";
+import { fetchNetworkStatus } from "./network.js";
 
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 min of no interaction
 const BACKGROUND_TIMEOUT_MS = 5 * 60 * 1000; // 5 min hidden re-triggers a lock
@@ -29,18 +30,21 @@ let hiddenAt = null;
 let listenersWired = false;
 
 export function wireGate(supabase, { gateEl, appEl, gateMsg, onAuthenticated, onSignedOut }) {
-  logAccessEvent(supabase, "gate_view");
+  // One network lookup per gate view, shared by every log call below
+  // (view, attempt, outcome) instead of each re-fetching it independently.
+  const networkStatusPromise = fetchNetworkStatus();
+  logAccessEvent(supabase, "gate_view", { statusPromise: networkStatusPromise });
 
   const triggerPasskeySignIn = async (method) => {
     gateMsg.textContent = "Waiting for your security key…";
-    logAccessEvent(supabase, "signin_attempt", { method });
+    logAccessEvent(supabase, "signin_attempt", { method, statusPromise: networkStatusPromise });
     const { error } = await supabase.auth.signInWithPasskey();
     if (error) {
       gateMsg.textContent = `Couldn't sign in: ${error.message}`;
-      logAccessEvent(supabase, "signin_failure", { method, detail: error.message });
+      logAccessEvent(supabase, "signin_failure", { method, detail: error.message, statusPromise: networkStatusPromise });
     } else {
       gateMsg.textContent = "";
-      logAccessEvent(supabase, "signin_success", { method });
+      logAccessEvent(supabase, "signin_success", { method, statusPromise: networkStatusPromise });
     }
   };
 

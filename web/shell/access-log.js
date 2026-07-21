@@ -8,9 +8,13 @@
 
 import { fetchNetworkStatus } from "./network.js";
 
-export async function logAccessEvent(supabase, event, { method, detail } = {}) {
+// statusPromise lets callers that fire several events per page view (the
+// gate: view, then attempt, then success/failure) share one network
+// lookup instead of tripling the ipify/ipapi.co round trips per visit —
+// pass the same in-flight fetchNetworkStatus() promise to each call.
+export async function logAccessEvent(supabase, event, { method, detail, statusPromise } = {}) {
   try {
-    const status = await fetchNetworkStatus();
+    const status = await (statusPromise || fetchNetworkStatus());
     await supabase.from("access_log").insert({
       event,
       method: method || null,
