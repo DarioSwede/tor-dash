@@ -14,6 +14,7 @@
 
 import { logAccessEvent } from "./access-log.js";
 import { fetchNetworkStatus } from "./network.js";
+import { watchYubikeyPresence, stopWatchingYubikeyPresence } from "./hid-presence.js";
 
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 min of no interaction
 const BACKGROUND_TIMEOUT_MS = 5 * 60 * 1000; // 5 min hidden re-triggers a lock
@@ -108,6 +109,12 @@ function startReauthGuard(supabase) {
     idleTimer = setTimeout(() => supabase.auth.signOut(), IDLE_TIMEOUT_MS);
   };
 
+  // Real hardware-presence enforcement (desktop Chrome/Edge only, opt-in
+  // in Settings) — see hid-presence.js. A no-op everywhere else, so this
+  // is purely additive to the idle/background guard below, never a
+  // replacement for it.
+  watchYubikeyPresence(() => supabase.auth.signOut());
+
   // Activity/visibility listeners are wired once for the page's lifetime,
   // not once per sign-in — otherwise repeated sign-out/sign-in cycles in a
   // single long-lived tab would accumulate duplicate listeners.
@@ -131,6 +138,7 @@ function stopReauthGuard() {
   clearTimeout(idleTimer);
   idleTimer = null;
   hiddenAt = null;
+  stopWatchingYubikeyPresence();
 }
 
 // A single-touch swipe anywhere on the gate, mostly vertical and upward,
