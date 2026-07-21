@@ -45,6 +45,14 @@
     <button id="register-passkey-btn" class="btn">Add a passkey</button>
     <div id="security-msg" class="panel-msg"></div>
 
+    <label class="field-label" for="gate-button-text-input">Sign-in button text</label>
+    <input type="text" id="gate-button-text-input" class="text-input" placeholder="Sign in with security key" maxlength="60">
+    <label class="toggle-row">
+      <input type="checkbox" id="gate-button-hidden-toggle">
+      Hide the button entirely (swipe up still works)
+    </label>
+    <div id="gate-button-msg" class="panel-msg"></div>
+
     <h3 class="panel-subhead">This device's encryption key</h3>
     <p>Lets this device read encrypted briefs. Separate from sign-in — set this up once per device.</p>
     <button id="register-device-key-btn" class="btn">Set up encryption on this device</button>

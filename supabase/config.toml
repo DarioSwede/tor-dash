@@ -1,0 +1,8 @@
+# Edge Function config. log-access must be callable by signed-out
+# visitors (that's the entire point -- logging unauthenticated gate
+# views/attempts), who have no Supabase session JWT, so the platform's
+# own gateway-level JWT check has to be off for this one function. The
+# function does its own request validation (event allowlist, per-IP rate
+# limit) instead -- see supabase/functions/log-access/index.ts.
+[functions.log-access]
+verify_jwt = false

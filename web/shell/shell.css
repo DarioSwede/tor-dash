@@ -140,7 +140,7 @@ h2.section-heading:first-of-type{margin-top:0;}
 .security-panel .panel-msg{ font-size:12.5px; color:var(--ink-soft); margin-top:10px; min-height:15px; }
 .security-panel .toggle-row{
   display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--ink);
-  cursor:pointer; user-select:none;
+  cursor:pointer; user-select:none; margin-top:6px;
 }
 .security-panel .toggle-row input{ width:15px; height:15px; accent-color:var(--clay); cursor:pointer; }
 .security-panel .field-label{

@@ -12,6 +12,7 @@ import { initModules } from "./module-registry.js";
 import { loadGateBackground, wireAppearanceUpload } from "./appearance.js";
 import { renderNetworkStatus, fetchShowOnGate, wireNetworkSettingToggle } from "./network.js";
 import { loadGateTitle, wireGateTitleSetting } from "./gate-title.js";
+import { loadGateButton, wireGateButtonSetting } from "./gate-button.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -26,6 +27,7 @@ if (!configOk) {
 } else {
   loadGateBackground(supabase);
   loadGateTitle(supabase);
+  loadGateButton(supabase);
   fetchShowOnGate(supabase).then((show) => {
     if (show) renderNetworkStatus(document.getElementById("gate-network-status"));
   });
@@ -83,6 +85,12 @@ function boot() {
   wireGateTitleSetting(supabase, {
     inputEl: document.getElementById("gate-title-input"),
     msgEl: document.getElementById("gate-title-msg"),
+  });
+
+  wireGateButtonSetting(supabase, {
+    textInputEl: document.getElementById("gate-button-text-input"),
+    hiddenToggleEl: document.getElementById("gate-button-hidden-toggle"),
+    msgEl: document.getElementById("gate-button-msg"),
   });
 }
 
