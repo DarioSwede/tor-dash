@@ -15,6 +15,7 @@
   <div id="gate">
     <div class="gate-vignette" aria-hidden="true"></div>
     <div class="gate-content">
+      <div class="gate-network-status" id="gate-network-status"></div>
       <p class="gate-eyebrow">Dashboard</p>
       <button id="passkey-signin-btn" class="gate-btn-primary">Sign in with security key</button>
       <div class="gate-msg" id="gate-msg"></div>
@@ -23,6 +24,7 @@
 
   <!-- signed in -->
   <div id="app">
+    <div class="network-status" id="network-status"></div>
     <div class="toolbar">
       <nav class="nav" id="module-nav"></nav>
       <div class="toolbar-right">
@@ -33,7 +35,7 @@
     <div id="module-content"></div>
   </div>
 
-  <!-- settings panel: sign-in method + this device's encryption key + appearance -->
+  <!-- settings panel: sign-in method + this device's encryption key + appearance + network status -->
   <div id="settings-panel" class="security-panel">
     <button class="close-btn" aria-label="Close">×</button>
     <h2 class="headline-font">Settings</h2>
@@ -55,6 +57,14 @@
       <input id="bg-upload-input" type="file" accept="image/*" style="display:none;">
     </label>
     <div id="appearance-msg" class="panel-msg"></div>
+
+    <h3 class="panel-subhead">Network status</h3>
+    <p>Shows your public IPv4/IPv6 and a best-effort VPN guess (by ISP name) in small text at the top of the dashboard.</p>
+    <label class="toggle-row">
+      <input type="checkbox" id="show-network-gate-toggle">
+      Also show on the sign-in page
+    </label>
+    <div id="network-settings-msg" class="panel-msg"></div>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.min.js"></script>

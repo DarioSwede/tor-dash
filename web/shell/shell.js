@@ -10,6 +10,7 @@ import { isSafeSvg } from "./svg-sanitize.js";
 import { el, renderItem } from "./dom-utils.js";
 import { initModules } from "./module-registry.js";
 import { loadGateBackground, wireAppearanceUpload } from "./appearance.js";
+import { renderNetworkStatus, fetchShowOnGate, wireNetworkSettingToggle } from "./network.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -23,6 +24,9 @@ if (!configOk) {
     "config.js is not set up yet — copy config.example.js to config.js and fill in your Supabase project values.";
 } else {
   loadGateBackground(supabase);
+  fetchShowOnGate(supabase).then((show) => {
+    if (show) renderNetworkStatus(document.getElementById("gate-network-status"));
+  });
   boot();
 }
 
@@ -30,6 +34,7 @@ function boot() {
   wireGate(supabase, {
     gateEl, appEl, gateMsg,
     onAuthenticated: async (session) => {
+      renderNetworkStatus(document.getElementById("network-status"));
       try {
         await refreshDeviceList();
         await initModules(navEl, contentEl, {
@@ -66,6 +71,11 @@ function boot() {
   wireAppearanceUpload(supabase, {
     msgEl: document.getElementById("appearance-msg"),
     uploadInputEl: document.getElementById("bg-upload-input"),
+  });
+
+  wireNetworkSettingToggle(supabase, {
+    checkboxEl: document.getElementById("show-network-gate-toggle"),
+    msgEl: document.getElementById("network-settings-msg"),
   });
 }
 
