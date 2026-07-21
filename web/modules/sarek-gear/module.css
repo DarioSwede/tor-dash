@@ -12,7 +12,8 @@
 .module-sarek-gear button,.module-sarek-gear input,.module-sarek-gear select{ font:inherit; color:inherit; }
 .module-sarek-gear button{ cursor:pointer; }
 
-.sk-app{ display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 60px); }
+.sk-app{ display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 60px);
+  max-width:1500px; margin:0 auto; }
 .sk-side{ border-right:1px solid var(--sk-line); padding:24px 18px; background:rgba(5,20,13,.82); }
 .sk-brand{ font-size:22px; font-weight:800; margin-bottom:20px; }
 .sk-nav{ display:block; width:100%; text-align:left; border:1px solid transparent; background:transparent;
