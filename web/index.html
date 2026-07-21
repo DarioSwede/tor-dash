@@ -76,6 +76,23 @@
     <p class="field-hint">Shown above the sign-in button. Leave empty to hide it entirely.</p>
     <div id="gate-title-msg" class="panel-msg"></div>
 
+    <h3 class="panel-subhead">Dashboard background</h3>
+    <p>Background color and/or an optional image behind the dashboard itself — not the sign-in screen.</p>
+    <label class="field-label" for="dashboard-bg-color-input">Background color</label>
+    <div class="color-row">
+      <input type="color" id="dashboard-bg-color-input" value="#fcfcfb">
+      <button type="button" id="dashboard-bg-color-reset" class="remove-btn">Reset to default</button>
+    </div>
+    <label class="toggle-row">
+      <input type="checkbox" id="dashboard-bg-visible-toggle">
+      Show a background image
+    </label>
+    <label class="btn bg-upload-btn">
+      Upload custom image…
+      <input id="dashboard-bg-upload-input" type="file" accept="image/*" style="display:none;">
+    </label>
+    <div id="dashboard-bg-msg" class="panel-msg"></div>
+
     <h3 class="panel-subhead">Network status</h3>
     <p>Shows your public IPv4/IPv6 and a best-effort VPN guess (by ISP name) in small text at the top of the dashboard.</p>
     <label class="toggle-row">
