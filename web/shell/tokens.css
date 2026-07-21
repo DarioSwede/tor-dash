@@ -15,13 +15,10 @@
 
   /* ---- gate (signed-out) palette ---- */
   --gate-bg:#0A0A0C;
-  --gate-bg-soft:#111114;
-  --gate-line:#3A3A3E;
   --gate-text:#D8D6CE;
   --gate-text-soft:#8A8880;
   --gate-accent:#8C6A4A;
   --gate-accent-hover:#A9805D;
-  --gate-vignette-skull:#5A5850;
 
   --font-body:'Lexend Deca','Lexend',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --font-headline:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;

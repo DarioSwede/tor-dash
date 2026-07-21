@@ -75,6 +75,7 @@ function boot() {
   wireAppearanceUpload(supabase, {
     msgEl: document.getElementById("appearance-msg"),
     uploadInputEl: document.getElementById("bg-upload-input"),
+    visibleToggleEl: document.getElementById("bg-visible-toggle"),
   });
 
   wireNetworkSettingToggle(supabase, {

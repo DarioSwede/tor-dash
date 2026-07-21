@@ -27,12 +27,12 @@
     <div class="network-status" id="network-status"></div>
     <div class="toolbar">
       <nav class="nav" id="module-nav"></nav>
-      <div class="toolbar-right">
-        <button class="security-link" id="open-settings-btn">Settings</button>
-        <button class="signout" id="signout-btn">Sign out</button>
-      </div>
     </div>
     <div id="module-content"></div>
+    <div class="bottom-bar">
+      <button class="security-link" id="open-settings-btn">Settings</button>
+      <button class="signout" id="signout-btn">Sign out</button>
+    </div>
   </div>
 
   <!-- settings panel: sign-in method + this device's encryption key + appearance + network status -->
@@ -60,6 +60,10 @@
 
     <h3 class="panel-subhead">Appearance</h3>
     <p>Background shown on the sign-in screen — applies everywhere you sign in.</p>
+    <label class="toggle-row">
+      <input type="checkbox" id="bg-visible-toggle">
+      Show a background image
+    </label>
     <label class="btn bg-upload-btn">
       Upload custom image…
       <input id="bg-upload-input" type="file" accept="image/*" style="display:none;">
