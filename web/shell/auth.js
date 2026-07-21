@@ -12,6 +12,8 @@
 // raced into loadBrief() with no de-dup guard, stacking duplicate
 // "No brief yet." messages. This version only ever subscribes once.
 
+import { logAccessEvent } from "./access-log.js";
+
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 min of no interaction
 const BACKGROUND_TIMEOUT_MS = 5 * 60 * 1000; // 5 min hidden re-triggers a lock
 
@@ -27,14 +29,23 @@ let hiddenAt = null;
 let listenersWired = false;
 
 export function wireGate(supabase, { gateEl, appEl, gateMsg, onAuthenticated, onSignedOut }) {
-  const triggerPasskeySignIn = async () => {
+  logAccessEvent(supabase, "gate_view");
+
+  const triggerPasskeySignIn = async (method) => {
     gateMsg.textContent = "Waiting for your security key…";
+    logAccessEvent(supabase, "signin_attempt", { method });
     const { error } = await supabase.auth.signInWithPasskey();
-    gateMsg.textContent = error ? `Couldn't sign in: ${error.message}` : "";
+    if (error) {
+      gateMsg.textContent = `Couldn't sign in: ${error.message}`;
+      logAccessEvent(supabase, "signin_failure", { method, detail: error.message });
+    } else {
+      gateMsg.textContent = "";
+      logAccessEvent(supabase, "signin_success", { method });
+    }
   };
 
-  document.getElementById("passkey-signin-btn").addEventListener("click", triggerPasskeySignIn);
-  wireSwipeToSignIn(gateEl, triggerPasskeySignIn);
+  document.getElementById("passkey-signin-btn").addEventListener("click", () => triggerPasskeySignIn("tap"));
+  wireSwipeToSignIn(gateEl, () => triggerPasskeySignIn("swipe"));
 
   document.getElementById("signout-btn").addEventListener("click", () => supabase.auth.signOut());
 

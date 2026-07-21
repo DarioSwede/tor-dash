@@ -53,13 +53,6 @@
 }
 #gate .gate-btn-primary:hover{ background:rgba(140,106,74,.2); border-color:var(--gate-accent); }
 #gate .gate-msg{ font-size:12.5px; margin-top:16px; color:var(--gate-text-soft); min-height:16px; }
-#gate .gate-swipe-hint{
-  display:none; font-size:11px; color:var(--gate-text-soft); margin:20px 0 0; letter-spacing:.02em;
-}
-/* Only hinted on touch devices — swiping isn't a thing with a mouse. */
-@media (hover:none) and (pointer:coarse){
-  #gate .gate-swipe-hint{ display:block; }
-}
 /* Pinned to the very top of the gate, not just the top of the vertically
    centered .gate-content block below it. */
 #gate .gate-network-status{

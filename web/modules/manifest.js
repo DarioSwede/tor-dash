@@ -19,4 +19,9 @@ export const MODULES = [
     path: "./sarek-gear/module.js",
     css: "./sarek-gear/module.css",
   },
+  {
+    id: "access-log",
+    path: "./access-log/module.js",
+    css: "./access-log/module.css",
+  },
 ];

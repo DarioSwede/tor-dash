@@ -1,0 +1,30 @@
+/* Access log module — reuses the shell's default palette (wrap/
+   empty-state), just adds a filter toolbar and a table on top. Everything
+   nested under .module-access-log so it can never leak into another
+   module. */
+.module-access-log .log-toolbar{
+  display:flex; gap:8px; max-width:860px; margin:32px auto 0; padding:0 32px;
+}
+.module-access-log .log-toolbar button{
+  background:none; border:1px solid var(--hairline); border-radius:8px; padding:6px 14px;
+  font-family:inherit; font-size:13px; color:var(--ink-soft); cursor:pointer;
+}
+.module-access-log .log-toolbar button.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+
+.module-access-log .log-table{ width:100%; border-collapse:collapse; font-size:13px; }
+.module-access-log .log-table th,
+.module-access-log .log-table td{
+  text-align:left; padding:10px 12px; border-bottom:1px solid var(--hairline); white-space:nowrap;
+}
+.module-access-log .log-table th{
+  color:var(--ink-soft); font-weight:500; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em;
+}
+.module-access-log .log-table td:last-child,
+.module-access-log .log-table th:last-child{ white-space:normal; }
+.module-access-log .log-row.log-signin_failure td{ color:var(--clay-hover); }
+.module-access-log .log-row.log-signin_success td:nth-child(2){ color:var(--ink); font-weight:600; }
+
+@media (max-width:640px){
+  .module-access-log .log-table{ font-size:12px; }
+  .module-access-log .log-table th, .module-access-log .log-table td{ padding:8px; }
+}
