@@ -1,6 +1,6 @@
-// Auth wiring: passkey (security key) sign-in as the primary path, magic
-// link as a de-emphasized fallback/first-time-enrollment path, plus a
-// re-authentication guard that signs you back out after a period of
+// Auth wiring: passkey (security key) sign-in only — no email/magic-link
+// path, so a leaked or guessed email address can't get anyone signed in —
+// plus a re-authentication guard that signs you back out after a period of
 // inactivity or after the tab/app has been backgrounded for a while — the
 // practical stand-in for "the key must be at hand," since no browser API
 // can truly sense continuous hardware presence on a phone (see the plan
@@ -24,17 +24,6 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, onAuthenticated, on
     gateMsg.textContent = "Waiting for your security key…";
     const { error } = await supabase.auth.signInWithPasskey();
     gateMsg.textContent = error ? `Couldn't sign in: ${error.message}` : "";
-  });
-
-  document.getElementById("send-link-btn").addEventListener("click", async () => {
-    const email = document.getElementById("email-input").value.trim();
-    if (!email) return;
-    gateMsg.textContent = "Sending…";
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.href },
-    });
-    gateMsg.textContent = error ? `Error: ${error.message}` : "Check your inbox for the sign-in link.";
   });
 
   document.getElementById("signout-btn").addEventListener("click", () => supabase.auth.signOut());

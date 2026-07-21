@@ -9,7 +9,7 @@ import { hasDeviceKey, setupEncryption, decryptPayload } from "./crypto.js";
 import { isSafeSvg } from "./svg-sanitize.js";
 import { el, renderItem } from "./dom-utils.js";
 import { initModules } from "./module-registry.js";
-import { loadGateBackground, wireAppearancePicker } from "./appearance.js";
+import { loadGateBackground, wireAppearanceUpload } from "./appearance.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -63,8 +63,7 @@ function boot() {
     onEnroll: refreshDeviceList,
   });
 
-  wireAppearancePicker(supabase, {
-    pickerEl: document.getElementById("bg-picker"),
+  wireAppearanceUpload(supabase, {
     msgEl: document.getElementById("appearance-msg"),
     uploadInputEl: document.getElementById("bg-upload-input"),
   });

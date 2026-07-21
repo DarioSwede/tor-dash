@@ -11,7 +11,9 @@
 // the public gate-backgrounds Storage bucket (see
 // supabase/migrations/0006_gate_background_storage.sql), referenced by
 // its public URL rather than embedded, so no repo change is needed to
-// swap it.
+// swap it. The settings panel only offers the upload path now, but
+// fetchValue/applyValue still understand a built-in value already saved
+// from before that change.
 
 const BUILTIN_VARIANTS = ["skull", "compass", "globe", "none"];
 const DEFAULT_VALUE = { variant: "skull" };
@@ -97,49 +99,18 @@ export async function uploadCustomBackground(supabase, file) {
   return value;
 }
 
-export function wireAppearancePicker(supabase, { pickerEl, msgEl, uploadInputEl }) {
-  let current = DEFAULT_VALUE;
-
-  function markSelected() {
-    pickerEl.querySelectorAll(".bg-option").forEach((btn) => {
-      btn.classList.toggle("selected", btn.dataset.variant === current.variant);
-    });
-  }
-
-  fetchValue(supabase).then((value) => { current = value; markSelected(); });
-
-  pickerEl.querySelectorAll(".bg-option").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const variant = btn.dataset.variant;
-      if (variant === current.variant) return;
-      const value = { variant };
-      msgEl.textContent = "Saving…";
-      const { error } = await saveValue(supabase, value);
-      if (error) {
-        msgEl.textContent = `Couldn't save: ${error.message}`;
-        return;
-      }
-      current = value;
-      markSelected();
-      await applyValue(value); // live preview on this page too
+export function wireAppearanceUpload(supabase, { msgEl, uploadInputEl }) {
+  uploadInputEl.addEventListener("change", async () => {
+    const file = uploadInputEl.files[0];
+    if (!file) return;
+    msgEl.textContent = "Uploading…";
+    try {
+      await uploadCustomBackground(supabase, file);
       msgEl.textContent = "Saved.";
-    });
+    } catch (e) {
+      msgEl.textContent = `Couldn't upload: ${e.message}`;
+    } finally {
+      uploadInputEl.value = "";
+    }
   });
-
-  if (uploadInputEl) {
-    uploadInputEl.addEventListener("change", async () => {
-      const file = uploadInputEl.files[0];
-      if (!file) return;
-      msgEl.textContent = "Uploading…";
-      try {
-        current = await uploadCustomBackground(supabase, file);
-        markSelected();
-        msgEl.textContent = "Saved.";
-      } catch (e) {
-        msgEl.textContent = `Couldn't upload: ${e.message}`;
-      } finally {
-        uploadInputEl.value = "";
-      }
-    });
-  }
 }
