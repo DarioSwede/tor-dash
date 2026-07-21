@@ -124,6 +124,16 @@
 .wrap{max-width:860px;margin:0 auto;padding:32px 32px 48px;}
 .wrap.bottom{padding:44px 32px 64px;}
 
+/* A custom dashboard background (see shell/dashboard-background.js) is
+   otherwise only ever visible behind the toolbar strip, since every
+   surface below it is fully opaque -- make them translucent instead,
+   with a blur so body text set directly against a busy photo stays
+   readable, whenever a custom image is actually active. */
+body.has-custom-bg .band-top{background:rgba(249,249,247,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+body.has-custom-bg .band-bottom{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+body.has-custom-bg .network-status{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+body.has-custom-bg .bottom-bar{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+
 h2.section-heading{
   font-family:var(--font-body); font-weight:600; font-size:15px; letter-spacing:.02em;
   color:var(--ink); margin:38px 0 16px;

@@ -42,7 +42,8 @@ async function saveValue(supabase, value) {
 
 function applyValue(value) {
   document.body.style.backgroundColor = value.color || "";
-  if (value.showImage && value.imageUrl) {
+  const active = Boolean(value.showImage && value.imageUrl);
+  if (active) {
     document.body.style.backgroundImage = `url("${value.imageUrl}")`;
     document.body.style.backgroundSize = "cover";
     document.body.style.backgroundPosition = "center";
@@ -51,6 +52,14 @@ function applyValue(value) {
   } else {
     document.body.style.backgroundImage = "";
   }
+  // Modules built on the shared .band-top/.band-bottom/.wrap primitives
+  // (shell.css) paint their own opaque near-white surface across nearly
+  // the entire content area by design -- fine normally, but it means a
+  // custom background image would only ever be visible behind the
+  // toolbar strip, defeating the point of setting one. This class lets
+  // shell.css turn those surfaces semi-transparent (with a blur, so text
+  // stays legible) only while a custom image is actually active.
+  document.body.classList.toggle("has-custom-bg", active);
 }
 
 // Only meaningful once signed in — dashboard_settings is owner-only
