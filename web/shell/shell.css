@@ -22,14 +22,10 @@
 /* An uploaded photo is meant to actually be seen, not hidden as a faint
    watermark — full-bleed cover, higher opacity, no forced grayscale. */
 #gate .gate-vignette.has-custom{ opacity:.55; filter:none; }
-/* contain, not cover: this holds a seal/emblem with meaningful content
-   at every edge (a text ring, a crest), not a generic photo where
-   cropping the edges is harmless. cover crops top+bottom on a wide
-   desktop window and left+right on a narrow phone one -- contain shows
-   the whole design on any viewport shape, letterboxed by #gate's own
-   solid dark background (which already fills the full viewport via
-   position:fixed;inset:0) rather than a mismatched or missing color. */
-#gate .gate-vignette.has-custom img{ width:100%; height:100%; object-fit:contain; }
+/* Reverted back to cover (tried contain, letterboxing the whole emblem
+   on every viewport shape -- explicitly not wanted, reads as too small/
+   floating; the tighter, cropped-in cover look was preferred). */
+#gate .gate-vignette.has-custom img{ width:100%; height:100%; object-fit:cover; }
 #gate::after{
   /* soft radial vignette, darkens the edges further */
   content:""; position:absolute; inset:0; pointer-events:none;
@@ -119,6 +115,9 @@
 .net-badge{ font-size:9px; font-weight:700; letter-spacing:.04em; opacity:.75; }
 .net-shield{ flex:0 0 auto; }
 .net-item.net-vpn{ color:#2f9e6e; }
+/* No frame on the gate (sign-in page) specifically -- just the plain
+   icon+text line there, unlike the dashboard's version above. */
+#gate .gate-network-status.net-pill{ border:none; padding:0; border-radius:0; }
 
 /* ---- side nav: hidden by default, slides in from the left ---- */
 .side-nav{
