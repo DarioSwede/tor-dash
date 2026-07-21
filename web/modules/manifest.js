@@ -20,6 +20,11 @@ export const MODULES = [
     css: "./sarek-gear/module.css",
   },
   {
+    id: "stocks",
+    path: "./stocks/module.js",
+    css: "./stocks/module.css",
+  },
+  {
     id: "access-log",
     path: "./access-log/module.js",
     css: "./access-log/module.css",
