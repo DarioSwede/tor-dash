@@ -13,6 +13,7 @@ import { loadGateBackground, wireAppearanceUpload } from "./appearance.js";
 import { renderNetworkStatus, fetchShowOnGate, wireNetworkSettingToggle } from "./network.js";
 import { loadGateTitle, wireGateTitleSetting } from "./gate-title.js";
 import { loadGateButton, wireGateButtonSetting } from "./gate-button.js";
+import { renderPasskeyList } from "./passkeys.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -41,6 +42,7 @@ function boot() {
       renderNetworkStatus(document.getElementById("network-status"));
       try {
         await refreshDeviceList();
+        await refreshPasskeyList();
         await initModules(navEl, contentEl, {
           supabase,
           session,
@@ -69,7 +71,14 @@ function boot() {
     panelEl: settingsPanel,
     openBtn: document.getElementById("open-settings-btn"),
     closeBtn: settingsPanel.querySelector(".close-btn"),
-    onEnroll: refreshDeviceList,
+    // onEnroll fires after a *passkey* registration (see auth.js) — it's
+    // wired to refreshDeviceList too because opening the panel is also a
+    // reasonable moment to make sure the (unrelated) encryption-key list
+    // is current, not because the two are actually connected.
+    onEnroll: async () => {
+      await refreshDeviceList();
+      await refreshPasskeyList();
+    },
   });
 
   wireAppearanceUpload(supabase, {
@@ -118,6 +127,11 @@ async function refreshDeviceList() {
     line.appendChild(el("span", null, new Date(row.created_at).toLocaleDateString()));
     listEl.appendChild(line);
   }
+}
+
+async function refreshPasskeyList() {
+  const listEl = document.getElementById("passkey-list");
+  if (listEl) await renderPasskeyList(supabase, listEl);
 }
 
 // registerPasskey() (wired in auth.js) only handles the login credential;

@@ -170,8 +170,12 @@ h2.section-heading:first-of-type{margin-top:0;}
 .security-panel .field-hint{ font-size:12px; color:var(--ink-soft); margin:6px 0 0; }
 .security-panel .device-list{ margin-top:6px; }
 .security-panel .device-row{
-  display:flex; justify-content:space-between; align-items:center; font-size:13.5px;
+  display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:13.5px;
   padding:11px 0; border-top:1px solid var(--hairline);
+}
+.security-panel .remove-btn{
+  font-size:12px; color:var(--clay-hover); background:none; border:none; cursor:pointer;
+  text-decoration:underline; font-family:inherit; padding:0; white-space:nowrap;
 }
 .security-panel .close-btn{
   position:absolute; top:18px; right:18px; background:none; border:none; cursor:pointer;
