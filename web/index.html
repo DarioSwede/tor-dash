@@ -71,16 +71,6 @@
     </label>
     <div id="gate-button-msg" class="panel-msg"></div>
 
-    <h3 class="panel-subhead">YubiKey presence (this browser)</h3>
-    <p>Sign out immediately if the security key is unplugged, instead of waiting for the usual inactivity timeout. Only works in Chrome/Edge on a computer (WebHID) — Safari and phones don't support this, and keep the regular timeout-based re-authentication instead.</p>
-    <button id="grant-hid-btn" class="btn">Grant access to this key</button>
-    <label class="toggle-row">
-      <input type="checkbox" id="hid-presence-toggle">
-      Sign out immediately if unplugged
-    </label>
-    <p id="hid-unsupported-msg" class="field-hint" style="display:none;">Not supported in this browser — the usual timeout-based re-authentication still applies.</p>
-    <div id="hid-presence-msg" class="panel-msg"></div>
-
     <h3 class="panel-subhead">This device's encryption key</h3>
     <p>Lets this device read encrypted briefs. Separate from sign-in — set this up once per device.</p>
     <button id="register-device-key-btn" class="btn">Set up encryption on this device</button>

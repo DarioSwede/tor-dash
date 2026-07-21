@@ -16,7 +16,6 @@ import { loadGateButton, wireGateButtonSetting } from "./gate-button.js";
 import { renderPasskeyList } from "./passkeys.js";
 import { loadDashboardBackground, wireDashboardBackgroundSetting, loadTopBarLayout, wireTopBarLayoutSetting } from "./dashboard-background.js";
 import { lookupIp } from "./ip-lookup.js";
-import { wireHidPresenceSetting } from "./hid-presence.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -123,13 +122,6 @@ function boot() {
     textInputEl: document.getElementById("gate-button-text-input"),
     hiddenToggleEl: document.getElementById("gate-button-hidden-toggle"),
     msgEl: document.getElementById("gate-button-msg"),
-  });
-
-  wireHidPresenceSetting(supabase, {
-    grantBtnEl: document.getElementById("grant-hid-btn"),
-    toggleEl: document.getElementById("hid-presence-toggle"),
-    msgEl: document.getElementById("hid-presence-msg"),
-    unsupportedEl: document.getElementById("hid-unsupported-msg"),
   });
 
   wireTopBarLayoutSetting(supabase, {
