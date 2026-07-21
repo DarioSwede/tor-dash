@@ -12,7 +12,12 @@
 <body>
 
   <!-- signed out -->
-  <div id="gate">
+  <!-- tabindex="-1": not in tab order, but programmatically focusable —
+       see auth.js's triggerPasskeySignIn, which focuses this before every
+       WebAuthn call so the swipe path (which doesn't naturally focus
+       anything, unlike tapping the button) doesn't hit "document is not
+       focused". Works regardless of whether the button itself is hidden. -->
+  <div id="gate" tabindex="-1">
     <div class="gate-vignette" aria-hidden="true"></div>
     <div class="gate-network-status" id="gate-network-status"></div>
     <div class="gate-content">

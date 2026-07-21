@@ -39,12 +39,17 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, onAuthenticated, on
     gateMsg.textContent = "Waiting for your security key…";
     logAccessEvent(supabase, "signin_attempt", { method, statusPromise: networkStatusPromise });
     // WebAuthn requires the document to actually have focus at call time.
-    // Tapping the button naturally focuses it (it's a focusable element);
-    // a swipe anywhere on the plain #gate div doesn't focus anything,
-    // which is what produced "Couldn't sign in: The document is not
-    // focused." on that path specifically. window.focus() here — still
-    // inside the same user-gesture-triggered handler — fixes both paths.
-    window.focus();
+    // Tapping the button naturally focuses it; a swipe on the plain
+    // #gate div doesn't focus anything on its own, which is what
+    // produced "Couldn't sign in: The document is not focused." on that
+    // path specifically. window.focus() alone (an earlier attempt at
+    // this fix) turned out not to be reliable — browsers are
+    // inconsistent about honoring a window self-focusing itself.
+    // Focusing a concrete element is the primitive that actually works;
+    // gateEl (tabindex="-1" in index.html) is used rather than the
+    // button itself so this still works when "hide the button entirely"
+    // is on and there's no button to focus.
+    gateEl.focus({ preventScroll: true });
     const { error } = await supabase.auth.signInWithPasskey();
     if (error) {
       gateMsg.textContent = `Couldn't sign in: ${error.message}`;
