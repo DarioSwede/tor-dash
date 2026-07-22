@@ -192,10 +192,22 @@ html.has-custom-bg, body.has-custom-bg{ background:transparent; }
    only the left inset ever rendered). */
 body.has-custom-bg .band-top{
   width:auto;
-  background:rgba(249,249,247,.26); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  background:rgba(249,249,247,.7); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
   margin:20px; border-radius:22px;
   box-shadow:0 16px 48px rgba(15,14,10,.18);
 }
+/* --ink-soft (#6B6A63) was tuned for a fully opaque --wash background
+   (5.15:1 contrast there) and measured as low as ~1.9:1 once blended
+   through a translucent card over a real photo -- nowhere near
+   readable, and no alpha/blur combination on the card fixes that for
+   every possible photo without going nearly opaque and defeating the
+   point of a translucent card at all. Cheaper fix: give secondary text
+   its own darker shade only in this mode, measured at ≥4.5:1 against
+   the .7-alpha blend above (see the module's own contrast check). */
+body.has-custom-bg .item-sentence,
+body.has-custom-bg .act-note,
+body.has-custom-bg .day-date,
+body.has-custom-bg .quiet-line{ color:#4A473F; }
 body.has-custom-bg .top-bar{background:rgba(252,252,251,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom-color:rgba(228,227,220,.35);}
 body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 
