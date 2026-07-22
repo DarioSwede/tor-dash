@@ -68,6 +68,21 @@ function fmtTimeShort(iso) {
   return new Date(iso).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" });
 }
 
+// Card titles are one line by design (see the ellipsis rule on
+// .item-title-text) -- the "YYYY-MM-DD " half of fmtTimeShort is most of
+// what pushed a title past that width, and it's dead weight for the
+// overwhelming majority of rows anyway (freshly logged, i.e. today).
+// Only a row old enough to be from a different calendar day pays for a
+// full date in its title.
+function fmtTimeCompact(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const isToday = d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate();
+  return isToday ? d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : fmtTimeShort(iso);
+}
+
 function fmtTimeOfDay(iso) {
   return new Date(iso).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
 }
@@ -242,8 +257,8 @@ export default {
         title.appendChild(el(
           "span", "item-title-text",
           count > 1
-            ? `${eventLabel} ×${count} · senast ${fmtTimeShort(latest.created_at)}`
-            : `${eventLabel} · ${fmtTimeShort(latest.created_at)}`
+            ? `${eventLabel} ×${count} · senast ${fmtTimeCompact(latest.created_at)}`
+            : `${eventLabel} · ${fmtTimeCompact(latest.created_at)}`
         ));
 
         function toggle() {

@@ -213,11 +213,17 @@ body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:bl
 
 @media (max-width:640px){
   body.has-custom-bg .band-top{ margin:12px; border-radius:18px; }
+  /* A title's usual content (event label + a full date/time stamp, for
+     the access log) is more prone to overflowing a phone-width card
+     than Brief's short hand-authored titles -- a smaller size buys back
+     room before the ellipsis rule above has to kick in. */
+  .item-title{ font-size:14px; }
+  .item-num{ font-size:13px; }
 }
 
 h2.section-heading{
   font-family:var(--font-body); font-weight:600; font-size:13.5px; letter-spacing:.02em;
-  color:var(--ink); margin:24px 0 10px;
+  color:var(--ink); margin:24px 0 4px;
 }
 
 .item{ display:flex; gap:14px; padding:12px 0; border-top:1px solid var(--hairline); }
@@ -238,7 +244,13 @@ h2.section-heading{
 .item-title:hover::before{ color:var(--clay); }
 .item.expanded .item-title::before{ transform:rotate(90deg); }
 .item-title:focus-visible{ outline:2px solid var(--clay); outline-offset:3px; }
-.item-title-text{ flex:1; min-width:0; }
+/* Truncate rather than wrap -- a title is meant to read as one line with
+   a chevron at the front; wrapping breaks that rhythm and, worse, can
+   clip the far end of a title/timestamp against the card edge on a
+   narrow phone instead of just shortening it with an ellipsis. */
+.item-title-text{
+  flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
 .item-link{
   flex:0 0 auto; font-size:12px; color:var(--ink-soft); text-decoration:none;
   padding:2px 4px; border-radius:4px;
