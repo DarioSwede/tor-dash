@@ -190,12 +190,12 @@ html.has-custom-bg, body.has-custom-bg{ background:transparent; }
    more of the image actually showing through, since a blur this size
    keeps text legible regardless of what's moving underneath it. */
 body.has-custom-bg .band-top{
-  background:rgba(249,249,247,.58); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  background:rgba(249,249,247,.36); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
   margin:14px 14px 0; border-radius:22px 22px 0 0; border-bottom:none;
   box-shadow:0 12px 40px rgba(20,18,12,.16);
 }
 body.has-custom-bg .band-bottom{
-  background:rgba(252,252,251,.58); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  background:rgba(252,252,251,.36); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
   margin:0 14px 14px; border-radius:0 0 22px 22px;
   border-top:1px solid rgba(228,227,220,.4);
   box-shadow:0 12px 40px rgba(20,18,12,.16);
