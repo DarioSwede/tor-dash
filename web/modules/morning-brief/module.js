@@ -1,6 +1,6 @@
 // Morning Brief module — ported from the original single-file app.js.
 //
-// Two things changed from that version:
+// Notable changes from that version:
 // 1. loadBrief() now clears its root synchronously before the first
 //    `await` on every call path (including the empty-state branch, which
 //    previously didn't) and carries a request-id guard, so a call
@@ -11,6 +11,12 @@
 //    envelopes, see shell/crypto.js) instead of plaintext `payload` —
 //    decrypted client-side before rendering, using whichever envelope (if
 //    any) matches this device's registered key.
+// 3. There is only ever one running brief now, not a morning/evening
+//    pair picked via a toggle — whatever row was pushed most recently
+//    (by created_at, not for_date, since same-day re-pushes are the
+//    normal way new content replaces stale content) is simply "the"
+//    brief. The `kind` column still exists on the table for now but is
+//    no longer read from here.
 
 let requestSeq = 0;
 
@@ -21,24 +27,8 @@ export default {
   async mount(container, ctx) {
     const { supabase, el, renderItem, isSafeSvg, decryptPayload } = ctx;
 
-    const toggle = el("div", "toggle");
-    const morningBtn = el("button", "active", "Morning");
-    const eveningBtn = el("button", "", "Evening");
-    toggle.append(morningBtn, eveningBtn);
-
     const briefRoot = el("div");
-    container.append(toggle, briefRoot);
-
-    let currentKind = "morning";
-
-    function switchKind(kind) {
-      currentKind = kind;
-      morningBtn.classList.toggle("active", kind === "morning");
-      eveningBtn.classList.toggle("active", kind === "evening");
-      loadBrief();
-    }
-    morningBtn.addEventListener("click", () => switchKind("morning"));
-    eveningBtn.addEventListener("click", () => switchKind("evening"));
+    container.append(briefRoot);
 
     async function loadBrief() {
       const myRequest = ++requestSeq;
@@ -47,19 +37,18 @@ export default {
       const { data, error } = await supabase
         .from("briefing_snapshots")
         .select("payload, payload_encrypted, for_date, created_at")
-        .eq("kind", currentKind)
-        .order("for_date", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (myRequest !== requestSeq) return; // a newer call started; this response is stale
 
       if (error) {
-        briefRoot.appendChild(el("div", "empty-state", `Couldn't load the ${currentKind} brief: ${error.message}`));
+        briefRoot.appendChild(el("div", "empty-state", `Kunde inte hämta briefen: ${error.message}`));
         return;
       }
       if (!data) {
-        briefRoot.appendChild(el("div", "empty-state", `No ${currentKind} brief yet.`));
+        briefRoot.appendChild(el("div", "empty-state", "Ingen brief ännu."));
         return;
       }
 
@@ -70,7 +59,7 @@ export default {
         if (!payload) {
           briefRoot.appendChild(el(
             "div", "empty-state",
-            "This brief is encrypted for a different device. Open Security and set up encryption here to read it."
+            "Den här briefen är krypterad för en annan enhet. Öppna Säkerhet och sätt upp kryptering här för att läsa den."
           ));
           return;
         }
@@ -118,11 +107,11 @@ export default {
         bottomWrap.appendChild(el("div", "quiet-line", payload.quiet_line));
       } else {
         if ((payload.needs_attention || []).length) {
-          bottomWrap.appendChild(el("h2", "section-heading", "Needs attention"));
+          bottomWrap.appendChild(el("h2", "section-heading", "Kräver uppmärksamhet"));
           payload.needs_attention.forEach((item, i) => bottomWrap.appendChild(renderItem(item, i)));
         }
         if ((payload.resolved || []).length) {
-          bottomWrap.appendChild(el("h2", "section-heading", "Resolved"));
+          bottomWrap.appendChild(el("h2", "section-heading", "Avklarat"));
           payload.resolved.forEach((item, i) => bottomWrap.appendChild(renderItem(item, i)));
         }
       }

@@ -1,23 +1,23 @@
 /* Morning Brief module — everything nested under .module-morning-brief so
    it can never leak into or collide with another module's styling. */
-.module-morning-brief .day-date{ font-size:13px; letter-spacing:.02em; color:var(--ink-soft); margin-bottom:18px; }
+.module-morning-brief .day-date{ font-size:12px; letter-spacing:.02em; color:var(--ink-soft); margin-bottom:8px; }
 .module-morning-brief h1.headline{
-  font-weight:600; font-size:40px; line-height:1.25; color:var(--ink); margin:0 0 34px; max-width:680px;
+  font-weight:600; font-size:22px; line-height:1.3; color:var(--ink); margin:0 0 18px; max-width:640px;
 }
-.module-morning-brief .drawing{ width:100%; height:auto; display:block; margin-bottom:8px; }
+.module-morning-brief .drawing{ width:100%; height:auto; display:block; margin-bottom:4px; max-height:110px; }
 
-.module-morning-brief .acts{ display:flex; margin-top:6px; }
-.module-morning-brief .act{ flex:1; padding:18px 24px; border-left:1px solid var(--hairline); }
+.module-morning-brief .acts{ display:flex; margin-top:4px; }
+.module-morning-brief .act{ flex:1; padding:12px 20px; border-left:1px solid var(--hairline); }
 .module-morning-brief .act:first-child{ border-left:none; padding-left:0; }
 .module-morning-brief .act:last-child{ padding-right:0; }
-.module-morning-brief .act-time{ font-weight:600; font-size:13px; color:var(--ink); margin-bottom:8px; }
-.module-morning-brief .act-note{ font-size:14px; line-height:1.5; color:var(--ink-soft); }
+.module-morning-brief .act-time{ font-weight:600; font-size:12px; color:var(--ink); margin-bottom:4px; }
+.module-morning-brief .act-note{ font-size:13px; line-height:1.45; color:var(--ink-soft); }
 
-.module-morning-brief .quiet-line{ font-size:16px; color:var(--ink-soft); padding:6px 0 8px; }
+.module-morning-brief .quiet-line{ font-size:15px; color:var(--ink-soft); padding:4px 0 6px; }
 
 @media (max-width:640px){
-  .module-morning-brief h1.headline{ font-size:30px; }
+  .module-morning-brief h1.headline{ font-size:19px; margin-bottom:14px; }
   .module-morning-brief .acts{ flex-direction:column; }
-  .module-morning-brief .act{ border-left:none; border-top:1px solid var(--hairline); padding:16px 0; }
+  .module-morning-brief .act{ border-left:none; border-top:1px solid var(--hairline); padding:10px 0; }
   .module-morning-brief .act:first-child{ border-top:none; padding-top:0; }
 }

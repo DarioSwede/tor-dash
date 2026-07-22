@@ -155,8 +155,8 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
 .band{width:100%;}
 .band-top{background:var(--wash);border-bottom:1px solid var(--hairline);}
 .band-bottom{background:var(--bg);}
-.wrap{max-width:860px;margin:0 auto;padding:32px 32px 48px;}
-.wrap.bottom{padding:44px 32px 64px;}
+.wrap{max-width:860px;margin:0 auto;padding:26px 28px 34px;}
+.wrap.bottom{padding:30px 28px 44px;}
 
 /* Fixed, full-viewport layer behind everything -- see
    shell/dashboard-background.js for why this is a real element rather
@@ -182,25 +182,72 @@ html.has-custom-bg, body.has-custom-bg{ background:transparent; }
    against a busy photo stays readable, whenever a custom image is
    actually active. The top bar goes almost fully transparent (10%
    opaque) since it has no body text of its own to protect, just icons
-   and a short status line. */
-body.has-custom-bg .band-top{background:rgba(249,249,247,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
-body.has-custom-bg .band-bottom{background:rgba(252,252,251,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+   and a short status line.
+   Inset as one rounded, floating card (rather than two full-bleed
+   panels butted edge to edge) so the background image reads as a frame
+   around the content instead of being fully hidden behind it -- lower
+   alpha + a stronger blur than before trades a bit of raw contrast for
+   more of the image actually showing through, since a blur this size
+   keeps text legible regardless of what's moving underneath it. */
+body.has-custom-bg .band-top{
+  background:rgba(249,249,247,.58); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  margin:14px 14px 0; border-radius:22px 22px 0 0; border-bottom:none;
+  box-shadow:0 12px 40px rgba(20,18,12,.16);
+}
+body.has-custom-bg .band-bottom{
+  background:rgba(252,252,251,.58); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  margin:0 14px 14px; border-radius:0 0 22px 22px;
+  border-top:1px solid rgba(228,227,220,.4);
+  box-shadow:0 12px 40px rgba(20,18,12,.16);
+}
 body.has-custom-bg .top-bar{background:rgba(252,252,251,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom-color:rgba(228,227,220,.35);}
 body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 
+@media (max-width:640px){
+  body.has-custom-bg .band-top{ margin:10px 10px 0; border-radius:18px 18px 0 0; }
+  body.has-custom-bg .band-bottom{ margin:0 10px 10px; border-radius:0 0 18px 18px; }
+}
+
 h2.section-heading{
-  font-family:var(--font-body); font-weight:600; font-size:15px; letter-spacing:.02em;
-  color:var(--ink); margin:38px 0 16px;
+  font-family:var(--font-body); font-weight:600; font-size:13.5px; letter-spacing:.02em;
+  color:var(--ink); margin:26px 0 10px;
 }
 h2.section-heading:first-of-type{margin-top:0;}
 
-.item{ display:flex; gap:16px; padding:16px 0; border-top:1px solid var(--hairline); }
+.item{ display:flex; gap:14px; padding:12px 0; border-top:1px solid var(--hairline); }
 .item:first-of-type{border-top:none;}
 .item-num{ font-size:14px; color:var(--ink-grey); min-width:16px; padding-top:2px; }
-.item-body{flex:1;}
-.item-title{ font-weight:600; font-size:15px; color:var(--ink); margin:0 0 6px; }
-.item-title a{ color:var(--ink); text-decoration:underline; text-decoration-color:var(--ink-soft); text-underline-offset:2px; }
-.item-sentence{ font-size:14px; line-height:1.55; color:var(--ink-soft); }
+.item-body{flex:1; min-width:0;}
+
+.item-title{
+  display:flex; align-items:center; gap:8px;
+  font-weight:600; font-size:15px; color:var(--ink); margin:0;
+  cursor:pointer; user-select:none;
+}
+.item-title::before{
+  content:"›"; flex:0 0 auto; display:inline-block;
+  font-size:15px; line-height:1; color:var(--ink-grey);
+  transition:transform .15s ease;
+}
+.item.expanded .item-title::before{ transform:rotate(90deg); }
+.item-title-text{ flex:1; min-width:0; }
+.item-link{
+  flex:0 0 auto; font-size:12px; color:var(--ink-soft); text-decoration:none;
+  padding:2px 4px; border-radius:4px;
+}
+.item-link:hover{ color:var(--clay); }
+
+/* Grid-rows accordion trick: animating 0fr → 1fr (rather than height:auto,
+   which can't be transitioned) lets the collapsed/expanded swap slide
+   instead of snap. The inner wrapper needs its own overflow:hidden since
+   a grid track's size, unlike a block's, doesn't itself clip content. */
+.item-detail{
+  display:grid; grid-template-rows:0fr; opacity:0;
+  transition:grid-template-rows .2s ease, opacity .15s ease;
+}
+.item.expanded .item-detail{ grid-template-rows:1fr; opacity:1; }
+.item-detail-inner{ overflow:hidden; }
+.item-sentence{ font-size:14px; line-height:1.55; color:var(--ink-soft); padding-top:8px; }
 .item .btn{ margin-top:10px; }
 
 .empty-state{ max-width:860px;margin:0 auto;padding:80px 32px;text-align:center;color:var(--ink-soft);font-size:15px; }
