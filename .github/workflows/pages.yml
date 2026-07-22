@@ -39,8 +39,17 @@ jobs:
         # shell/*.js -- gives each deploy a unique URL per file, so a
         # fresh visit always gets the matching set. Source files on disk
         # stay unversioned; this only touches the uploaded artifact.
-        # (modules/ dynamic import() isn't covered -- out of scope for
-        # this bug, and those files change far less often.)
+        #
+        # modules/manifest.js's own url IS covered by the `from "..."`
+        # pass below (module-registry.js imports it that way), but the
+        # per-module path/css strings *inside* manifest.js are a plain
+        # data array, not `from "..."` specifiers, so they need their own
+        # pass -- module-registry.js builds each module's script/link URL
+        # straight from those strings via `new URL(entry.path, ...)`.
+        # Missed this the first time around ("those files change far less
+        # often" turned out to be wrong) and iterating on a module's
+        # module.js/module.css kept serving a stale cached copy on phones
+        # even though index.html/shell/* were fresh.
         run: |
           VERSION="${GITHUB_SHA::8}"
           sed -i "s#href=\"shell/tokens.css\"#href=\"shell/tokens.css?v=${VERSION}\"#" web/index.html
@@ -48,6 +57,7 @@ jobs:
           sed -i "s#src=\"shell/shell.js\"#src=\"shell/shell.js?v=${VERSION}\"#" web/index.html
           sed -i "s#src=\"config.js\"#src=\"config.js?v=${VERSION}\"#" web/index.html
           sed -i -E "s#(from \"\.\.?/[A-Za-z0-9_./-]+\.js)\"#\1?v=${VERSION}\"#g" web/shell/*.js web/modules/manifest.js
+          sed -i -E "s#(path|css): \"(\./[A-Za-z0-9_./-]+\.(js|css))\"#\1: \"\2?v=${VERSION}\"#g" web/modules/manifest.js
 
       - name: Upload web/ as Pages artifact
         uses: actions/upload-pages-artifact@v3
