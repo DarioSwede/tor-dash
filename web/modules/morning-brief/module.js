@@ -67,14 +67,18 @@ export default {
       render(payload);
     }
 
+    // One seamless card, not a two-band split -- there's only one running
+    // brief now (see the module-level comment above), so a hard seam
+    // between a "header half" and a "list half" no longer means anything,
+    // and it used to cost two independent paddings' worth of dead space
+    // right where acts meets the first section heading.
     function render(payload) {
       briefRoot.innerHTML = "";
 
-      // top band
-      const top = el("div", "band band-top");
-      const topWrap = el("div", "wrap");
-      topWrap.appendChild(el("div", "day-date", `${payload.day_name} · ${payload.date_label}`));
-      topWrap.appendChild(el("h1", "headline headline-font", payload.headline));
+      const card = el("div", "band band-top");
+      const wrap = el("div", "wrap");
+      wrap.appendChild(el("div", "day-date", `${payload.day_name} · ${payload.date_label}`));
+      wrap.appendChild(el("h1", "headline headline-font", payload.headline));
 
       if (payload.svg && isSafeSvg(payload.svg)) {
         const holder = document.createElement("div");
@@ -82,7 +86,7 @@ export default {
         const svgEl = holder.querySelector("svg");
         if (svgEl) {
           svgEl.classList.add("drawing");
-          topWrap.appendChild(svgEl);
+          wrap.appendChild(svgEl);
         }
       } else if (payload.svg) {
         console.warn("Skipped rendering payload.svg: failed the safety allowlist check.");
@@ -95,35 +99,29 @@ export default {
         a.appendChild(el("div", "act-note", act.note));
         acts.appendChild(a);
       });
-      topWrap.appendChild(acts);
-      top.appendChild(topWrap);
-      briefRoot.appendChild(top);
-
-      // bottom band
-      const bottom = el("div", "band band-bottom");
-      const bottomWrap = el("div", "wrap bottom");
+      if (acts.children.length) wrap.appendChild(acts);
 
       if (payload.quiet_line) {
-        bottomWrap.appendChild(el("div", "quiet-line", payload.quiet_line));
+        wrap.appendChild(el("div", "quiet-line", payload.quiet_line));
       } else {
         if ((payload.needs_attention || []).length) {
-          bottomWrap.appendChild(el("h2", "section-heading", "Kräver uppmärksamhet"));
-          payload.needs_attention.forEach((item, i) => bottomWrap.appendChild(renderItem(item, i)));
+          wrap.appendChild(el("h2", "section-heading", "Kräver uppmärksamhet"));
+          payload.needs_attention.forEach((item, i) => wrap.appendChild(renderItem(item, i)));
         }
         if ((payload.resolved || []).length) {
-          bottomWrap.appendChild(el("h2", "section-heading", "Avklarat"));
-          payload.resolved.forEach((item, i) => bottomWrap.appendChild(renderItem(item, i)));
+          wrap.appendChild(el("h2", "section-heading", "Avklarat"));
+          payload.resolved.forEach((item, i) => wrap.appendChild(renderItem(item, i)));
         }
       }
 
       (payload.sections || []).forEach((section) => {
         if (!section.items || !section.items.length) return;
-        bottomWrap.appendChild(el("h2", "section-heading", section.heading));
-        section.items.forEach((item, i) => bottomWrap.appendChild(renderItem(item, i)));
+        wrap.appendChild(el("h2", "section-heading", section.heading));
+        section.items.forEach((item, i) => wrap.appendChild(renderItem(item, i)));
       });
 
-      bottom.appendChild(bottomWrap);
-      briefRoot.appendChild(bottom);
+      card.appendChild(wrap);
+      briefRoot.appendChild(card);
     }
 
     await loadBrief();

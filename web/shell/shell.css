@@ -153,10 +153,8 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
 .btn:hover{ background:var(--clay-hover); border-color:var(--clay-hover); }
 
 .band{width:100%;}
-.band-top{background:var(--wash);border-bottom:1px solid var(--hairline);}
-.band-bottom{background:var(--bg);}
-.wrap{max-width:860px;margin:0 auto;padding:26px 28px 34px;}
-.wrap.bottom{padding:30px 28px 44px;}
+.band-top{background:var(--wash);}
+.wrap{max-width:860px;margin:0 auto;padding:28px 28px 36px;}
 
 /* Fixed, full-viewport layer behind everything -- see
    shell/dashboard-background.js for why this is a real element rather
@@ -183,41 +181,32 @@ html.has-custom-bg, body.has-custom-bg{ background:transparent; }
    actually active. The top bar goes almost fully transparent (10%
    opaque) since it has no body text of its own to protect, just icons
    and a short status line.
-   band-top and band-bottom are one continuous card now (no seam, no
-   hairline between them -- there's only one running brief, see
-   module.js) inset as a single rounded, floating shape rather than two
-   full-bleed panels, so the background image reads as a frame around
-   the content instead of being hidden behind it. `width:auto` here is
-   load-bearing: the base .band rule sets `width:100%`, and adding
-   left/right margin on TOP of an already-100%-wide box overflows the
-   viewport by exactly the margin instead of shrinking to fit -- which
-   is exactly the "right margin is missing" bug this replaces (the box
-   quietly overflowed off the right edge, so only the left inset ever
-   rendered). */
-body.has-custom-bg .band-top,
-body.has-custom-bg .band-bottom{
+   .band-top is one seamless floating card (there's only one running
+   brief, see module.js -- no more header/list split to seam), inset on
+   every side so the background image reads as a frame around it.
+   `width:auto` here is load-bearing: the base .band rule sets
+   `width:100%`, and adding left/right margin on TOP of an already-100%-
+   wide box overflows the viewport by exactly the margin instead of
+   shrinking to fit -- which is exactly the "right margin is missing"
+   bug this replaces (the box quietly overflowed off the right edge, so
+   only the left inset ever rendered). */
+body.has-custom-bg .band-top{
   width:auto;
   background:rgba(249,249,247,.26); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-  margin:0 20px; border:none;
+  margin:20px; border-radius:22px;
   box-shadow:0 16px 48px rgba(15,14,10,.18);
 }
-body.has-custom-bg .band-top{ margin-top:20px; border-radius:22px 22px 0 0; }
-body.has-custom-bg .band-bottom{ margin-bottom:20px; border-radius:0 0 22px 22px; }
 body.has-custom-bg .top-bar{background:rgba(252,252,251,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom-color:rgba(228,227,220,.35);}
 body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 
 @media (max-width:640px){
-  body.has-custom-bg .band-top,
-  body.has-custom-bg .band-bottom{ margin-left:12px; margin-right:12px; }
-  body.has-custom-bg .band-top{ margin-top:12px; border-radius:18px 18px 0 0; }
-  body.has-custom-bg .band-bottom{ margin-bottom:12px; border-radius:0 0 18px 18px; }
+  body.has-custom-bg .band-top{ margin:12px; border-radius:18px; }
 }
 
 h2.section-heading{
   font-family:var(--font-body); font-weight:600; font-size:13.5px; letter-spacing:.02em;
-  color:var(--ink); margin:26px 0 10px;
+  color:var(--ink); margin:24px 0 10px;
 }
-h2.section-heading:first-of-type{margin-top:0;}
 
 .item{ display:flex; gap:14px; padding:12px 0; border-top:1px solid var(--hairline); }
 .item:first-of-type{border-top:none;}
@@ -257,7 +246,7 @@ h2.section-heading:first-of-type{margin-top:0;}
 .item-sentence{ font-size:14px; line-height:1.55; color:var(--ink-soft); padding-top:8px; }
 .item .btn{ margin-top:10px; }
 
-.empty-state{ max-width:860px;margin:0 auto;padding:80px 32px;text-align:center;color:var(--ink-soft);font-size:15px; }
+.empty-state{ max-width:860px;margin:0 auto;padding:48px 32px;text-align:center;color:var(--ink-soft);font-size:15px; }
 .module-error{ max-width:860px;margin:0 auto;padding:40px 32px;color:var(--clay-hover);font-size:14px; }
 
 /* ---- settings panel (appearance + sign-in + this device's encryption key) ---- */
