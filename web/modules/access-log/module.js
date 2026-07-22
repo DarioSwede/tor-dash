@@ -88,13 +88,24 @@ export default {
   async mount(container, ctx) {
     const { supabase, el, lookupIp } = ctx;
 
+    // Same card shell as the Morning Brief (.band.band-top > .wrap) --
+    // without it, this module sat directly on the raw fixed background
+    // image with none of the frosted-card contrast handling (blur, the
+    // darker has-custom-bg text override, the rounded floating card),
+    // which is exactly why it read as washed-out/illegible next to Brief.
+    const card = el("div", "band band-top");
+    const wrap = el("div", "wrap");
+
     const toolbar = el("div", "log-toolbar");
     const allBtn = el("button", "active", "Alla");
     const failBtn = el("button", "", "Bara misslyckade inloggningar");
     toolbar.append(allBtn, failBtn);
+    wrap.appendChild(toolbar);
 
     const listRoot = el("div");
-    container.append(toolbar, listRoot);
+    wrap.appendChild(listRoot);
+    card.appendChild(wrap);
+    container.appendChild(card);
 
     let rows = [];
     let filter = "all";
@@ -109,7 +120,7 @@ export default {
     failBtn.addEventListener("click", () => setFilter("failed"));
 
     function renderTable(visible) {
-      const wrap = el("div", "wrap log-table-wrap");
+      const wrap = el("div", "log-table-wrap");
       const table = document.createElement("table");
       table.className = "log-table";
       const thead = document.createElement("thead");
@@ -165,7 +176,7 @@ export default {
     // Morning Brief's items) instead of a second bespoke component, so
     // "same style as Brief" is literally the same CSS, not a lookalike.
     function renderCards(visible) {
-      const wrap = el("div", "wrap log-cards");
+      const wrap = el("div", "log-cards");
       visible.forEach((row, i) => {
         const item = el("div", `item log-item${row.category ? ` log-cat-${row.category}` : ""}`);
         item.appendChild(el("div", "item-num", String(i + 1)));

@@ -1,15 +1,22 @@
-/* Access log module — reuses the shell's default palette (wrap/
-   empty-state/item), just adds a filter toolbar and two row renderings
-   (table + card list) on top. Everything nested under .module-access-log
-   so it can never leak into another module. */
+/* Access log module — same .band/.wrap card shell the Morning Brief
+   uses (see module.js), so it gets the same frosted-card contrast
+   handling over a custom background instead of sitting bare on the raw
+   image. Just adds a filter toolbar and two row renderings (table +
+   card list) inside that shell. Everything nested under
+   .module-access-log so it can never leak into another module. */
 .module-access-log .log-toolbar{
-  display:flex; gap:8px; max-width:860px; margin:32px auto 0; padding:0 32px;
+  display:flex; gap:8px; margin-bottom:20px;
 }
 .module-access-log .log-toolbar button{
   background:none; border:1px solid var(--hairline); border-radius:8px; padding:6px 14px;
   font-family:inherit; font-size:13px; color:var(--ink-soft); cursor:pointer;
 }
 .module-access-log .log-toolbar button.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+/* Same darker-secondary-text fix as shell.css's has-custom-bg override
+   (measured contrast, see that comment) -- the inactive toolbar button
+   has no fill of its own, so its --ink-soft text sits directly against
+   the translucent card same as item-sentence/act-note did. */
+body.has-custom-bg .module-access-log .log-toolbar button:not(.active){ color:#4A473F; }
 
 /* ---- table (≥641px): dense, many rows at a glance ---- */
 .module-access-log .log-table-wrap{ overflow-x:auto; } /* safety net -- never clip/cut off, scroll instead */
