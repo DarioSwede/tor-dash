@@ -106,22 +106,18 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
 }
 .network-status:empty{ display:none; }
 
-/* One soft-cornered frame around the whole IPv4/IPv6/VPN line, rather
-   than plain text — colors inherit via currentColor so this reads
-   correctly both here (light, on --ink-grey) and on the dark gate (see
-   #gate .gate-network-status below, on --gate-text-soft). */
+/* Plain IPv4/IPv6/VPN line, no frame — colors inherit via currentColor
+   so this reads correctly both here (light, on --ink-grey) and on the
+   dark gate (see #gate .gate-network-status below, on
+   --gate-text-soft). */
 .net-pill{
   display:inline-flex; flex-wrap:wrap; align-items:center; justify-content:center;
-  gap:4px 14px; padding:4px 14px;
-  border:1px solid currentColor; border-radius:999px; opacity:.82;
+  gap:4px 14px; padding:4px 0; opacity:.82;
 }
 .net-item{ display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
 .net-badge{ font-size:9px; font-weight:700; letter-spacing:.04em; opacity:.75; }
 .net-shield{ flex:0 0 auto; }
 .net-item.net-vpn{ color:#2f9e6e; }
-/* No frame on the gate (sign-in page) specifically -- just the plain
-   icon+text line there, unlike the dashboard's version above. */
-#gate .gate-network-status.net-pill{ border:none; padding:0; border-radius:0; }
 
 /* ---- side nav: hidden by default, slides in from the left ---- */
 .side-nav{
