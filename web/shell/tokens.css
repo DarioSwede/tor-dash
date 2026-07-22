@@ -13,6 +13,14 @@
   --clay:#C6613F;
   --clay-hover:#AE5133;
 
+  /* Status colors for the access log's visit categorization (green/
+     amber/red) -- distinct from --clay/--clay-hover (a warm terracotta
+     accent used for buttons/links) so "danger" reads unambiguously as
+     red rather than a shade of the same accent color. */
+  --status-ok:#2F9E6E;
+  --status-warn:#D29922;
+  --status-danger:#C0392B;
+
   /* ---- gate (signed-out) palette ---- */
   --gate-bg:#0A0A0C;
   --gate-text:#D8D6CE;

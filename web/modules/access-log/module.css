@@ -1,7 +1,7 @@
 /* Access log module — reuses the shell's default palette (wrap/
-   empty-state), just adds a filter toolbar and a table on top. Everything
-   nested under .module-access-log so it can never leak into another
-   module. */
+   empty-state/item), just adds a filter toolbar and two row renderings
+   (table + card list) on top. Everything nested under .module-access-log
+   so it can never leak into another module. */
 .module-access-log .log-toolbar{
   display:flex; gap:8px; max-width:860px; margin:32px auto 0; padding:0 32px;
 }
@@ -11,6 +11,8 @@
 }
 .module-access-log .log-toolbar button.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
 
+/* ---- table (≥641px): dense, many rows at a glance ---- */
+.module-access-log .log-table-wrap{ overflow-x:auto; } /* safety net -- never clip/cut off, scroll instead */
 .module-access-log .log-table{ width:100%; border-collapse:collapse; font-size:13px; }
 .module-access-log .log-table th,
 .module-access-log .log-table td{
@@ -24,8 +26,17 @@
    text actually shows up. */
 .module-access-log .log-table td:nth-last-child(-n+2),
 .module-access-log .log-table th:nth-last-child(-n+2){ white-space:normal; }
-.module-access-log .log-row.log-signin_failure td{ color:var(--clay-hover); }
-.module-access-log .log-row.log-signin_success td:nth-child(2){ color:var(--ink); font-weight:600; }
+
+/* Category coloring: a colored left edge on the row (via box-shadow so
+   it doesn't shift column widths the way a border would) plus a
+   matching tint on the event cell's text. */
+.module-access-log .log-table tr.log-cat-ok{ box-shadow:inset 3px 0 0 var(--status-ok); }
+.module-access-log .log-table tr.log-cat-warn{ box-shadow:inset 3px 0 0 var(--status-warn); }
+.module-access-log .log-table tr.log-cat-danger{ box-shadow:inset 3px 0 0 var(--status-danger); }
+.module-access-log .log-table tr.log-cat-ok td:nth-child(2){ color:var(--status-ok); font-weight:600; }
+.module-access-log .log-table tr.log-cat-warn td:nth-child(2){ color:var(--status-warn); font-weight:600; }
+.module-access-log .log-table tr.log-cat-danger td:nth-child(2){ color:var(--status-danger); font-weight:600; }
+
 .module-access-log .lookup-btn{
   font-size:12px; color:var(--ink-soft); background:none; border:1px solid var(--hairline);
   border-radius:6px; padding:4px 10px; cursor:pointer; font-family:inherit;
@@ -33,7 +44,23 @@
 .module-access-log .lookup-btn:hover{ border-color:var(--clay); color:var(--clay-hover); }
 .module-access-log .lookup-btn:disabled{ cursor:default; opacity:.6; }
 
+/* ---- card list (≤640px): same .item shell as the Morning Brief ---- */
+.module-access-log .log-cards{ display:none; }
+.module-access-log .log-item .status-dot{
+  width:8px; height:8px; border-radius:50%; flex:0 0 auto;
+  background:var(--ink-grey); opacity:.45;
+}
+.module-access-log .log-item.log-cat-ok .status-dot{ background:var(--status-ok); opacity:1; }
+.module-access-log .log-item.log-cat-warn .status-dot{ background:var(--status-warn); opacity:1; }
+.module-access-log .log-item.log-cat-danger .status-dot{ background:var(--status-danger); opacity:1; }
+.module-access-log .log-item.log-cat-ok .item-title-text{ color:var(--status-ok); }
+.module-access-log .log-item.log-cat-warn .item-title-text{ color:var(--status-warn); }
+.module-access-log .log-item.log-cat-danger .item-title-text{ color:var(--status-danger); }
+.module-access-log .log-lookup-result:empty{ display:none; }
+.module-access-log .log-item .btn{ font-size:12.5px; padding:7px 14px; }
+
 @media (max-width:640px){
-  .module-access-log .log-table{ font-size:12px; }
-  .module-access-log .log-table th, .module-access-log .log-table td{ padding:8px; }
+  .module-access-log .log-toolbar{ flex-wrap:wrap; }
+  .module-access-log .log-table-wrap{ display:none; }
+  .module-access-log .log-cards{ display:block; }
 }

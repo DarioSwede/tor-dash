@@ -5,16 +5,80 @@
 // supabase/migrations/0009_access_log.sql) — anyone can insert, only the
 // owner can read, which is the entire point: seeing attempts from people
 // who never got in.
+//
+// Two views of the same categorized rows: a table for wider screens
+// (dense, good for scanning many rows at once) and a card list for
+// narrow ones, built from the same .item/.item-title/.item-detail shell
+// primitives the Morning Brief module uses -- collapsed title, tap to
+// reveal detail -- so the log reads like the rest of the dashboard
+// instead of a cramped table forced into a phone-width column. Both are
+// always in the DOM; a CSS media query (module.css) shows one and hides
+// the other, so there's one row-building pass, not two.
 
 const EVENT_LABEL = {
-  gate_view: "Visited",
-  signin_attempt: "Attempt",
-  signin_success: "Signed in",
-  signin_failure: "Failed",
+  gate_view: "Besök",
+  signin_attempt: "Inloggningsförsök",
+  signin_success: "Inloggad",
+  signin_failure: "Misslyckad inloggning",
 };
+
+// Category rules, applied per row using stats about every other row from
+// the same IP (see categorize() below):
+//   ok     - this row is a successful sign-in.
+//   danger - this row is a failed sign-in AND this IP has failed more
+//            than once (a repeated, not one-off, failure -- the actual
+//            warning signal).
+//   warn   - this row is a view/attempt AND this IP has visited more
+//            than once AND has never once signed in successfully
+//            (recurring, unauthenticated interest).
+//   null   - anything else (a lone view, a lone attempt, or a single
+//            failure with no repeat history) -- not enough of a pattern
+//            yet to color it.
+function categorize(rows) {
+  const byIp = new Map();
+  for (const row of rows) {
+    const key = row.ip_v4 || row.ip_v6 || "unknown";
+    if (!byIp.has(key)) byIp.set(key, []);
+    byIp.get(key).push(row);
+  }
+
+  return rows.map((row) => {
+    const key = row.ip_v4 || row.ip_v6 || "unknown";
+    const group = byIp.get(key);
+    const hasSuccess = group.some((r) => r.event === "signin_success");
+    const failureCount = group.filter((r) => r.event === "signin_failure").length;
+
+    let category = null;
+    if (row.event === "signin_success") {
+      category = "ok";
+    } else if (row.event === "signin_failure" && failureCount > 1) {
+      category = "danger";
+    } else if ((row.event === "gate_view" || row.event === "signin_attempt") && !hasSuccess && group.length > 1) {
+      category = "warn";
+    }
+    return { ...row, category };
+  });
+}
 
 function fmtTime(iso) {
   return new Date(iso).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "medium" });
+}
+
+function fmtTimeShort(iso) {
+  return new Date(iso).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" });
+}
+
+async function runLookup(lookupIp, ip, resultEl, triggerBtn) {
+  triggerBtn.disabled = true;
+  triggerBtn.textContent = "Slår upp…";
+  const result = await lookupIp(ip);
+  const parts = [
+    result.hostname,
+    result.org || result.asn,
+    [result.city, result.country].filter(Boolean).join(", ") || null,
+  ].filter(Boolean);
+  resultEl.textContent = parts.length ? parts.join(" · ") : "Ingen data hittades.";
+  triggerBtn.remove();
 }
 
 export default {
@@ -25,8 +89,8 @@ export default {
     const { supabase, el, lookupIp } = ctx;
 
     const toolbar = el("div", "log-toolbar");
-    const allBtn = el("button", "active", "All");
-    const failBtn = el("button", "", "Failed sign-ins only");
+    const allBtn = el("button", "active", "Alla");
+    const failBtn = el("button", "", "Bara misslyckade inloggningar");
     toolbar.append(allBtn, failBtn);
 
     const listRoot = el("div");
@@ -44,20 +108,13 @@ export default {
     allBtn.addEventListener("click", () => setFilter("all"));
     failBtn.addEventListener("click", () => setFilter("failed"));
 
-    function render() {
-      listRoot.innerHTML = "";
-      const visible = filter === "failed" ? rows.filter((r) => r.event === "signin_failure") : rows;
-      if (!visible.length) {
-        listRoot.appendChild(el("div", "empty-state", "No log entries yet."));
-        return;
-      }
-
-      const wrap = el("div", "wrap");
+    function renderTable(visible) {
+      const wrap = el("div", "wrap log-table-wrap");
       const table = document.createElement("table");
       table.className = "log-table";
       const thead = document.createElement("thead");
       const headRow = document.createElement("tr");
-      ["When", "Event", "Method", "IP", "Network", "Detail", "Lookup"].forEach((h) => {
+      ["När", "Händelse", "Metod", "IP", "Nätverk", "Detalj", "Slå upp"].forEach((h) => {
         const th = document.createElement("th");
         th.textContent = h;
         headRow.appendChild(th);
@@ -68,7 +125,7 @@ export default {
       const tbody = document.createElement("tbody");
       for (const row of visible) {
         const tr = document.createElement("tr");
-        tr.className = `log-row log-${row.event}`;
+        tr.className = `log-row log-${row.event}${row.category ? ` log-cat-${row.category}` : ""}`;
         const ips = [row.ip_v4, row.ip_v6].filter(Boolean).join(" · ") || "—";
         [
           fmtTime(row.created_at),
@@ -88,18 +145,8 @@ export default {
         if (lookupTarget) {
           const lookupBtn = document.createElement("button");
           lookupBtn.className = "lookup-btn";
-          lookupBtn.textContent = "Lookup";
-          lookupBtn.addEventListener("click", async () => {
-            lookupBtn.disabled = true;
-            lookupBtn.textContent = "Looking up…";
-            const result = await lookupIp(lookupTarget);
-            const parts = [
-              result.hostname,
-              result.org || result.asn,
-              [result.city, result.country].filter(Boolean).join(", ") || null,
-            ].filter(Boolean);
-            lookupTd.textContent = parts.length ? parts.join(" · ") : "No data found.";
-          });
+          lookupBtn.textContent = "Slå upp";
+          lookupBtn.addEventListener("click", () => runLookup(lookupIp, lookupTarget, lookupTd, lookupBtn));
           lookupTd.appendChild(lookupBtn);
         } else {
           lookupTd.textContent = "—";
@@ -110,12 +157,86 @@ export default {
       }
       table.appendChild(tbody);
       wrap.appendChild(table);
-      listRoot.appendChild(wrap);
+      return wrap;
+    }
+
+    // Mobile card list: reuses the shell's .item/.item-title/.item-detail
+    // primitives (same collapsed-title-until-tapped behavior as the
+    // Morning Brief's items) instead of a second bespoke component, so
+    // "same style as Brief" is literally the same CSS, not a lookalike.
+    function renderCards(visible) {
+      const wrap = el("div", "wrap log-cards");
+      visible.forEach((row, i) => {
+        const item = el("div", `item log-item${row.category ? ` log-cat-${row.category}` : ""}`);
+        item.appendChild(el("div", "item-num", String(i + 1)));
+
+        const body = el("div", "item-body");
+
+        const title = document.createElement("div");
+        title.className = "item-title";
+        title.setAttribute("role", "button");
+        title.setAttribute("tabindex", "0");
+        title.setAttribute("aria-expanded", "false");
+        title.appendChild(el("span", "status-dot", ""));
+        title.appendChild(el(
+          "span", "item-title-text",
+          `${EVENT_LABEL[row.event] || row.event} · ${fmtTimeShort(row.created_at)}`
+        ));
+
+        function toggle() {
+          const expanded = item.classList.toggle("expanded");
+          title.setAttribute("aria-expanded", String(expanded));
+        }
+        title.addEventListener("click", toggle);
+        title.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+        });
+        body.appendChild(title);
+
+        const detail = el("div", "item-detail");
+        const inner = el("div", "item-detail-inner");
+        const ips = [row.ip_v4, row.ip_v6].filter(Boolean).join(" · ") || "—";
+        const lines = [
+          `IP: ${ips}`,
+          row.org ? `Nätverk: ${row.org}` : null,
+          row.method ? `Metod: ${row.method}` : null,
+          row.detail ? `Detalj: ${row.detail}` : null,
+        ].filter(Boolean);
+        inner.appendChild(el("p", "item-sentence", lines.join(" · ")));
+
+        const lookupTarget = row.ip_v4 || row.ip_v6;
+        if (lookupTarget) {
+          const lookupResult = el("p", "item-sentence log-lookup-result", "");
+          const lookupBtn = document.createElement("button");
+          lookupBtn.className = "btn";
+          lookupBtn.textContent = "Slå upp";
+          lookupBtn.addEventListener("click", () => runLookup(lookupIp, lookupTarget, lookupResult, lookupBtn));
+          inner.appendChild(lookupBtn);
+          inner.appendChild(lookupResult);
+        }
+
+        detail.appendChild(inner);
+        body.appendChild(detail);
+        item.appendChild(body);
+        wrap.appendChild(item);
+      });
+      return wrap;
+    }
+
+    function render() {
+      listRoot.innerHTML = "";
+      const visible = filter === "failed" ? rows.filter((r) => r.event === "signin_failure") : rows;
+      if (!visible.length) {
+        listRoot.appendChild(el("div", "empty-state", "Inga loggposter ännu."));
+        return;
+      }
+      listRoot.appendChild(renderTable(visible));
+      listRoot.appendChild(renderCards(visible));
     }
 
     async function load() {
       listRoot.innerHTML = "";
-      listRoot.appendChild(el("div", "empty-state", "Loading…"));
+      listRoot.appendChild(el("div", "empty-state", "Laddar…"));
 
       const { data, error } = await supabase
         .from("access_log")
@@ -127,11 +248,11 @@ export default {
         listRoot.innerHTML = "";
         listRoot.appendChild(el(
           "div", "empty-state",
-          `Couldn't load the log: ${error.message}. Run supabase/migrations/0009_access_log.sql if you haven't yet.`
+          `Kunde inte hämta loggen: ${error.message}. Kör supabase/migrations/0009_access_log.sql om du inte redan gjort det.`
         ));
         return;
       }
-      rows = data || [];
+      rows = categorize(data || []);
       render();
     }
 
