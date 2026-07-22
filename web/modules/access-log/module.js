@@ -68,6 +68,38 @@ function fmtTimeShort(iso) {
   return new Date(iso).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" });
 }
 
+function fmtTimeOfDay(iso) {
+  return new Date(iso).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+}
+
+// Collapses consecutive rows (rows already sorted newest-first) that
+// share both IP and event into one group -- a burst of plain "Besök"
+// gate_view pings from the same visitor is the common case, but any
+// repeat of the same event from the same IP merges the same way.
+// "Consecutive" on purpose, not "same IP anywhere in the list": a
+// success sitting between two view/attempt rows from that IP is a real
+// change in what happened and shouldn't be swallowed into one summary
+// line. category is identical for every row in a group by construction
+// (categorize() derives it from event + that IP's aggregate stats, both
+// fixed within a group), so there's nothing to reconcile there.
+function groupConsecutive(rows) {
+  const groups = [];
+  for (const row of rows) {
+    const key = row.ip_v4 || row.ip_v6 || "unknown";
+    const last = groups[groups.length - 1];
+    if (last && last.key === key && last.event === row.event) {
+      last.instances.push(row);
+    } else {
+      groups.push({
+        key, event: row.event, category: row.category,
+        ip_v4: row.ip_v4, ip_v6: row.ip_v6, org: row.org,
+        instances: [row],
+      });
+    }
+  }
+  return groups;
+}
+
 async function runLookup(lookupIp, ip, resultEl, triggerBtn) {
   triggerBtn.disabled = true;
   triggerBtn.textContent = "Slår upp…";
@@ -119,7 +151,7 @@ export default {
     allBtn.addEventListener("click", () => setFilter("all"));
     failBtn.addEventListener("click", () => setFilter("failed"));
 
-    function renderTable(visible) {
+    function renderTable(groups) {
       const wrap = el("div", "log-table-wrap");
       const table = document.createElement("table");
       table.className = "log-table";
@@ -134,17 +166,32 @@ export default {
       table.appendChild(thead);
 
       const tbody = document.createElement("tbody");
-      for (const row of visible) {
+      for (const group of groups) {
+        const [latest] = group.instances;
+        const count = group.instances.length;
         const tr = document.createElement("tr");
-        tr.className = `log-row log-${row.event}${row.category ? ` log-cat-${row.category}` : ""}`;
-        const ips = [row.ip_v4, row.ip_v6].filter(Boolean).join(" · ") || "—";
+        tr.className = `log-row log-${group.event}${group.category ? ` log-cat-${group.category}` : ""}`;
+        const ips = [group.ip_v4, group.ip_v6].filter(Boolean).join(" · ") || "—";
+        const eventLabel = EVENT_LABEL[group.event] || group.event;
+
+        // Merged detail column: every instance's time, plus its own
+        // detail text next to it only when that instance actually has
+        // one (mirrors what the single-row case showed, just repeated
+        // per instance instead of collapsing distinct details away).
+        const detailText = count === 1
+          ? (latest.detail || "")
+          : group.instances.map((r) => {
+              const t = fmtTimeOfDay(r.created_at);
+              return r.detail ? `${t} (${r.detail})` : t;
+            }).reverse().join(", ");
+
         [
-          fmtTime(row.created_at),
-          EVENT_LABEL[row.event] || row.event,
-          row.method || "—",
+          fmtTime(latest.created_at),
+          count > 1 ? `${eventLabel} ×${count}` : eventLabel,
+          count === 1 ? (latest.method || "—") : "—",
           ips,
-          row.org || "—",
-          row.detail || "",
+          group.org || "—",
+          detailText,
         ].forEach((value) => {
           const td = document.createElement("td");
           td.textContent = value;
@@ -152,7 +199,7 @@ export default {
         });
 
         const lookupTd = document.createElement("td");
-        const lookupTarget = row.ip_v4 || row.ip_v6;
+        const lookupTarget = group.ip_v4 || group.ip_v6;
         if (lookupTarget) {
           const lookupBtn = document.createElement("button");
           lookupBtn.className = "lookup-btn";
@@ -175,10 +222,12 @@ export default {
     // primitives (same collapsed-title-until-tapped behavior as the
     // Morning Brief's items) instead of a second bespoke component, so
     // "same style as Brief" is literally the same CSS, not a lookalike.
-    function renderCards(visible) {
+    function renderCards(groups) {
       const wrap = el("div", "log-cards");
-      visible.forEach((row, i) => {
-        const item = el("div", `item log-item${row.category ? ` log-cat-${row.category}` : ""}`);
+      groups.forEach((group, i) => {
+        const [latest] = group.instances;
+        const count = group.instances.length;
+        const item = el("div", `item log-item${group.category ? ` log-cat-${group.category}` : ""}`);
         item.appendChild(el("div", "item-num", String(i + 1)));
 
         const body = el("div", "item-body");
@@ -189,9 +238,12 @@ export default {
         title.setAttribute("tabindex", "0");
         title.setAttribute("aria-expanded", "false");
         title.appendChild(el("span", "status-dot", ""));
+        const eventLabel = EVENT_LABEL[group.event] || group.event;
         title.appendChild(el(
           "span", "item-title-text",
-          `${EVENT_LABEL[row.event] || row.event} · ${fmtTimeShort(row.created_at)}`
+          count > 1
+            ? `${eventLabel} ×${count} · senast ${fmtTimeShort(latest.created_at)}`
+            : `${eventLabel} · ${fmtTimeShort(latest.created_at)}`
         ));
 
         function toggle() {
@@ -206,16 +258,27 @@ export default {
 
         const detail = el("div", "item-detail");
         const inner = el("div", "item-detail-inner");
-        const ips = [row.ip_v4, row.ip_v6].filter(Boolean).join(" · ") || "—";
+        const ips = [group.ip_v4, group.ip_v6].filter(Boolean).join(" · ") || "—";
         const lines = [
           `IP: ${ips}`,
-          row.org ? `Nätverk: ${row.org}` : null,
-          row.method ? `Metod: ${row.method}` : null,
-          row.detail ? `Detalj: ${row.detail}` : null,
+          group.org ? `Nätverk: ${group.org}` : null,
+          count === 1 && latest.method ? `Metod: ${latest.method}` : null,
+          count === 1 && latest.detail ? `Detalj: ${latest.detail}` : null,
         ].filter(Boolean);
         inner.appendChild(el("p", "item-sentence", lines.join(" · ")));
 
-        const lookupTarget = row.ip_v4 || row.ip_v6;
+        // Merged entries keep every individual timestamp visible instead
+        // of only the summary -- collapsing rows should hide repetition,
+        // not the underlying facts.
+        if (count > 1) {
+          const times = group.instances.map((r) => {
+            const t = fmtTimeOfDay(r.created_at);
+            return r.detail ? `${t} (${r.detail})` : t;
+          }).reverse().join(", ");
+          inner.appendChild(el("p", "item-sentence", `Tider: ${times}`));
+        }
+
+        const lookupTarget = group.ip_v4 || group.ip_v6;
         if (lookupTarget) {
           const lookupResult = el("p", "item-sentence log-lookup-result", "");
           const lookupBtn = document.createElement("button");
@@ -241,8 +304,9 @@ export default {
         listRoot.appendChild(el("div", "empty-state", "Inga loggposter ännu."));
         return;
       }
-      listRoot.appendChild(renderTable(visible));
-      listRoot.appendChild(renderCards(visible));
+      const groups = groupConsecutive(visible);
+      listRoot.appendChild(renderTable(groups));
+      listRoot.appendChild(renderCards(groups));
     }
 
     async function load() {
