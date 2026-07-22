@@ -178,34 +178,39 @@ html.has-custom-bg, body.has-custom-bg{ background:transparent; }
 
 /* A custom dashboard background is otherwise only ever visible behind
    the toolbar strip, since every surface below it is fully opaque --
-   make them translucent instead, with a blur so body text set directly
+   make it translucent instead, with a blur so body text set directly
    against a busy photo stays readable, whenever a custom image is
    actually active. The top bar goes almost fully transparent (10%
    opaque) since it has no body text of its own to protect, just icons
    and a short status line.
-   Inset as one rounded, floating card (rather than two full-bleed
-   panels butted edge to edge) so the background image reads as a frame
-   around the content instead of being fully hidden behind it -- lower
-   alpha + a stronger blur than before trades a bit of raw contrast for
-   more of the image actually showing through, since a blur this size
-   keeps text legible regardless of what's moving underneath it. */
-body.has-custom-bg .band-top{
-  background:rgba(249,249,247,.36); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-  margin:14px 14px 0; border-radius:22px 22px 0 0; border-bottom:none;
-  box-shadow:0 12px 40px rgba(20,18,12,.16);
-}
+   band-top and band-bottom are one continuous card now (no seam, no
+   hairline between them -- there's only one running brief, see
+   module.js) inset as a single rounded, floating shape rather than two
+   full-bleed panels, so the background image reads as a frame around
+   the content instead of being hidden behind it. `width:auto` here is
+   load-bearing: the base .band rule sets `width:100%`, and adding
+   left/right margin on TOP of an already-100%-wide box overflows the
+   viewport by exactly the margin instead of shrinking to fit -- which
+   is exactly the "right margin is missing" bug this replaces (the box
+   quietly overflowed off the right edge, so only the left inset ever
+   rendered). */
+body.has-custom-bg .band-top,
 body.has-custom-bg .band-bottom{
-  background:rgba(252,252,251,.36); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-  margin:0 14px 14px; border-radius:0 0 22px 22px;
-  border-top:1px solid rgba(228,227,220,.4);
-  box-shadow:0 12px 40px rgba(20,18,12,.16);
+  width:auto;
+  background:rgba(249,249,247,.26); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  margin:0 20px; border:none;
+  box-shadow:0 16px 48px rgba(15,14,10,.18);
 }
+body.has-custom-bg .band-top{ margin-top:20px; border-radius:22px 22px 0 0; }
+body.has-custom-bg .band-bottom{ margin-bottom:20px; border-radius:0 0 22px 22px; }
 body.has-custom-bg .top-bar{background:rgba(252,252,251,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom-color:rgba(228,227,220,.35);}
 body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 
 @media (max-width:640px){
-  body.has-custom-bg .band-top{ margin:10px 10px 0; border-radius:18px 18px 0 0; }
-  body.has-custom-bg .band-bottom{ margin:0 10px 10px; border-radius:0 0 18px 18px; }
+  body.has-custom-bg .band-top,
+  body.has-custom-bg .band-bottom{ margin-left:12px; margin-right:12px; }
+  body.has-custom-bg .band-top{ margin-top:12px; border-radius:18px 18px 0 0; }
+  body.has-custom-bg .band-bottom{ margin-bottom:12px; border-radius:0 0 18px 18px; }
 }
 
 h2.section-heading{
@@ -221,15 +226,17 @@ h2.section-heading:first-of-type{margin-top:0;}
 
 .item-title{
   display:flex; align-items:center; gap:8px;
-  font-weight:600; font-size:15px; color:var(--ink); margin:0;
-  cursor:pointer; user-select:none;
+  font-weight:600; font-size:15px; color:var(--ink); margin:-4px 0; padding:4px 0;
+  cursor:pointer; user-select:none; border-radius:6px;
 }
 .item-title::before{
   content:"›"; flex:0 0 auto; display:inline-block;
   font-size:15px; line-height:1; color:var(--ink-grey);
-  transition:transform .15s ease;
+  transition:transform .15s ease, color .15s ease;
 }
+.item-title:hover::before{ color:var(--clay); }
 .item.expanded .item-title::before{ transform:rotate(90deg); }
+.item-title:focus-visible{ outline:2px solid var(--clay); outline-offset:3px; }
 .item-title-text{ flex:1; min-width:0; }
 .item-link{
   flex:0 0 auto; font-size:12px; color:var(--ink-soft); text-decoration:none;
