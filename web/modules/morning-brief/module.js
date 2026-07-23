@@ -23,6 +23,7 @@
 //    hash points) is actually warranted.
 
 import { setLastSeenBrief } from "../../shell/last-seen.js";
+import { mountTodoPanel } from "../todo/module.js";
 
 let requestSeq = 0;
 
@@ -33,8 +34,17 @@ export default {
   async mount(container, ctx) {
     const { supabase, el, renderItem, isSafeSvg, decryptPayload } = ctx;
 
-    const briefRoot = el("div");
-    container.append(briefRoot);
+    // ToDo lives here now, as a right-hand column, instead of its own
+    // nav tab -- see modules/todo/module.js's own comment for why. Its
+    // own load/save cycle is entirely independent of the brief's, so it
+    // mounts once, up front, rather than being rebuilt on every
+    // loadBrief() re-render.
+    const briefLayout = el("div", "brief-layout");
+    const briefRoot = el("div", "brief-main");
+    const todoRoot = el("div", "brief-side");
+    briefLayout.append(briefRoot, todoRoot);
+    container.append(briefLayout);
+    mountTodoPanel(todoRoot, ctx);
 
     async function loadBrief() {
       const myRequest = ++requestSeq;
