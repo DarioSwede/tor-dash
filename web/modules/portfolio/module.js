@@ -54,6 +54,9 @@ const DEFAULT_CARD_ORDER = [
   "bevakning", "utdelning", "veckanstips", "redeye",
 ];
 const CARD_SPAN = { total: 2, aktier: 3 };
+const DEFAULT_GRID_COLUMNS = 6;
+const MIN_GRID_COLUMNS = 2;
+const MAX_GRID_COLUMNS = 12;
 
 // Merges a saved order with the default rather than trusting it as-is:
 // drops any id that no longer corresponds to a real card (a card type
@@ -84,6 +87,7 @@ export default {
     const doc = loaded.doc;
     assignIds(doc);
     doc.cardOrder = normalizeCardOrder(doc.cardOrder);
+    if (!Number.isInteger(doc.gridColumns)) doc.gridColumns = DEFAULT_GRID_COLUMNS;
 
     // Runtime-only state -- prices, sparklines, UI toggles -- none of
     // this is persisted; it's rebuilt by fetching/refreshing each time.
@@ -606,8 +610,29 @@ export default {
       notifyBtn.disabled = ok;
     });
     const importMsgEl = el("span", "pf-import-msg");
-    toolbar.append(importBtn, notifyBtn, importMsgEl);
+    // Column count is a doc setting, not a fixed auto-fit width (see
+    // module.css's .pf-grid) -- Dario wants direct control over how
+    // many tracks the grid has, not however many happen to fit at
+    // whatever width the window is.
+    const columnsLabel = el("label", "pf-columns-control");
+    columnsLabel.append("Kolumner");
+    const columnsInput = document.createElement("input");
+    columnsInput.type = "number"; columnsInput.min = String(MIN_GRID_COLUMNS); columnsInput.max = String(MAX_GRID_COLUMNS);
+    columnsInput.value = doc.gridColumns; columnsInput.className = "pf-field pf-field-num";
+    columnsInput.addEventListener("change", () => {
+      let n = parseInt(columnsInput.value, 10);
+      if (isNaN(n)) n = DEFAULT_GRID_COLUMNS;
+      n = Math.max(MIN_GRID_COLUMNS, Math.min(MAX_GRID_COLUMNS, n));
+      doc.gridColumns = n;
+      columnsInput.value = n;
+      applyGridColumns();
+      save();
+    });
+    columnsLabel.appendChild(columnsInput);
+    toolbar.append(importBtn, notifyBtn, columnsLabel, importMsgEl);
     const gridEl = el("div", "pf-grid");
+    function applyGridColumns() { gridEl.style.setProperty("--pf-cols", String(doc.gridColumns)); }
+    applyGridColumns();
     // Dropping on the grid's own empty background (not bubbled from a
     // card slot, which already handled and stopped its own drop event --
     // see wireDrag above) moves the dragged card to the very end,
