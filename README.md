@@ -110,6 +110,14 @@ tor-dashboard/
 `url` and `button` are optional per item; omit or set to `null` when there's
 nothing to link.
 
+**Multi-day calendar events** (someone's vacation, a race/event spanning
+several days) that are still running today are worth a line even though
+they're not actionable — put them in a "Bakgrund" section. State how long
+the event runs and how much is left, plus which calendar it came from,
+abbreviated (a short name, not "according to the X calendar"): e.g.
+`"13 juli–10 augusti, 18 dagar kvar · Nettan"` rather than "Enligt Nettans
+kalender, till 10 augusti."
+
 ## Not done yet (on purpose)
 
 - `mail@torbjornzimmerman.se` (Loopia IMAP) isn't part of the automated
