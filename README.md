@@ -134,6 +134,18 @@ prefixes it with "Imorgon: " itself, so the string should just be the fact
 ("Vindelälvsloppets sista dag."), not restate "tomorrow". Omit or set to
 `null` on days with nothing worth a heads-up about — most days.
 
+**Väder (weather) section:** built from `scripts/weather.py`, not a web
+search — it calls Open-Meteo (free, no API key) and prints structured
+JSON (current condition, today's high/low, tonight's low, tomorrow's
+outlook). Run it before writing the brief:
+```
+python3 scripts/weather.py                          # Stockholm by default
+python3 scripts/weather.py --lat 59.33 --lon 18.07 --place Stockholm
+```
+and turn the result into the "Väder Stockholm" plain section's one-line
+sentence. Requires `api.open-meteo.com` on the scheduled task's network
+allowlist (same mechanism as the Supabase domain in step 6 above).
+
 ## Not done yet (on purpose)
 
 - `mail@torbjornzimmerman.se` (Loopia IMAP) isn't part of the automated
