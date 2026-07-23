@@ -30,6 +30,16 @@ const sideNavBackdrop = document.getElementById("side-nav-backdrop");
 const navToggleBtn = document.getElementById("nav-toggle-btn");
 const topBarNavSlot = document.getElementById("top-bar-nav-slot");
 const themeColorMeta = document.getElementById("theme-color-meta");
+const topbarClockEl = document.getElementById("topbar-clock");
+
+// Plain live clock, device-local time -- no session/auth dependency, so
+// it just runs for the page's whole lifetime rather than being started/
+// stopped alongside sign-in like the idle-timeout countdown is.
+function tickClock() {
+  topbarClockEl.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+tickClock();
+setInterval(tickClock, 1000);
 
 // Wide screens get the nav buttons in the top bar itself, not a second
 // bar underneath it -- this physically reparents #module-nav between
@@ -83,6 +93,7 @@ if (!configOk) {
 function boot() {
   wireGate(supabase, {
     gateEl, appEl, gateMsg,
+    sessionTimerEl: document.getElementById("session-timer"),
     onAuthenticated: async (session) => {
       setThemeColor("#FCFCFB"); // --bg, tokens.css
       renderNetworkStatus(document.getElementById("network-status"));

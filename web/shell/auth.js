@@ -28,8 +28,11 @@ const SWIPE_MAX_DURATION_MS = 800;
 let idleTimer = null;
 let hiddenAt = null;
 let listenersWired = false;
+let idleDeadline = null;
+let sessionTimerEl = null;
+let tickInterval = null;
 
-export function wireGate(supabase, { gateEl, appEl, gateMsg, onAuthenticated, onSignedOut }) {
+export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: timerEl, onAuthenticated, onSignedOut }) {
   // One network lookup per gate view, shared by every log call below
   // (view, attempt, outcome) instead of each re-fetching it independently.
   const networkStatusPromise = fetchNetworkStatus();
@@ -72,7 +75,7 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, onAuthenticated, on
     if (session) {
       gateEl.style.display = "none";
       appEl.style.display = "block";
-      startReauthGuard(supabase);
+      startReauthGuard(supabase, timerEl);
       onAuthenticated(session);
     } else {
       gateEl.style.display = "flex";
@@ -115,11 +118,38 @@ export function wireSecurityPanel(supabase, { panelEl, openBtn, closeBtn, onEnro
   });
 }
 
-function startReauthGuard(supabase) {
+function formatCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// Ticks once a second while signed in, purely a display concern — the
+// actual sign-out is still driven by idleTimer/setTimeout above,
+// independent of whether this element exists or this interval is even
+// running.
+function updateSessionTimerDisplay() {
+  if (!sessionTimerEl) return;
+  if (!idleDeadline) {
+    sessionTimerEl.style.display = "none";
+    return;
+  }
+  const remaining = idleDeadline - Date.now();
+  sessionTimerEl.style.display = "";
+  sessionTimerEl.classList.toggle("session-timer-warn", remaining < 60 * 1000);
+  sessionTimerEl.textContent = `Utloggning om ${formatCountdown(remaining)}`;
+  sessionTimerEl.title = "Loggas ut automatiskt efter 15 min utan aktivitet";
+}
+
+function startReauthGuard(supabase, timerEl) {
+  sessionTimerEl = timerEl || sessionTimerEl;
   clearTimeout(idleTimer);
   const resetIdle = () => {
     clearTimeout(idleTimer);
+    idleDeadline = Date.now() + IDLE_TIMEOUT_MS;
     idleTimer = setTimeout(() => supabase.auth.signOut(), IDLE_TIMEOUT_MS);
+    updateSessionTimerDisplay();
   };
 
   // Activity/visibility listeners are wired once for the page's lifetime,
@@ -139,12 +169,19 @@ function startReauthGuard(supabase) {
     });
   }
   resetIdle();
+
+  clearInterval(tickInterval);
+  tickInterval = setInterval(updateSessionTimerDisplay, 1000);
 }
 
 function stopReauthGuard() {
   clearTimeout(idleTimer);
   idleTimer = null;
   hiddenAt = null;
+  idleDeadline = null;
+  clearInterval(tickInterval);
+  tickInterval = null;
+  updateSessionTimerDisplay();
 }
 
 // A single-touch swipe anywhere on the gate, mostly vertical and upward,

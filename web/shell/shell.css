@@ -99,12 +99,34 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
 }
 .icon-btn:hover{ border-color:var(--ink-soft); color:var(--ink); }
 
+/* Idle-signout countdown -- sits directly left of the IP/network status
+   (see auth.js's startReauthGuard/updateSessionTimerDisplay, which own
+   the actual timer and just write text into this element every second).
+   No auto margin of its own: .network-status centers itself independently
+   via its own margin:0 auto below, and this fixed right-margin just tucks
+   the countdown in right before it. */
+.session-timer{
+  flex:0 0 auto; margin-right:14px;
+  font-size:11px; letter-spacing:.01em; color:var(--ink-grey); white-space:nowrap;
+}
+.session-timer:empty{ display:none; }
+.session-timer.session-timer-warn{ color:var(--status-warn); font-weight:600; }
+
 .network-status{
   flex:0 1 320px; min-width:0; margin:0 auto;
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); text-align:center;
   word-break:break-word;
 }
 .network-status:empty{ display:none; }
+
+/* Plain live clock, directly right of the IP/network status (see
+   shell.js's tickClock) -- same fixed-margin-on-one-side trick as
+   .session-timer above, just mirrored, so it tucks in without disturbing
+   .network-status's own self-centering. */
+.topbar-clock{
+  flex:0 0 auto; margin-left:14px;
+  font-size:11px; letter-spacing:.01em; color:var(--ink-grey); white-space:nowrap;
+}
 
 /* Plain IPv4/IPv6/VPN line, no frame — colors inherit via currentColor
    so this reads correctly both here (light, on --ink-grey) and on the
