@@ -17,7 +17,7 @@
 .module-morning-brief h1.headline{
   font-weight:600; font-size:22px; line-height:1.3; color:var(--ink); margin:0 0 14px; max-width:640px;
 }
-.module-morning-brief .drawing{ width:100%; height:auto; display:block; margin-bottom:2px; max-height:88px; }
+.module-morning-brief .drawing{ width:auto; max-width:100%; height:auto; max-height:88px; display:block; margin-bottom:2px; }
 
 .module-morning-brief .acts{ display:flex; margin-top:2px; }
 .module-morning-brief .act{ flex:1; padding:10px 20px; border-left:1px solid var(--hairline); }
@@ -60,6 +60,13 @@ body.has-custom-bg .module-morning-brief .plain-item-sentence{ color:#4A473F; }
   background:none; border:1px solid var(--hairline); border-radius:8px; padding:9px 12px;
 }
 .module-morning-brief .todo-panel .text-input:focus{ outline:none; border-color:var(--clay); }
+
+/* The shared .empty-state rule (shell.css) is sized for a full-page
+   empty state -- 48px/32px padding, centered, 860px max-width. Inside
+   this narrow side panel that reads as a big block of dead air under
+   "Inget att göra just nu.", so it's cut down to the same compact,
+   left-aligned rhythm as a real .todo-item row. */
+.module-morning-brief .todo-panel .empty-state{ max-width:none; margin:0; padding:8px 0; text-align:left; font-size:14px; }
 
 .module-morning-brief .todo-item{
   display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-top:1px solid var(--hairline);
