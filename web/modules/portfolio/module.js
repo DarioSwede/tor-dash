@@ -108,6 +108,15 @@ export default {
     assignIds(doc);
     doc.cardOrder = normalizeCardOrder(doc.cardOrder);
     if (!Number.isInteger(doc.gridColumns)) doc.gridColumns = DEFAULT_GRID_COLUMNS;
+    if (typeof doc.cardSpans !== "object" || !doc.cardSpans) doc.cardSpans = {};
+    // Per-card override of CARD_SPAN's hardcoded defaults, set via the
+    // click-to-pick control in each card's own head (see wireCardHead
+    // below) -- falls back to CARD_SPAN, then to 1, same fallback chain
+    // as before this was ever adjustable.
+    function cardSpan(id) {
+      const custom = doc.cardSpans[id];
+      return Number.isInteger(custom) ? custom : (CARD_SPAN[id] || 1);
+    }
 
     // Runtime-only state -- prices, sparklines, UI toggles -- none of
     // this is persisted; it's rebuilt by fetching/refreshing each time.
@@ -404,6 +413,7 @@ export default {
       if (!target) return;
       target.innerHTML = "";
       target.appendChild(buildCard(id));
+      wireCardHeadSpanPicker(target, id); // rebuilding wipes out the picker too -- put it back
     }
     // Recomputed right before each render that shows alert badges --
     // Alerts.check() also fires a notification on a fresh crossing, so
@@ -577,16 +587,52 @@ export default {
         renderGrid();
       });
     }
+    // Click-to-pick column span: a <select> dropped into whatever this
+    // card's own .pf-card-head is (every card except "total" has one,
+    // via cardHeader() or a hand-built equivalent) -- clicking it opens
+    // the native picker directly, no separate reveal step needed. Lives
+    // at the slot level rather than inside cardHeader() itself so every
+    // card gets it without cards-holdings.js/cards-market.js needing to
+    // know this feature exists.
+    function wireCardHeadSpanPicker(holder, id) {
+      const head = holder.querySelector(".pf-card-head");
+      if (!head) return; // "total" has no title row -- stays at its fixed span
+      const select = document.createElement("select");
+      select.className = "pf-field pf-span-select";
+      select.title = "Antal kolumner för det här kortet";
+      select.addEventListener("click", (e) => e.stopPropagation());
+      for (let n = 1; n <= doc.gridColumns; n++) {
+        const opt = document.createElement("option");
+        opt.value = String(n);
+        opt.textContent = `${n} kol`;
+        select.appendChild(opt);
+      }
+      select.value = String(Math.min(cardSpan(id), doc.gridColumns));
+      select.addEventListener("change", () => {
+        doc.cardSpans[id] = parseInt(select.value, 10);
+        holder.style.gridColumn = `span ${doc.cardSpans[id]}`;
+        save();
+      });
+      // .pf-card-head is a two-child space-between row (title, refresh
+      // wrap) for cards that have a refresh button -- appending the
+      // select as a bare third child would push that wrap into the
+      // middle instead of the corner. Slot it inside the existing
+      // refresh wrap when there is one; otherwise it's the only other
+      // child, which keeps the same title-left/control-right layout.
+      const refreshWrap = head.querySelector(".pf-module-refresh");
+      (refreshWrap || head).appendChild(select);
+    }
+
     function renderGrid() {
       gridEl.innerHTML = "";
       doc.cardOrder.forEach((id) => {
         const holder = el("div", "pf-card-slot");
         holder.dataset.cardId = id;
-        const span = CARD_SPAN[id];
-        if (span) holder.style.gridColumn = `span ${span}`;
+        holder.style.gridColumn = `span ${cardSpan(id)}`;
         cardEls[id] = holder;
         wireDrag(holder, id);
         holder.appendChild(buildCard(id));
+        wireCardHeadSpanPicker(holder, id);
         gridEl.appendChild(holder);
       });
     }

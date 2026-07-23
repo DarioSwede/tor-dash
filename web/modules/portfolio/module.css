@@ -108,6 +108,12 @@
   width:28px; height:28px; font-size:13px; display:inline-flex; align-items:center; justify-content:center;
 }
 .pf-icon-btn:disabled{ opacity:.5; }
+/* Column-span picker, dropped into every card's own head (see
+   module.js's wireCardHeadSpanPicker) -- small enough to sit next to
+   the refresh button without dominating the header. */
+.pf-span-select{
+  width:auto; flex:none; padding:4px 6px; font-size:11px; cursor:pointer;
+}
 
 /* ---- rows / lists ---- */
 .pf-grid-list{ display:flex; flex-direction:column; gap:10px; }
