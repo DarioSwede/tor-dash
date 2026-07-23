@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<!-- Colors the browser chrome (status bar area on iOS Safari) to match
+     whichever screen is showing, instead of a default white/light bar
+     that makes the page look like it stops short of the actual screen
+     edges. Starts matching the gate's dark background (--gate-bg,
+     tokens.css) since that's the first thing painted; shell.js flips it
+     to the signed-in background on auth state changes. -->
+<meta name="theme-color" content="#0A0A0C" id="theme-color-meta">
 <title>Dashboard</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="shell/tokens.css">

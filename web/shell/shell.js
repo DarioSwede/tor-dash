@@ -28,6 +28,15 @@ const settingsPanel = document.getElementById("settings-panel");
 const sideNav = document.getElementById("side-nav");
 const sideNavBackdrop = document.getElementById("side-nav-backdrop");
 const navToggleBtn = document.getElementById("nav-toggle-btn");
+const themeColorMeta = document.getElementById("theme-color-meta");
+
+// Keeps the browser chrome (status bar area) matching whichever screen
+// is actually showing -- see index.html's meta tag comment for why this
+// exists at all (a mismatched, default-light status bar over the dark
+// gate reads as the page not actually filling the screen).
+function setThemeColor(hex) {
+  themeColorMeta.setAttribute("content", hex);
+}
 
 function setSideNavOpen(open) {
   sideNav.classList.toggle("open", open);
@@ -59,6 +68,7 @@ function boot() {
   wireGate(supabase, {
     gateEl, appEl, gateMsg,
     onAuthenticated: async (session) => {
+      setThemeColor("#FCFCFB"); // --bg, tokens.css
       renderNetworkStatus(document.getElementById("network-status"));
       loadDashboardBackground(supabase);
       loadTopBarLayout(supabase);
@@ -86,6 +96,7 @@ function boot() {
       }
     },
     onSignedOut: () => {
+      setThemeColor("#0A0A0C"); // --gate-bg, tokens.css
       contentEl.innerHTML = "";
       settingsPanel.classList.remove("open");
     },
