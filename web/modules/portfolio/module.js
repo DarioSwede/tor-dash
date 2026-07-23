@@ -10,9 +10,14 @@
 //   whole dashboard is already behind passkey auth + RLS, so a second
 //   password layer on top is redundant. See import-fortpolio.js for a
 //   one-time client-side-decrypt import of holdings from the old blob.
-// - Layout is a responsive CSS grid, not the original's custom drag/
-//   resize masonry engine -- explicitly simpler and more predictable on
-//   narrow screens, which was the point of rebuilding it at all.
+// - Layout is a responsive CSS grid with native HTML5 drag-and-drop for
+//   reordering cards (persisted as doc.cardOrder), rather than the
+//   original's custom pixel-level drag/resize masonry engine -- cards
+//   snap to grid slots instead of landing at an arbitrary position, and
+//   each card's width is a fixed span (not user-resizable). Simpler and
+//   more predictable on narrow screens (where dragging is moot anyway
+//   and everything just stacks single-column) while still letting Dario
+//   put cards where he wants on a wide screen.
 // - The price-paste and P/S-paste text boxes from the original Aktier
 //   card aren't ported (manual price override is still available per
 //   stock, via the detail panel) -- a deliberate trim, not an oversight.
@@ -36,6 +41,29 @@ import * as Alerts from "./alerts.js";
 const OPEN_INTERVAL_MS = 2 * 60 * 1000;
 const CLOSED_INTERVAL_MS = 60 * 60 * 1000;
 
+// Default reading order for a first-time doc (or one saved before
+// cardOrder existed). Aktier defaults wider (see CARD_SPAN) since its
+// holdings list reads better with room for multiple columns.
+const DEFAULT_CARD_ORDER = [
+  "allokering", "valutor", "ravaror",
+  "vinnareforlorare", "aktier", "fonder", "borsen",
+  "bevakning", "utdelning", "veckanstips", "redeye",
+];
+const CARD_SPAN = { aktier: 3 };
+
+// Merges a saved order with the default rather than trusting it as-is:
+// drops any id that no longer corresponds to a real card (a card type
+// removed in a later version) and appends any id the saved order
+// predates (a card type added later) at the end, so nothing silently
+// disappears from the grid just because it's missing from an older
+// save.
+function normalizeCardOrder(saved) {
+  const valid = new Set(DEFAULT_CARD_ORDER);
+  const kept = (Array.isArray(saved) ? saved : []).filter((id) => valid.has(id));
+  const missing = DEFAULT_CARD_ORDER.filter((id) => !kept.includes(id));
+  return [...kept, ...missing];
+}
+
 export default {
   id: "portfolio",
   navLabel: "Portfolio",
@@ -51,6 +79,7 @@ export default {
     const { rowId } = loaded;
     const doc = loaded.doc;
     assignIds(doc);
+    doc.cardOrder = normalizeCardOrder(doc.cardOrder);
 
     // Runtime-only state -- prices, sparklines, UI toggles -- none of
     // this is persisted; it's rebuilt by fetching/refreshing each time.
@@ -458,37 +487,75 @@ export default {
       return card;
     }
 
-    // Three placement groups instead of one flat CARD_ORDER, per the
-    // desktop redesign: allokering/valutor/ravaror move up next to the
-    // header total (headerSideEl, styled compact -- see module.css) as
-    // "at a glance" stats rather than full cards in the scroll; aktier/
-    // fonder/borsen/vinnareforlorare get a dedicated named-area grid
-    // (topGridEl) wide enough to give aktier a real two-column holdings
-    // list and put börsen+vinnare in their own right-hand column; the
-    // remaining cards keep the original simple auto-fit flow (gridEl).
-    // Same buildCard(id)/cardEls[id] machinery throughout -- only which
-    // container a slot lands in changed, not how a card is built or
-    // refreshed.
-    const HEADER_SIDE_CARDS = ["allokering", "valutor", "ravaror"];
-    const TOP_GRID_CARDS = ["vinnareforlorare", "aktier", "fonder", "borsen"];
-    const REST_CARDS = ["bevakning", "utdelning", "veckanstips", "redeye"];
+    // One drag-reorderable grid instead of three fixed zones -- doc.
+    // cardOrder is the single source of truth for both position (DOM/
+    // grid order) and, indirectly, width (CARD_SPAN is keyed by id, not
+    // position). A slot's own drag handlers only ever move ids around
+    // within this array and re-render; buildCard(id)/cardEls[id] don't
+    // change at all from before.
+    //
+    // Excluded from drag-start when the gesture began on one of these --
+    // otherwise clicking "Uppdatera", typing in a field, or opening a
+    // stock's detail panel would sometimes get eaten as a card-drag
+    // instead of the click it looks like. Keep this in sync with
+    // whatever ends up clickable *inside* a card body (not the slot
+    // itself, which browsers only start dragging from a genuine
+    // press-and-move gesture on non-form content anyway).
+    const DRAG_EXCLUDE_SELECTOR = "button, input, select, textarea, a, label, .pf-row-clickable, .pf-allokering-toggle";
+    let dragCardId = null;
 
-    function renderGroup(container, ids, extraClass) {
-      container.innerHTML = "";
-      ids.forEach((id) => {
-        const holder = el("div", "pf-card-slot" + (extraClass ? ` ${extraClass}` : ""));
+    function wireDrag(holder, id) {
+      holder.draggable = true;
+      holder.addEventListener("dragstart", (e) => {
+        if (e.target.closest(DRAG_EXCLUDE_SELECTOR)) { e.preventDefault(); return; }
+        dragCardId = id;
+        e.dataTransfer.effectAllowed = "move";
+        holder.classList.add("dragging");
+      });
+      holder.addEventListener("dragend", () => {
+        holder.classList.remove("dragging");
+        dragCardId = null;
+        gridEl.querySelectorAll(".pf-card-slot.drop-target").forEach((n) => n.classList.remove("drop-target"));
+      });
+      holder.addEventListener("dragover", (e) => {
+        if (!dragCardId || dragCardId === id) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        holder.classList.add("drop-target");
+      });
+      holder.addEventListener("dragleave", () => holder.classList.remove("drop-target"));
+      holder.addEventListener("drop", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        holder.classList.remove("drop-target");
+        if (!dragCardId || dragCardId === id) return;
+        const order = doc.cardOrder.slice();
+        const fromIdx = order.indexOf(dragCardId);
+        if (fromIdx === -1 || !order.includes(id)) return;
+        order.splice(fromIdx, 1);
+        order.splice(order.indexOf(id), 0, dragCardId); // drops just before the target slot
+        doc.cardOrder = order;
+        save();
+        renderGrid();
+      });
+    }
+    function renderGrid() {
+      gridEl.innerHTML = "";
+      doc.cardOrder.forEach((id) => {
+        const holder = el("div", "pf-card-slot");
         holder.dataset.cardId = id;
+        const span = CARD_SPAN[id];
+        if (span) holder.style.gridColumn = `span ${span}`;
         cardEls[id] = holder;
+        wireDrag(holder, id);
         holder.appendChild(buildCard(id));
-        container.appendChild(holder);
+        gridEl.appendChild(holder);
       });
     }
 
     function renderAll() {
       renderHeader();
-      renderGroup(headerSideEl, HEADER_SIDE_CARDS);
-      renderGroup(topGridEl, TOP_GRID_CARDS);
-      renderGroup(gridEl, REST_CARDS);
+      renderGrid();
     }
 
     // ---------- import from FortPolio ----------
@@ -514,9 +581,6 @@ export default {
     // ---------- shell ----------
     const root = el("div", "pf-app");
     const headerEl = el("div", "pf-header");
-    const headerSideEl = el("div", "pf-header-side");
-    const headerRow = el("div", "pf-header-row");
-    headerRow.append(headerEl, headerSideEl);
     const toolbar = el("div", "pf-toolbar");
     const importBtn = el("button", "pf-btn", "Importera från FortPolio");
     importBtn.addEventListener("click", openImportDialog);
@@ -528,10 +592,21 @@ export default {
     });
     const importMsgEl = el("span", "pf-import-msg");
     toolbar.append(importBtn, notifyBtn, importMsgEl);
-    const topGridEl = el("div", "pf-top-grid");
     const gridEl = el("div", "pf-grid");
+    // Dropping on the grid's own empty background (not bubbled from a
+    // card slot, which already handled and stopped its own drop event --
+    // see wireDrag above) moves the dragged card to the very end,
+    // otherwise there'd be no way to drag something *past* the last card.
+    gridEl.addEventListener("dragover", (e) => { if (dragCardId) e.preventDefault(); });
+    gridEl.addEventListener("drop", (e) => {
+      if (e.target !== gridEl || !dragCardId) return;
+      e.preventDefault();
+      doc.cardOrder = doc.cardOrder.filter((cid) => cid !== dragCardId).concat(dragCardId);
+      save();
+      renderGrid();
+    });
     const detailEl = el("div", "pf-detail-overlay");
-    root.append(headerRow, toolbar, topGridEl, gridEl, detailEl);
+    root.append(headerEl, toolbar, gridEl, detailEl);
     container.appendChild(root);
 
     renderAll();

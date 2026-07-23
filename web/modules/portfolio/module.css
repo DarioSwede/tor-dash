@@ -23,40 +23,9 @@
 .module-portfolio button{ cursor:pointer; }
 .module-portfolio ::placeholder{ color:var(--pf-text-muted); }
 
-.pf-app{ padding:24px; max-width:1400px; margin:0 auto; }
+.pf-app{ padding:24px; max-width:1900px; margin:0 auto; }
 
 /* ---- header ---- */
-/* Row so allokering/valutor/ravaror (headerSideEl) sit beside the
-   total/breakdown/chart (headerEl) as a row of real cards spanning the
-   rest of the width -- not a narrow stacked sidebar (an earlier pass at
-   this looked like a stray card grid bolted onto the header; Dario's
-   reference screenshot wanted proper boxed cards in a row instead).
-   Wraps to a plain stack on narrow screens via flex-wrap. */
-.pf-header-row{ display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
-.pf-header-row .pf-header{ margin-bottom:0; flex:0 0 auto; }
-.pf-header-side{ display:flex; flex-wrap:wrap; gap:16px; flex:1 1 480px; }
-.pf-header-side .pf-card-slot{ flex:1 1 220px; min-width:220px; }
-
-/* Valutor/Råvaror rows: a boxed .pf-row per currency/commodity (with a
-   category line above and a sub-label line below, on top of the name+
-   price line) reads fine at full width, but the header cards are
-   narrower than a main-grid card, so name/price/change share one flex
-   line (module.js's .pf-row-price-group) and the old badge+sub-label
-   collapse into a single small caption underneath (see quoteRow() in
-   cards-market.js) instead of stacking as two separate lines. */
-.pf-header-side .pf-row{ padding:9px 0; }
-.pf-header-side .pf-ticker{ font-size:12.5px; font-weight:500; }
-.pf-header-side .pf-price{ font-size:12.5px; }
-.pf-header-side .pf-change{ font-size:11px; min-width:50px; text-align:right; }
-.pf-header-side .pf-unit-suffix{ font-size:10.5px; margin-top:1px; }
-/* Two-per-line instead of one long stack -- Valutor (4 items) and
-   Råvaror (6 items) both fit comfortably in the header row's height
-   this way instead of running taller than every neighboring card. */
-.pf-header-side [data-card-id="valutor"] .pf-grid-list,
-.pf-header-side [data-card-id="ravaror"] .pf-grid-list{
-  display:grid; grid-template-columns:1fr 1fr; gap:0 14px;
-}
-
 .pf-header{ margin-bottom:22px; }
 .pf-header-total-row{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
 .pf-header-total-value{ font-size:34px; font-weight:700; }
@@ -81,44 +50,45 @@
 .pf-toolbar{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px; }
 .pf-import-msg{ font-size:12px; color:var(--pf-text-muted); }
 
-/* ---- top grid: aktier/fonder/börsen/vinnare-förlorare ---- */
-/* Plain auto-fit stack until the desktop breakpoint below -- same
-   fallback every other grid in this module uses, so narrow screens get
-   the simple single-column flow with no separate override needed. */
-.pf-top-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; align-items:start; margin-bottom:16px; }
+/* ---- one unified, drag-reorderable grid for every card ---- */
+/* auto-fit/minmax so narrow screens fall back to a plain single column
+   automatically -- a card's grid-column:span (set inline per module.js's
+   CARD_SPAN) just collapses to the one available track there, no
+   separate mobile override needed. */
+.pf-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; align-items:start; }
+.pf-card-slot{ min-width:0; cursor:grab; border-radius:14px; }
+.pf-card-slot.dragging{ opacity:.35; }
+/* Dashed outline instead of moving anything else on the page while
+   dragging -- the actual reorder only happens on drop (see module.js's
+   wireDrag), so this is purely "this is where it'll land" feedback. */
+.pf-card-slot.drop-target{ outline:2px dashed var(--pf-gold); outline-offset:2px; }
 
-@media (min-width:1100px){
-  /* Named areas, one row: vinnare-förlorare on the left, aktier wide in
-     the middle (its own two-column holdings list below needs the
-     width), fonder and börsen as their own narrower columns on the
-     right -- matches Dario's reference layout. Each column's card sizes
-     to its own content independently (align-items:start on the base
-     rule), so a much-taller Aktier simply ends lower than its shorter
-     neighbors instead of stretching them. */
-  .pf-top-grid{
-    grid-template-columns:1.1fr 2.4fr 1.2fr 1.1fr;
-    grid-template-areas: "vinnareforlorare aktier fonder borsen";
-  }
-  .pf-top-grid [data-card-id="aktier"]{ grid-area:aktier; }
-  .pf-top-grid [data-card-id="fonder"]{ grid-area:fonder; }
-  .pf-top-grid [data-card-id="borsen"]{ grid-area:borsen; }
-  .pf-top-grid [data-card-id="vinnareforlorare"]{ grid-area:vinnareforlorare; }
-
-  /* Two columns of holdings rows instead of one tall stack, so the
-     whole Aktier list is visible without scrolling inside the card --
-     column-count (newspaper-style top-to-bottom-then-next-column) reads
-     better here than a row-major CSS grid would for variable-height
-     rows. break-inside:avoid keeps a single row from splitting across
-     the column gap. */
-  .pf-top-grid [data-card-id="aktier"] .pf-grid-list{
-    display:block; column-count:2; column-gap:14px;
-  }
-  .pf-top-grid [data-card-id="aktier"] .pf-grid-list > *{ break-inside:avoid; margin-bottom:10px; }
+/* Aktier's holdings list gets multiple columns instead of one tall
+   stack once the card itself is wide enough to fit them -- column-width
+   (not a fixed column-count) lets the browser fit 2 or 3 depending on
+   how wide the card actually ends up (it defaults to a 3-track span,
+   see CARD_SPAN, but can be dragged narrower). break-inside:avoid keeps
+   a single row from splitting across the column gap. */
+[data-card-id="aktier"] .pf-grid-list{
+  display:block; column-width:260px; column-gap:14px;
 }
+[data-card-id="aktier"] .pf-grid-list > *{ break-inside:avoid; margin-bottom:10px; }
 
-/* ---- responsive grid ---- */
-.pf-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; align-items:start; }
-.pf-card-slot{ min-width:0; }
+/* Valutor/Råvaror rows: a boxed .pf-row per currency/commodity (with a
+   category line above and a sub-label line below, on top of the name+
+   price line) reads fine at full card width, but stacked one-per-line
+   that's still taller than most neighboring cards -- two-per-line
+   instead, with name/price/change sharing one flex row (module.js's
+   .pf-row-price-group) and the old badge+sub-label collapsed into a
+   single small caption underneath (see quoteRow() in cards-market.js). */
+[data-card-id="valutor"] .pf-grid-list,
+[data-card-id="ravaror"] .pf-grid-list{
+  display:grid; grid-template-columns:1fr 1fr; gap:0 14px;
+}
+[data-card-id="valutor"] .pf-row,
+[data-card-id="ravaror"] .pf-row{ padding:9px 0; }
+[data-card-id="valutor"] .pf-change,
+[data-card-id="ravaror"] .pf-change{ min-width:50px; text-align:right; }
 .pf-card{ background:var(--pf-surface); border:1px solid var(--pf-border); border-radius:14px; overflow:hidden; }
 .pf-card-head{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-bottom:1px solid var(--pf-border); }
 .pf-section-title{ font-size:14px; font-weight:700; letter-spacing:.02em; margin:0; }
@@ -283,6 +253,11 @@ textarea.pf-field{ width:100%; min-height:70px; resize:vertical; }
   .pf-app{ padding:16px; }
   .pf-header-total-value{ font-size:26px; }
   .pf-overview-row{ grid-template-columns:1fr; }
-  .pf-top-grid{ grid-template-columns:1fr; }
   .pf-grid{ grid-template-columns:1fr; }
+  /* Dragging is moot on a phone (no touch support for the HTML5 DnD
+     API this uses) -- drop the grab cursor and any card's wide span so
+     nothing looks draggable or oddly proportioned here. */
+  .pf-card-slot{ cursor:auto; grid-column:auto !important; }
+  [data-card-id="valutor"] .pf-grid-list,
+  [data-card-id="ravaror"] .pf-grid-list{ grid-template-columns:1fr; }
 }
