@@ -155,27 +155,22 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
 .side-nav .nav-badge{ top:50%; right:10px; transform:translateY(-50%); }
 .nav button.active .nav-badge{ border-color:var(--ink); }
 
-/* On a wide-enough screen there's no reason the module nav should be a
-   hamburger-triggered drawer -- that's a phone pattern, borrowed here
-   only because the drawer was the one nav implementation this shell
-   had. From this breakpoint up, real always-visible buttons in the top
-   bar read as a real desktop app instead of hiding navigation behind a
-   menu icon. #module-nav itself doesn't move in the DOM (still inside
-   #side-nav, still built the same way by module-registry.js) -- .side-
-   nav just stops being a fixed slide-out panel and becomes a plain
-   static bar docked under .top-bar, and the hamburger/backdrop that
-   only make sense for a collapsible drawer disappear. */
+/* Real, always-visible nav buttons in the top bar on a wide-enough
+   screen instead of hiding navigation behind a hamburger -- a phone
+   pattern that only existed here because the drawer was this shell's
+   one nav implementation. shell.js's placeNavForViewport() physically
+   moves #module-nav from #side-nav into #top-bar-nav-slot (a child of
+   .top-bar) once the viewport crosses this same breakpoint, so there's
+   no second bar sitting underneath .top-bar -- the buttons live in the
+   same row as the settings/sign-out icons. #side-nav and its backdrop
+   are simply unused once #module-nav has moved out of them (nothing
+   left to open), so no CSS override is needed for them here at all. */
+.top-bar-nav{ display:flex; align-items:center; }
+.top-bar-nav .nav{ flex-direction:row; flex-wrap:wrap; }
+.top-bar-nav .nav button{ text-align:center; padding:6px 14px; }
+.top-bar-nav .nav-badge{ top:4px; right:4px; transform:none; }
 @media (min-width:860px){
   #nav-toggle-btn{ display:none; }
-  .side-nav-backdrop{ display:none; }
-  .side-nav{
-    position:static; width:auto; max-width:none; transform:none;
-    padding:10px 20px; border-right:none; border-bottom:1px solid var(--hairline);
-    overflow:visible;
-  }
-  .side-nav .nav{ flex-direction:row; flex-wrap:wrap; }
-  .side-nav .nav button{ text-align:center; padding:6px 14px; }
-  .side-nav .nav-badge{ top:4px; right:4px; transform:none; }
 }
 
 .btn{

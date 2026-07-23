@@ -28,7 +28,23 @@ const settingsPanel = document.getElementById("settings-panel");
 const sideNav = document.getElementById("side-nav");
 const sideNavBackdrop = document.getElementById("side-nav-backdrop");
 const navToggleBtn = document.getElementById("nav-toggle-btn");
+const topBarNavSlot = document.getElementById("top-bar-nav-slot");
 const themeColorMeta = document.getElementById("theme-color-meta");
+
+// Wide screens get the nav buttons in the top bar itself, not a second
+// bar underneath it -- this physically reparents #module-nav between
+// the drawer (mobile) and the top bar (desktop) on every breakpoint
+// crossing, rather than trying to fake "in the top bar" with CSS on an
+// element that's a sibling of .top-bar, not a child of it. #module-nav
+// itself is never rebuilt here, just moved -- module-registry.js
+// doesn't need to know where it currently lives.
+const desktopNavQuery = window.matchMedia("(min-width: 860px)");
+function placeNavForViewport() {
+  const target = desktopNavQuery.matches ? topBarNavSlot : sideNav;
+  if (navEl.parentElement !== target) target.appendChild(navEl);
+}
+desktopNavQuery.addEventListener("change", placeNavForViewport);
+placeNavForViewport();
 
 // Keeps the browser chrome (status bar area) matching whichever screen
 // is actually showing -- see index.html's meta tag comment for why this

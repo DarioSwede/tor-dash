@@ -37,6 +37,12 @@
   <!-- signed in -->
   <div id="app">
     <div class="top-bar">
+      <!-- On desktop, shell.js moves #module-nav in here (see its
+           placeNavForViewport()) so the nav buttons sit in this same
+           row instead of a second bar underneath -- on a phone it stays
+           inside #side-nav below and this slot is simply empty. -->
+      <div class="top-bar-nav" id="top-bar-nav-slot"></div>
+      <div class="network-status" id="network-status"></div>
       <div class="top-bar-group">
         <button class="icon-btn" id="nav-toggle-btn" aria-label="Menu" aria-expanded="false" title="Menu">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -44,9 +50,6 @@
         <button class="icon-btn" id="open-settings-btn" aria-label="Settings" title="Settings">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
-      </div>
-      <div class="network-status" id="network-status"></div>
-      <div class="top-bar-group">
         <button class="icon-btn" id="signout-btn" aria-label="Sign out" title="Sign out">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0L19 4m-3.5 3.5L19 11"/></svg>
         </button>
@@ -109,10 +112,10 @@
         <div id="gate-title-msg" class="panel-msg"></div>
 
         <h3 class="panel-subhead">Layout</h3>
-        <p>Which side the menu/settings icons and sign-out sit on, in the top bar.</p>
+        <p>Which side the nav buttons sit on vs. settings/sign-out, in the top bar.</p>
         <label class="toggle-row">
           <input type="checkbox" id="top-bar-swap-toggle">
-          Swap button sides
+          Swap sides
         </label>
         <div id="top-bar-layout-msg" class="panel-msg"></div>
 
