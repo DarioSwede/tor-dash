@@ -14,6 +14,13 @@
 // instead of a cramped table forced into a phone-width column. Both are
 // always in the DOM; a CSS media query (module.css) shows one and hides
 // the other, so there's one row-building pass, not two.
+//
+// getBadgeCount() backs the nav dot (see shell/module-registry.js):
+// counts rows newer than this device's last-seen marker. load() bumps
+// that marker to "now" on every successful fetch -- opening the tab is
+// what clears its own dot, same as the Brief marks itself seen on render.
+
+import { getLastSeenLog, setLastSeenLog } from "../../shell/last-seen.js";
 
 const EVENT_LABEL = {
   gate_view: "Besök",
@@ -344,8 +351,19 @@ export default {
       }
       rows = categorize(data || []);
       render();
+      setLastSeenLog(new Date().toISOString());
     }
 
     await load();
+  },
+
+  async getBadgeCount(ctx) {
+    const lastSeen = getLastSeenLog();
+    if (!lastSeen) return 0; // never opened on this device yet -- nothing to compare against, not "everything is unseen"
+    const { count, error } = await ctx.supabase
+      .from("access_log")
+      .select("id", { count: "exact", head: true })
+      .gt("created_at", lastSeen);
+    return error ? 0 : (count || 0);
   },
 };

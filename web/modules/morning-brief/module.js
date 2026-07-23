@@ -17,6 +17,12 @@
 //    normal way new content replaces stale content) is simply "the"
 //    brief. The `kind` column still exists on the table for now but is
 //    no longer read from here.
+// 4. A successful render marks this row's created_at as "seen" (see
+//    shell/last-seen.js) -- that's what shell.js's sign-in routing
+//    checks to decide whether landing here (instead of wherever the URL
+//    hash points) is actually warranted.
+
+import { setLastSeenBrief } from "../../shell/last-seen.js";
 
 let requestSeq = 0;
 
@@ -65,6 +71,7 @@ export default {
         }
       }
       render(payload);
+      setLastSeenBrief(data.created_at);
     }
 
     // One seamless card, not a two-band split -- there's only one running

@@ -3,14 +3,21 @@
 // new folder + one line in manifest.js — nothing here needs to change.
 //
 // Each module default-exports:
-//   { id, navLabel, mount(container, ctx), unmount(container)? }
+//   { id, navLabel, mount(container, ctx), unmount(container)?, getBadgeCount(ctx)? }
 // mount() owns everything inside `container` until unmount() (if present)
 // is called on module switch. A module that throws during mount renders
 // its own inline error and does not affect nav or other modules.
+//
+// getBadgeCount(ctx) is optional: if present, it's awaited once at boot
+// (for every module, so the nav shows unseen state even before visiting
+// a tab) and again right after that specific module's mount() resolves
+// (since mounting is usually what marks its own content "seen" and
+// should clear its own dot). See modules/access-log/module.js.
 
 import { MODULES, MODULES_BASE_URL } from "../modules/manifest.js";
 
 const registry = new Map(); // id -> module object
+const badges = new Map(); // id -> unseen count (0/absent = no dot)
 let activeId = null;
 let contentEl = null;
 let navEl = null;
@@ -29,8 +36,26 @@ async function loadModule(entry) {
     link.href = new URL(entry.css, MODULES_BASE_URL).href;
     document.head.appendChild(link);
   }
-  const mod = await import(jsUrl);
-  registry.set(entry.id, mod.default);
+  // Returns the loaded module rather than inserting into `registry`
+  // itself -- these run in parallel via Promise.allSettled below, and
+  // whichever import() happens to resolve first would otherwise decide
+  // Map insertion order. Since a Map iterates in insertion order and
+  // both nav order and "no hash yet, no preferred id" default both fall
+  // back to "the first entry in registry", that meant nav button order
+  // (and which tab a fresh sign-in landed on) could silently shuffle
+  // between reloads depending on network/parse timing -- inserting
+  // every entry in MODULES' own order, after all settle, makes it
+  // deterministic.
+  return (await import(jsUrl)).default;
+}
+
+async function refreshBadge(id, mod) {
+  if (typeof mod.getBadgeCount !== "function") return;
+  try {
+    badges.set(id, await mod.getBadgeCount(ctx));
+  } catch (e) {
+    console.error(`getBadgeCount(${id}) failed:`, e);
+  }
 }
 
 function buildNav() {
@@ -40,6 +65,7 @@ function buildNav() {
     btn.textContent = mod.navLabel || id;
     btn.dataset.moduleId = id;
     btn.className = id === activeId ? "active" : "";
+    if (badges.get(id) > 0) btn.appendChild(document.createElement("span")).className = "nav-badge";
     btn.addEventListener("click", () => {
       if (id !== activeId) location.hash = `#${id}`;
     });
@@ -89,25 +115,33 @@ async function activate(id) {
     return;
   }
 
-  // No extra cleanup needed here even if a newer activate() has since taken
-  // over: activeId/prevMod are captured synchronously at the top of every
-  // activate() call (before any await), so the newer call already unmounted
-  // whatever was active at that point -- including this instance, if it was
-  // still the active one. Doing it again here would target whatever the
-  // registry now considers "active", not necessarily this stale instance.
+  if (token === activationToken) {
+    // Visiting a module is usually what marks its own content "seen" (see
+    // access-log's mount(), which updates its last-seen marker before this
+    // runs) -- recompute just this module's badge so its dot clears
+    // without waiting for the next full page load.
+    await refreshBadge(mod.id, mod);
+    if (token === activationToken) buildNav();
+  }
 }
 
-export async function initModules(navElement, contentElement, sharedCtx) {
+export async function initModules(navElement, contentElement, sharedCtx, preferredInitialId) {
   navEl = navElement;
   contentEl = contentElement;
   ctx = sharedCtx;
 
   // Load each module independently — one bad module (a 404, a syntax
   // error) must not take down nav or every other module with it. This is
-  // the difference between "one broken module" and "a blank page."
+  // the difference between "one broken module" and "a blank page." The
+  // registry itself is still filled in MODULES' order (see loadModule's
+  // comment) once every promise has settled, not as each one resolves.
   const results = await Promise.allSettled(MODULES.map(loadModule));
   results.forEach((r, i) => {
-    if (r.status === "rejected") console.error(`Failed to load module "${MODULES[i].id}":`, r.reason);
+    if (r.status === "fulfilled") {
+      registry.set(MODULES[i].id, r.value);
+    } else {
+      console.error(`Failed to load module "${MODULES[i].id}":`, r.reason);
+    }
   });
 
   if (!registry.size) {
@@ -119,11 +153,23 @@ export async function initModules(navElement, contentElement, sharedCtx) {
     return;
   }
 
+  // Every module's badge up front, in parallel, so the nav shows unseen
+  // state even for tabs not visited yet this session -- not just the one
+  // that happens to get activated first.
+  await Promise.all(Array.from(registry.entries()).map(([id, mod]) => refreshBadge(id, mod)));
+
   window.addEventListener("hashchange", () => {
     const id = location.hash.replace(/^#/, "");
     activate(registry.has(id) ? id : registry.keys().next().value);
   });
 
-  const initial = location.hash.replace(/^#/, "");
-  await activate(registry.has(initial) ? initial : registry.keys().next().value);
+  const hashId = location.hash.replace(/^#/, "");
+  const initial = (preferredInitialId && registry.has(preferredInitialId))
+    ? preferredInitialId
+    : (registry.has(hashId) ? hashId : registry.keys().next().value);
+  // Sync the address bar without location.hash's side effect of firing
+  // hashchange (which would race a second, redundant activate() against
+  // the one below) -- replaceState is silent.
+  history.replaceState(null, "", `#${initial}`);
+  await activate(initial);
 }

@@ -16,6 +16,7 @@ import { loadGateButton, wireGateButtonSetting } from "./gate-button.js";
 import { renderPasskeyList } from "./passkeys.js";
 import { loadDashboardBackground, wireDashboardBackgroundSetting, loadTopBarLayout, wireTopBarLayoutSetting } from "./dashboard-background.js";
 import { lookupIp } from "./ip-lookup.js";
+import { getLastSeenBrief } from "./last-seen.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -63,6 +64,7 @@ function boot() {
       try {
         await refreshDeviceList();
         await refreshPasskeyList();
+        const preferredInitialId = await computePreferredInitialId();
         await initModules(navEl, contentEl, {
           supabase,
           session,
@@ -71,7 +73,7 @@ function boot() {
           isSafeSvg,
           decryptPayload,
           lookupIp,
-        });
+        }, preferredInitialId);
       } catch (e) {
         // Last-resort net: anything unexpected here previously meant a
         // silently blank page (an unhandled rejection inside an
@@ -136,6 +138,25 @@ function boot() {
     uploadInputEl: document.getElementById("dashboard-bg-upload-input"),
     msgEl: document.getElementById("dashboard-bg-msg"),
   });
+}
+
+// Sign-in should land on the Morning Brief when there's something there
+// worth seeing, and otherwise leave the URL hash (last tab visited)
+// alone -- not force Brief every time regardless, and not leave sign-in
+// stranded on whatever tab a stale hash from a prior visit points at.
+// "Something worth seeing" is simply: a newer briefing_snapshots row
+// than the last one this device actually rendered (see
+// modules/morning-brief/module.js's setLastSeenBrief call).
+async function computePreferredInitialId() {
+  const { data } = await supabase
+    .from("briefing_snapshots")
+    .select("created_at")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  const lastSeen = getLastSeenBrief();
+  return (!lastSeen || new Date(data.created_at) > new Date(lastSeen)) ? "morning-brief" : null;
 }
 
 async function refreshDeviceList() {
