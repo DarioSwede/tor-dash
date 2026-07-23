@@ -164,9 +164,19 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
   position:relative;
   background:none;border:1px solid var(--hairline);border-radius:8px;padding:6px 14px;
   font-family:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer;
+  transition:border-color .12s ease, color .12s ease, background .12s ease;
 }
 .side-nav .nav button{ text-align:left; padding:10px 14px; }
-.nav button.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+/* Hover feedback was missing entirely -- every other clickable control
+   in the top bar (.icon-btn, .btn) already gives some, so an inactive
+   nav button was the one thing in the row that looked clickable only by
+   cursor:pointer, with nothing confirming it under the mouse. */
+.nav button:not(.active):hover{ border-color:var(--ink-soft); color:var(--ink); }
+/* --clay (the app's one warm accent, used everywhere else a primary
+   action needs to stand out -- see .btn) rather than flat --ink/black,
+   so the active tab reads as "the same accent as the rest of the app"
+   instead of an unrelated dark pill. */
+.nav button.active{ background:var(--clay); color:var(--bg); border-color:var(--clay); }
 /* Unseen-activity dot (see module-registry.js's getBadgeCount) -- a
    count would need real estate this small a button doesn't have; a dot
    only ever means "something changed since you last looked here." */
@@ -175,7 +185,7 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
   background:var(--status-warn); border:1.5px solid var(--bg);
 }
 .side-nav .nav-badge{ top:50%; right:10px; transform:translateY(-50%); }
-.nav button.active .nav-badge{ border-color:var(--ink); }
+.nav button.active .nav-badge{ border-color:var(--clay); }
 
 /* Real, always-visible nav buttons in the top bar on a wide-enough
    screen instead of hiding navigation behind a hamburger -- a phone
@@ -193,6 +203,27 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
 .top-bar-nav .nav-badge{ top:4px; right:4px; transform:none; }
 @media (min-width:860px){
   #nav-toggle-btn{ display:none; }
+  /* Three clear zones instead of one flat row of mixed controls:
+     navigation | status (countdown/IP/clock) | settings/sign-out. Only
+     scoped to desktop, since #top-bar-nav-slot is empty on mobile (nav
+     lives in the side-nav drawer there instead, see shell.js's
+     placeNavForViewport) -- a divider next to nothing would look stray. */
+  .top-bar-nav:has(.nav button){ padding-right:16px; border-right:1px solid var(--hairline); }
+  .top-bar-group{ padding-left:16px; border-left:1px solid var(--hairline); }
+  /* "Swap button sides" (settings, see dashboard-background.js) flips the
+     whole row via flex-direction:row-reverse -- a physical border-right/
+     border-left doesn't follow that reversal on its own (it stays on the
+     same edge of the *box*, which is now the bar's outer edge instead of
+     the one facing the status cluster), so the two rules above get
+     mirrored here rather than left to silently end up on the wrong side. */
+  body.top-bar-swapped .top-bar-nav:has(.nav button){
+    border-right:none; padding-right:0;
+    border-left:1px solid var(--hairline); padding-left:16px;
+  }
+  body.top-bar-swapped .top-bar-group{
+    border-left:none; padding-left:0;
+    border-right:1px solid var(--hairline); padding-right:16px;
+  }
 }
 
 .btn{
