@@ -78,7 +78,27 @@ export default {
   async mount(container, ctx) {
     const { supabase } = ctx;
 
+    // Declared up front, before the cleanup closure below captures them --
+    // unmount() can fire (via container._pfCleanup) while this very mount()
+    // call is still paused at its first await, which is *before* execution
+    // would otherwise reach a `let` further down, and reading a `let`
+    // ahead of its own declaration throws instead of reading undefined.
+    let autoRefreshTimer = null;
+    let autoRefreshPaused = false;
+
+    // Flipped off by unmount() if a newer module instance supersedes this
+    // one mid-flight (see shell/module-registry.js's activation-token
+    // comment) -- loadPortfolio()/refreshAll() below are real network
+    // round-trips, so switching away from Portfolio and back before one
+    // finishes is a genuine race: without this guard, the older, now-
+    // stale mount() call still reaches its own container.appendChild(root)
+    // once its await resolves, landing a second full copy of the page
+    // next to the newer one instead of being silently dropped.
+    let alive = true;
+    container._pfCleanup = () => { alive = false; clearTimeout(autoRefreshTimer); };
+
     const loaded = await loadPortfolio(supabase);
+    if (!alive) return;
     if (!loaded) {
       container.appendChild(el("div", "empty-state", "Kunde inte hämta portföljen. Kör migrationen supabase/migrations/0013_portfolio.sql om du inte redan gjort det."));
       return;
@@ -105,9 +125,6 @@ export default {
     let bevakningAddOpen = false;
     let detailStock = null;
     let redeyeView = { year: new Date().getFullYear(), month: new Date().getMonth(), selected: Redeye.todayStr() };
-
-    let autoRefreshTimer = null;
-    let autoRefreshPaused = false;
 
     function save() {
       schedulePortfolioSave(supabase, rowId, doc, (error) => {
@@ -647,16 +664,16 @@ export default {
     });
     const detailEl = el("div", "pf-detail-overlay");
     root.append(toolbar, gridEl, detailEl);
+    if (!alive) return; // superseded while the setup above (all synchronous) was running
     container.appendChild(root);
 
     renderAll();
     await refreshAll();
+    if (!alive) return; // superseded while refreshAll()'s network calls were in flight
     scheduleNextAutoRefresh();
-
-    this._cleanup = () => clearTimeout(autoRefreshTimer);
   },
 
-  unmount() {
-    if (this._cleanup) this._cleanup();
+  unmount(container) {
+    if (container._pfCleanup) container._pfCleanup();
   },
 };
