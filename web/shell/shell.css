@@ -295,11 +295,38 @@ h2.section-heading{
 }
 .security-panel.open{ transform:none; }
 .security-panel h2{ font-family:var(--font-headline); font-size:21px; margin:0 0 6px; color:var(--ink); }
+
+/* Top-level grouping so the panel reads as a few named categories
+   instead of one long undifferentiated scroll of h3 subheads -- the
+   more settings get added over time, the more that flat list turns into
+   noise. Native <details>/<summary> rather than a bespoke toggle: free
+   keyboard/a11y support, and nothing in shell.js needs to know these
+   groups exist -- every input keeps the same id it always had, just
+   nested one level deeper, so all the existing getElementById wiring
+   still finds everything unchanged. Chevron reuses the same "›"
+   rotate-90-when-open language as .item-title (see the .item rules
+   below) instead of inventing a second disclosure convention.*/
+.security-panel .settings-category{ margin-top:0; }
+.security-panel .settings-category > summary{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  font-family:var(--font-headline); font-weight:600; font-size:15.5px; color:var(--ink);
+  padding:14px 0; border-top:1px solid var(--hairline); cursor:pointer; user-select:none;
+  list-style:none;
+}
+.security-panel .settings-category:first-of-type > summary{ border-top:none; padding-top:4px; }
+.security-panel .settings-category > summary::-webkit-details-marker{ display:none; }
+.security-panel .settings-category > summary::after{
+  content:"›"; flex:0 0 auto; font-size:16px; line-height:1; color:var(--ink-grey);
+  transition:transform .15s ease;
+}
+.security-panel .settings-category[open] > summary::after{ transform:rotate(90deg); }
+.security-panel .settings-category-body{ padding-bottom:6px; }
+
 .security-panel .panel-subhead{
   font-family:var(--font-body); font-weight:600; font-size:14.5px; letter-spacing:.01em;
   color:var(--ink); margin:30px 0 8px;
 }
-.security-panel .panel-subhead:first-of-type{ margin-top:22px; }
+.security-panel .panel-subhead:first-of-type{ margin-top:8px; }
 .security-panel p{ font-size:13.5px; line-height:1.5; color:var(--ink-soft); margin:0 0 14px; }
 .security-panel .panel-msg{ font-size:12.5px; color:var(--ink-soft); margin-top:10px; min-height:15px; }
 .security-panel .toggle-row{

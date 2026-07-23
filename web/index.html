@@ -64,105 +64,125 @@
     <button class="close-btn" aria-label="Close">×</button>
     <h2 class="headline-font">Settings</h2>
 
-    <h3 class="panel-subhead">Sign-in</h3>
-    <p>Add a passkey (security key, Touch ID, Face ID) for this browser.</p>
-    <button id="register-passkey-btn" class="btn">Add a passkey</button>
-    <div id="security-msg" class="panel-msg"></div>
-    <div id="passkey-list" class="device-list"></div>
+    <details class="settings-category" open>
+      <summary>Konto</summary>
+      <div class="settings-category-body">
+        <h3 class="panel-subhead">Sign-in</h3>
+        <p>Add a passkey (security key, Touch ID, Face ID) for this browser.</p>
+        <button id="register-passkey-btn" class="btn">Add a passkey</button>
+        <div id="security-msg" class="panel-msg"></div>
+        <div id="passkey-list" class="device-list"></div>
 
-    <label class="field-label" for="gate-button-text-input">Sign-in button text</label>
-    <input type="text" id="gate-button-text-input" class="text-input" placeholder="Sign in with security key" maxlength="60">
-    <label class="toggle-row">
-      <input type="checkbox" id="gate-button-hidden-toggle">
-      Hide the button entirely (swipe up still works)
-    </label>
-    <div id="gate-button-msg" class="panel-msg"></div>
+        <label class="field-label" for="gate-button-text-input">Sign-in button text</label>
+        <input type="text" id="gate-button-text-input" class="text-input" placeholder="Sign in with security key" maxlength="60">
+        <label class="toggle-row">
+          <input type="checkbox" id="gate-button-hidden-toggle">
+          Hide the button entirely (swipe up still works)
+        </label>
+        <div id="gate-button-msg" class="panel-msg"></div>
 
-    <h3 class="panel-subhead">This device's encryption key</h3>
-    <p>Lets this device read encrypted briefs. Separate from sign-in — set this up once per device.</p>
-    <button id="register-device-key-btn" class="btn">Set up encryption on this device</button>
-    <div id="device-list" class="device-list"></div>
-
-    <h3 class="panel-subhead">Appearance</h3>
-    <p>Background shown on the sign-in screen — applies everywhere you sign in.</p>
-    <label class="toggle-row">
-      <input type="checkbox" id="bg-visible-toggle">
-      Show a background image
-    </label>
-    <label class="btn bg-upload-btn">
-      Upload custom image…
-      <input id="bg-upload-input" type="file" accept="image/*" style="display:none;">
-    </label>
-    <div id="appearance-msg" class="panel-msg"></div>
-
-    <label class="field-label" for="gate-title-input">Sign-in page text</label>
-    <input type="text" id="gate-title-input" class="text-input" placeholder="Dashboard" maxlength="60">
-    <p class="field-hint">Shown above the sign-in button. Leave empty to hide it entirely.</p>
-    <div id="gate-title-msg" class="panel-msg"></div>
-
-    <h3 class="panel-subhead">Layout</h3>
-    <p>Which side the menu/settings icons and sign-out sit on, in the top bar.</p>
-    <label class="toggle-row">
-      <input type="checkbox" id="top-bar-swap-toggle">
-      Swap button sides
-    </label>
-    <div id="top-bar-layout-msg" class="panel-msg"></div>
-
-    <h3 class="panel-subhead">Dashboard background</h3>
-    <p>Background color and/or an optional image behind the dashboard itself — not the sign-in screen.</p>
-    <label class="field-label" for="dashboard-bg-color-input">Background color</label>
-    <div class="color-row">
-      <input type="color" id="dashboard-bg-color-input" value="#fcfcfb">
-      <button type="button" id="dashboard-bg-color-reset" class="remove-btn">Reset to default</button>
-    </div>
-    <label class="toggle-row">
-      <input type="checkbox" id="dashboard-bg-visible-toggle">
-      Show a background image
-    </label>
-    <label class="btn bg-upload-btn">
-      Upload custom image…
-      <input id="dashboard-bg-upload-input" type="file" accept="image/*" style="display:none;">
-    </label>
-    <div id="dashboard-bg-msg" class="panel-msg"></div>
-
-    <h3 class="panel-subhead">Automatiska brief-uppdateringar</h3>
-    <p>Hur ofta och under vilka timmar briefen ska hämta ny mejl/kalenderdata och uppdatera sig själv.</p>
-    <label class="toggle-row">
-      <input type="checkbox" id="brief-schedule-enabled-toggle">
-      Aktivera automatiska uppdateringar
-    </label>
-    <div class="row-inputs">
-      <div>
-        <label class="field-label" for="brief-schedule-start-select">Från kl</label>
-        <select id="brief-schedule-start-select" class="text-input">
-          <option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
-        </select>
+        <h3 class="panel-subhead">This device's encryption key</h3>
+        <p>Lets this device read encrypted briefs. Separate from sign-in — set this up once per device.</p>
+        <button id="register-device-key-btn" class="btn">Set up encryption on this device</button>
+        <div id="device-list" class="device-list"></div>
       </div>
-      <div>
-        <label class="field-label" for="brief-schedule-end-select">Till kl</label>
-        <select id="brief-schedule-end-select" class="text-input">
-          <option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
-        </select>
-      </div>
-    </div>
-    <label class="field-label" for="brief-schedule-interval-select">Uppdateringsintervall</label>
-    <select id="brief-schedule-interval-select" class="text-input">
-      <option value="1">Varje timme</option>
-      <option value="2">Var 2:a timme</option>
-      <option value="3">Var 3:e timme</option>
-      <option value="4">Var 4:e timme</option>
-      <option value="6">Var 6:e timme</option>
-    </select>
-    <p class="field-hint">Rutinen själv vaknar varje timme och kollar den här inställningen — den avgör bara om just den timmen faktiskt ska hämta och pusha en ny brief.</p>
-    <div id="brief-schedule-msg" class="panel-msg"></div>
+    </details>
 
-    <h3 class="panel-subhead">Network status</h3>
-    <p>Shows your public IPv4/IPv6 and a best-effort VPN guess (by ISP name) in small text at the top of the dashboard.</p>
-    <label class="toggle-row">
-      <input type="checkbox" id="show-network-gate-toggle">
-      Also show on the sign-in page
-    </label>
-    <div id="network-settings-msg" class="panel-msg"></div>
+    <details class="settings-category">
+      <summary>Utseende</summary>
+      <div class="settings-category-body">
+        <h3 class="panel-subhead">Appearance</h3>
+        <p>Background shown on the sign-in screen — applies everywhere you sign in.</p>
+        <label class="toggle-row">
+          <input type="checkbox" id="bg-visible-toggle">
+          Show a background image
+        </label>
+        <label class="btn bg-upload-btn">
+          Upload custom image…
+          <input id="bg-upload-input" type="file" accept="image/*" style="display:none;">
+        </label>
+        <div id="appearance-msg" class="panel-msg"></div>
+
+        <label class="field-label" for="gate-title-input">Sign-in page text</label>
+        <input type="text" id="gate-title-input" class="text-input" placeholder="Dashboard" maxlength="60">
+        <p class="field-hint">Shown above the sign-in button. Leave empty to hide it entirely.</p>
+        <div id="gate-title-msg" class="panel-msg"></div>
+
+        <h3 class="panel-subhead">Layout</h3>
+        <p>Which side the menu/settings icons and sign-out sit on, in the top bar.</p>
+        <label class="toggle-row">
+          <input type="checkbox" id="top-bar-swap-toggle">
+          Swap button sides
+        </label>
+        <div id="top-bar-layout-msg" class="panel-msg"></div>
+
+        <h3 class="panel-subhead">Dashboard background</h3>
+        <p>Background color and/or an optional image behind the dashboard itself — not the sign-in screen.</p>
+        <label class="field-label" for="dashboard-bg-color-input">Background color</label>
+        <div class="color-row">
+          <input type="color" id="dashboard-bg-color-input" value="#fcfcfb">
+          <button type="button" id="dashboard-bg-color-reset" class="remove-btn">Reset to default</button>
+        </div>
+        <label class="toggle-row">
+          <input type="checkbox" id="dashboard-bg-visible-toggle">
+          Show a background image
+        </label>
+        <label class="btn bg-upload-btn">
+          Upload custom image…
+          <input id="dashboard-bg-upload-input" type="file" accept="image/*" style="display:none;">
+        </label>
+        <div id="dashboard-bg-msg" class="panel-msg"></div>
+      </div>
+    </details>
+
+    <details class="settings-category">
+      <summary>Brief</summary>
+      <div class="settings-category-body">
+        <h3 class="panel-subhead">Automatiska brief-uppdateringar</h3>
+        <p>Hur ofta och under vilka timmar briefen ska hämta ny mejl/kalenderdata och uppdatera sig själv.</p>
+        <label class="toggle-row">
+          <input type="checkbox" id="brief-schedule-enabled-toggle">
+          Aktivera automatiska uppdateringar
+        </label>
+        <div class="row-inputs">
+          <div>
+            <label class="field-label" for="brief-schedule-start-select">Från kl</label>
+            <select id="brief-schedule-start-select" class="text-input">
+              <option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="brief-schedule-end-select">Till kl</label>
+            <select id="brief-schedule-end-select" class="text-input">
+              <option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
+            </select>
+          </div>
+        </div>
+        <label class="field-label" for="brief-schedule-interval-select">Uppdateringsintervall</label>
+        <select id="brief-schedule-interval-select" class="text-input">
+          <option value="1">Varje timme</option>
+          <option value="2">Var 2:a timme</option>
+          <option value="3">Var 3:e timme</option>
+          <option value="4">Var 4:e timme</option>
+          <option value="6">Var 6:e timme</option>
+        </select>
+        <p class="field-hint">Rutinen själv vaknar varje timme och kollar den här inställningen — den avgör bara om just den timmen faktiskt ska hämta och pusha en ny brief.</p>
+        <div id="brief-schedule-msg" class="panel-msg"></div>
+      </div>
+    </details>
+
+    <details class="settings-category">
+      <summary>Nätverk</summary>
+      <div class="settings-category-body">
+        <h3 class="panel-subhead">Network status</h3>
+        <p>Shows your public IPv4/IPv6 and a best-effort VPN guess (by ISP name) in small text at the top of the dashboard.</p>
+        <label class="toggle-row">
+          <input type="checkbox" id="show-network-gate-toggle">
+          Also show on the sign-in page
+        </label>
+        <div id="network-settings-msg" class="panel-msg"></div>
+      </div>
+    </details>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.7/dist/umd/supabase.min.js"></script>
