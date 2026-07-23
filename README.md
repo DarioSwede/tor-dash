@@ -94,6 +94,7 @@ tor-dashboard/
     { "time": "12 – 5 PM", "note": "Still nothing scheduled." },
     { "time": "5 PM onward", "note": "Open through the evening too." }
   ],
+  "tomorrow_line": "Last day of Vindelälvsloppet.",    // optional one-line heads-up on tomorrow; omit/null for none
   "quiet_line": "Nothing needs you this morning.",     // or null if the two lists below have content
   "needs_attention": [
     { "title": "...", "url": null, "sentence": "...", "button": { "label": "...", "href": "https://..." } }
@@ -125,6 +126,13 @@ State how long the event runs and how much is left, plus which calendar it
 came from, abbreviated (a short name, not "according to the X calendar"):
 e.g. `"13 juli–10 augusti, 18 dagar kvar · Nettan"` rather than "Enligt
 Nettans kalender, till 10 augusti."
+
+**`tomorrow_line`** is a single short fact about tomorrow (a meeting worth
+knowing about a day ahead, the last day of a running event, anything that's
+useful to see today rather than only in tomorrow's own brief). The frontend
+prefixes it with "Imorgon: " itself, so the string should just be the fact
+("Vindelälvsloppets sista dag."), not restate "tomorrow". Omit or set to
+`null` on days with nothing worth a heads-up about — most days.
 
 ## Not done yet (on purpose)
 

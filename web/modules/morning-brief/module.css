@@ -13,6 +13,9 @@
 .module-morning-brief .act-time{ font-weight:600; font-size:12px; color:var(--ink); margin-bottom:4px; }
 .module-morning-brief .act-note{ font-size:13px; line-height:1.45; color:var(--ink-soft); }
 
+.module-morning-brief .tomorrow-line{ font-size:13px; color:var(--ink-soft); padding:2px 0; }
+body.has-custom-bg .module-morning-brief .tomorrow-line{ color:#4A473F; }
+
 .module-morning-brief .quiet-line{ font-size:15px; color:var(--ink-soft); padding:4px 0 6px; }
 
 /* Plain (non-collapsible) section items -- see module.js's

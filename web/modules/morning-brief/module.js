@@ -123,6 +123,15 @@ export default {
       });
       if (acts.children.length) wrap.appendChild(acts);
 
+      // Short forward-looking heads-up, separate from acts (today's own
+      // schedule) and quiet_line (today's status) -- a one-line answer
+      // to "what happens tomorrow" so that doesn't require waiting for
+      // tomorrow's own brief to find out. Optional: omitted entirely
+      // when there's nothing worth a heads-up about.
+      if (payload.tomorrow_line) {
+        wrap.appendChild(el("div", "tomorrow-line", `Imorgon: ${payload.tomorrow_line}`));
+      }
+
       if (payload.quiet_line) {
         wrap.appendChild(el("div", "quiet-line", payload.quiet_line));
       } else {
