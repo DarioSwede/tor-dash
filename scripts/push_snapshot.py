@@ -38,6 +38,7 @@ import secrets
 import sys
 import urllib.request
 import urllib.error
+from datetime import datetime, timezone
 
 # Mirrors the isSafeSvg() allowlist in web/shell/svg-sanitize.js, which
 # renders payload.svg via innerHTML. The svg field is meant to be pure
@@ -162,7 +163,17 @@ def main():
         )
         sys.exit(1)
 
-    row = {"kind": args.kind, "for_date": args.date}
+    # Explicit, not left to the column's DEFAULT now() -- that default only
+    # ever fires on the row's first INSERT. Same-day re-pushes hit this
+    # table's unique(kind, for_date) conflict and take the merge-duplicates
+    # UPDATE path instead, which never re-runs a DEFAULT expression, so
+    # created_at would otherwise stay frozen at the first push of the day
+    # no matter how many times the content is actually refreshed afterward.
+    # That silently broke both module.js's "most recent by created_at is
+    # the current brief" assumption and any interval-since-last-push check
+    # built on top of it -- both need created_at to mean "last written",
+    # not "first written".
+    row = {"kind": args.kind, "for_date": args.date, "created_at": datetime.now(timezone.utc).isoformat()}
 
     try:
         keys = fetch_active_keys(supabase_url, service_key)
