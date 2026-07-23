@@ -467,7 +467,7 @@ export default {
     // container a slot lands in changed, not how a card is built or
     // refreshed.
     const HEADER_SIDE_CARDS = ["allokering", "valutor", "ravaror"];
-    const TOP_GRID_CARDS = ["aktier", "fonder", "borsen", "vinnareforlorare"];
+    const TOP_GRID_CARDS = ["vinnareforlorare", "aktier", "fonder", "borsen"];
     const REST_CARDS = ["bevakning", "utdelning", "veckanstips", "redeye"];
 
     function renderGroup(container, ids, extraClass) {
@@ -483,7 +483,7 @@ export default {
 
     function renderAll() {
       renderHeader();
-      renderGroup(headerSideEl, HEADER_SIDE_CARDS, "pf-card-slot-compact");
+      renderGroup(headerSideEl, HEADER_SIDE_CARDS);
       renderGroup(topGridEl, TOP_GRID_CARDS);
       renderGroup(gridEl, REST_CARDS);
     }
