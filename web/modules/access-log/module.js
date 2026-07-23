@@ -150,6 +150,17 @@ export default {
     const card = el("div", "band band-top");
     const wrap = el("div", "wrap");
 
+    // Two independent toggle rows: which time range to query (this
+    // week vs. the archive of everything older), and which events to
+    // show within whatever that range returns. Kept as two rows rather
+    // than one wider one so both fit without wrapping on a phone (see
+    // the "no line breaks" fix on the event filter row already).
+    const rangeToolbar = el("div", "log-toolbar");
+    const weekBtn = el("button", "active", "Senaste veckan");
+    const archiveBtn = el("button", "", "Arkiv");
+    rangeToolbar.append(weekBtn, archiveBtn);
+    wrap.appendChild(rangeToolbar);
+
     const toolbar = el("div", "log-toolbar");
     const allBtn = el("button", "active", "Alla");
     const failBtn = el("button", "", "Misslyckade");
@@ -163,6 +174,7 @@ export default {
 
     let rows = [];
     let filter = "all";
+    let range = "week";
 
     function setFilter(f) {
       filter = f;
@@ -172,6 +184,16 @@ export default {
     }
     allBtn.addEventListener("click", () => setFilter("all"));
     failBtn.addEventListener("click", () => setFilter("failed"));
+
+    function setRange(r) {
+      if (r === range) return;
+      range = r;
+      weekBtn.classList.toggle("active", r === "week");
+      archiveBtn.classList.toggle("active", r === "archive");
+      load();
+    }
+    weekBtn.addEventListener("click", () => setRange("week"));
+    archiveBtn.addEventListener("click", () => setRange("archive"));
 
     function renderTable(groups) {
       const wrap = el("div", "log-table-wrap");
@@ -323,7 +345,10 @@ export default {
       listRoot.innerHTML = "";
       const visible = filter === "failed" ? rows.filter((r) => r.event === "signin_failure") : rows;
       if (!visible.length) {
-        listRoot.appendChild(el("div", "empty-state", "Inga loggposter ännu."));
+        listRoot.appendChild(el(
+          "div", "empty-state",
+          range === "archive" ? "Inget i arkivet ännu." : "Inga loggposter senaste veckan."
+        ));
         return;
       }
       const groups = groupConsecutive(visible);
@@ -335,11 +360,22 @@ export default {
       listRoot.innerHTML = "";
       listRoot.appendChild(el("div", "empty-state", "Laddar…"));
 
-      const { data, error } = await supabase
+      // Same table either way -- Postgres handles this fine at any size,
+      // so "archive" is purely a UI split (a wider time filter, a higher
+      // row cap for the inevitably longer tail) rather than a separate
+      // store. sevenDaysAgo is computed fresh on every load() so "this
+      // week" always means the last 7 days from right now, not a fixed
+      // calendar window.
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      let query = supabase
         .from("access_log")
         .select("created_at, event, method, ip_v4, ip_v6, org, user_agent, detail")
-        .order("created_at", { ascending: false })
-        .limit(200);
+        .order("created_at", { ascending: false });
+      query = range === "archive"
+        ? query.lt("created_at", sevenDaysAgo).limit(2000)
+        : query.gte("created_at", sevenDaysAgo).limit(500);
+
+      const { data, error } = await query;
 
       if (error) {
         listRoot.innerHTML = "";
@@ -351,7 +387,11 @@ export default {
       }
       rows = categorize(data || []);
       render();
-      setLastSeenLog(new Date().toISOString());
+      // Only "this week" view counts as having actually looked at recent
+      // activity -- browsing the archive shouldn't silently clear the
+      // unseen-activity dot for stuff that happened since, which this
+      // load() call never even fetched.
+      if (range === "week") setLastSeenLog(new Date().toISOString());
     }
 
     await load();
