@@ -87,6 +87,20 @@ export function wireSecurityPanel(supabase, { panelEl, openBtn, closeBtn, onEnro
   openBtn.addEventListener("click", () => panelEl.classList.add("open"));
   closeBtn.addEventListener("click", () => panelEl.classList.remove("open"));
 
+  // Click anywhere outside the panel closes it too, not just the ×
+  // button -- the more common way to dismiss this kind of slide-out
+  // panel. openBtn itself is excluded so the click that *opens* the
+  // panel (which bubbles to this same document listener) doesn't
+  // immediately close it again. The × stays as the only way to close
+  // on a phone screen, though -- there the panel is full-width/full-
+  // height (see shell.css's max-width:640px rule), so there's no
+  // "outside" left to click.
+  document.addEventListener("click", (e) => {
+    if (!panelEl.classList.contains("open")) return;
+    if (panelEl.contains(e.target) || openBtn.contains(e.target)) return;
+    panelEl.classList.remove("open");
+  });
+
   const registerBtn = panelEl.querySelector("#register-passkey-btn");
   const securityMsg = panelEl.querySelector("#security-msg");
   registerBtn.addEventListener("click", async () => {

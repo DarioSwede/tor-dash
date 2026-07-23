@@ -153,13 +153,6 @@ export function buildAktierCard(doc, { hideAmounts, filter, onSetFilter, onOpenD
   card.appendChild(cardHeader("Aktier", onRefresh));
   const body = el("div", "pf-card-body");
 
-  if (doc.stocks.length) {
-    const overview = el("div", "pf-overview-row");
-    overview.appendChild(distBlock("Sektor", sectorEntries(doc)));
-    overview.appendChild(distBlock("Geografi", landEntries(doc)));
-    body.appendChild(overview);
-  }
-
   const filters = [
     { k: "all", label: "Alla" }, { k: "winners", label: "Vinnare" }, { k: "losers", label: "Förlorare" },
     { k: "swedish", label: "Svenska" }, { k: "foreign", label: "Utländska" },
@@ -230,7 +223,16 @@ function deviationColor(actual, target) {
   return "var(--pf-loss)";
 }
 
-export function buildAllokeringCard(doc, { onSetTarget }) {
+// Bar + legend are one clickable toggle (same collapsed-until-tapped
+// idiom as the Brief/Log items and Valutor/Råvaror's own symbol
+// editor) that reveals the "Mål aktier" target input below it -- Dario
+// specifically wanted clicking the allocation bar itself to be how you
+// get to the editable target, not a separately-visible input row.
+// Sektor/Geografi moved here from the Aktier card (see buildAktierCard)
+// -- same "portfolio breakdown, all in one place" card instead of
+// splitting it across two cards -- and stay always visible, since
+// they're read-only context, not something to hide behind a click.
+export function buildAllokeringCard(doc, { expanded, onToggle, onSetTarget }) {
   const card = el("div", "pf-card");
   card.appendChild(cardHeader("Allokering", null, false));
   const body = el("div", "pf-card-body");
@@ -241,7 +243,15 @@ export function buildAllokeringCard(doc, { onSetTarget }) {
   const actualFonder = (fundValue / total) * 100;
   const targetFonder = 100 - doc.targetAktier;
 
-  body.appendChild(trustedHtml("div", null, Charts.barOnly([
+  const toggle = el("div", "pf-allokering-toggle");
+  toggle.setAttribute("role", "button");
+  toggle.setAttribute("tabindex", "0");
+  toggle.setAttribute("aria-expanded", String(!!expanded));
+  const activate = () => onToggle();
+  toggle.addEventListener("click", activate);
+  toggle.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); } });
+
+  toggle.appendChild(trustedHtml("div", null, Charts.barOnly([
     { val: stockValueSEK, color: COLOR_AKTIER }, { val: fundValue, color: COLOR_FONDER },
   ])));
   const legend = el("div", "pf-bar-legend");
@@ -256,18 +266,29 @@ export function buildAllokeringCard(doc, { onSetTarget }) {
   const dev2 = el("span", "pf-dot"); dev2.style.background = deviationColor(actualFonder, targetFonder); dev2.title = "Avvikelse mot mål";
   item2.appendChild(dev2);
   legend.append(item1, item2);
-  body.appendChild(legend);
+  toggle.appendChild(legend);
+  body.appendChild(toggle);
 
-  const targetRow = el("div", "pf-target-row");
-  targetRow.appendChild(el("label", null, "Mål aktier"));
-  const input = document.createElement("input");
-  input.type = "number"; input.min = "0"; input.max = "100"; input.value = doc.targetAktier; input.className = "pf-field pf-field-num";
-  input.addEventListener("change", () => onSetTarget(input.value));
-  targetRow.appendChild(input);
-  targetRow.appendChild(el("span", "pf-unit", "%"));
-  targetRow.appendChild(el("label", null, "Fonder"));
-  targetRow.appendChild(el("span", "pf-mono", targetFonder + "%"));
-  body.appendChild(targetRow);
+  if (expanded) {
+    const targetRow = el("div", "pf-target-row");
+    targetRow.appendChild(el("label", null, "Mål aktier"));
+    const input = document.createElement("input");
+    input.type = "number"; input.min = "0"; input.max = "100"; input.value = doc.targetAktier; input.className = "pf-field pf-field-num";
+    input.addEventListener("click", (e) => e.stopPropagation());
+    input.addEventListener("change", () => onSetTarget(input.value));
+    targetRow.appendChild(input);
+    targetRow.appendChild(el("span", "pf-unit", "%"));
+    targetRow.appendChild(el("label", null, "Fonder"));
+    targetRow.appendChild(el("span", "pf-mono", targetFonder + "%"));
+    body.appendChild(targetRow);
+  }
+
+  if (doc.stocks.length) {
+    const overview = el("div", "pf-overview-row");
+    overview.appendChild(distBlock("Sektor", sectorEntries(doc)));
+    overview.appendChild(distBlock("Geografi", landEntries(doc)));
+    body.appendChild(overview);
+  }
 
   card.appendChild(body);
   return card;

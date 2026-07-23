@@ -62,6 +62,7 @@ export default {
     let dividendsFetching = false;
 
     let aktierFilter = "all";
+    let allokeringExpanded = false;
     const ravarorExpanded = new Set();
     const valutorExpanded = new Set();
     let bevakningAddOpen = false;
@@ -396,6 +397,8 @@ export default {
           triggeredIds: computeTriggeredIds(),
         });
         case "allokering": return buildAllokeringCard(doc, {
+          expanded: allokeringExpanded,
+          onToggle: () => { allokeringExpanded = !allokeringExpanded; renderCard("allokering"); },
           onSetTarget: (val) => { let n = parseFloat(val); if (isNaN(n)) n = 35; doc.targetAktier = Math.max(0, Math.min(100, n)); save(); renderCard("allokering"); },
         });
         case "vinnareforlorare": return buildVinnareForlorareCard(omxs30List, { onRefresh: refreshOMXS30 });

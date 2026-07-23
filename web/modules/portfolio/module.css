@@ -197,10 +197,21 @@ textarea.pf-field{ width:100%; min-height:70px; resize:vertical; }
 .pf-btn-small{ background:none; border:1px solid var(--pf-border); border-radius:7px; padding:4px 10px; font-size:10.5px; color:var(--pf-text-muted); }
 
 /* ---- allokering ---- */
+/* The bar+legend is the click target that reveals .pf-target-row below
+   it (see buildAllokeringCard) -- same collapsed-until-tapped idiom as
+   everywhere else in this app, so the editable target % doesn't need
+   its own always-visible input row cluttering the card. */
+.pf-allokering-toggle{ cursor:pointer; border-radius:8px; margin:-4px -4px 0; padding:4px; }
+.pf-allokering-toggle:hover .pf-bar-legend{ opacity:.85; }
+.pf-allokering-toggle:focus-visible{ outline:2px solid var(--pf-gold); outline-offset:2px; }
 .pf-target-row{ display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--pf-border); flex-wrap:wrap; }
 .pf-target-row label{ font-size:12px; color:var(--pf-text-muted); }
 .pf-unit{ font-size:11px; color:var(--pf-text-muted); }
 .pf-mono{ font-family:"IBM Plex Mono", monospace; font-size:12px; }
+/* Sector/geography breakdown, moved here from the Aktier card -- same
+   spacing rhythm as .pf-target-row (a hairline above, hanging off
+   whatever came before it, expanded target row or not). */
+.pf-overview-row{ margin-top:16px; padding-top:16px; border-top:1px solid var(--pf-border); }
 
 /* ---- valutor trend switch ---- */
 .pf-switch-row{ display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-bottom:10px; }
