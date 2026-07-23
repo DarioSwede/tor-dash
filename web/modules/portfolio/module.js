@@ -57,6 +57,9 @@ const CARD_SPAN = { total: 2, aktier: 3 };
 const DEFAULT_GRID_COLUMNS = 6;
 const MIN_GRID_COLUMNS = 2;
 const MAX_GRID_COLUMNS = 12;
+const DEFAULT_CONTENT_WIDTH = 1900;
+const MIN_CONTENT_WIDTH = 1000;
+const MAX_CONTENT_WIDTH = 3600;
 
 // Merges a saved order with the default rather than trusting it as-is:
 // drops any id that no longer corresponds to a real card (a card type
@@ -108,6 +111,7 @@ export default {
     assignIds(doc);
     doc.cardOrder = normalizeCardOrder(doc.cardOrder);
     if (!Number.isInteger(doc.gridColumns)) doc.gridColumns = DEFAULT_GRID_COLUMNS;
+    if (!Number.isInteger(doc.contentWidth)) doc.contentWidth = DEFAULT_CONTENT_WIDTH;
     if (typeof doc.cardSpans !== "object" || !doc.cardSpans) doc.cardSpans = {};
     // Per-card override of CARD_SPAN's hardcoded defaults, set via the
     // click-to-pick control in each card's own head (see wireCardHead
@@ -692,10 +696,30 @@ export default {
       save();
     });
     columnsLabel.appendChild(columnsInput);
-    toolbar.append(importBtn, notifyBtn, columnsLabel, importMsgEl);
+    // Overall page width is a doc setting too -- with more grid columns
+    // than the default 1900px width comfortably fits, every column just
+    // gets narrower; this lets Dario widen the whole page instead.
+    const widthLabel = el("label", "pf-columns-control");
+    widthLabel.append("Bredd (px)");
+    const widthInput = document.createElement("input");
+    widthInput.type = "number"; widthInput.min = String(MIN_CONTENT_WIDTH); widthInput.max = String(MAX_CONTENT_WIDTH); widthInput.step = "50";
+    widthInput.value = doc.contentWidth; widthInput.className = "pf-field pf-field-num pf-field-num-wide";
+    widthInput.addEventListener("change", () => {
+      let n = parseInt(widthInput.value, 10);
+      if (isNaN(n)) n = DEFAULT_CONTENT_WIDTH;
+      n = Math.max(MIN_CONTENT_WIDTH, Math.min(MAX_CONTENT_WIDTH, n));
+      doc.contentWidth = n;
+      widthInput.value = n;
+      applyContentWidth();
+      save();
+    });
+    widthLabel.appendChild(widthInput);
+    toolbar.append(importBtn, notifyBtn, columnsLabel, widthLabel, importMsgEl);
     const gridEl = el("div", "pf-grid");
     function applyGridColumns() { gridEl.style.setProperty("--pf-cols", String(doc.gridColumns)); }
     applyGridColumns();
+    function applyContentWidth() { root.style.setProperty("--pf-max-width", `${doc.contentWidth}px`); }
+    applyContentWidth();
     // Dropping on the grid's own empty background (not bubbled from a
     // card slot, which already handled and stopped its own drop event --
     // see wireDrag above) moves the dragged card to the very end,
