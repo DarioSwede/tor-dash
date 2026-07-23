@@ -17,6 +17,7 @@ import { renderPasskeyList } from "./passkeys.js";
 import { loadDashboardBackground, wireDashboardBackgroundSetting, loadTopBarLayout, wireTopBarLayoutSetting } from "./dashboard-background.js";
 import { lookupIp } from "./ip-lookup.js";
 import { getLastSeenBrief } from "./last-seen.js";
+import { wireBriefScheduleSetting } from "./brief-schedule.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -137,6 +138,14 @@ function boot() {
     visibleToggleEl: document.getElementById("dashboard-bg-visible-toggle"),
     uploadInputEl: document.getElementById("dashboard-bg-upload-input"),
     msgEl: document.getElementById("dashboard-bg-msg"),
+  });
+
+  wireBriefScheduleSetting(supabase, {
+    enabledToggleEl: document.getElementById("brief-schedule-enabled-toggle"),
+    startSelectEl: document.getElementById("brief-schedule-start-select"),
+    endSelectEl: document.getElementById("brief-schedule-end-select"),
+    intervalSelectEl: document.getElementById("brief-schedule-interval-select"),
+    msgEl: document.getElementById("brief-schedule-msg"),
   });
 }
 

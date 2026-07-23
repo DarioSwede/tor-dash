@@ -118,6 +118,37 @@
     </label>
     <div id="dashboard-bg-msg" class="panel-msg"></div>
 
+    <h3 class="panel-subhead">Automatiska brief-uppdateringar</h3>
+    <p>Hur ofta och under vilka timmar briefen ska hämta ny mejl/kalenderdata och uppdatera sig själv.</p>
+    <label class="toggle-row">
+      <input type="checkbox" id="brief-schedule-enabled-toggle">
+      Aktivera automatiska uppdateringar
+    </label>
+    <div class="row-inputs">
+      <div>
+        <label class="field-label" for="brief-schedule-start-select">Från kl</label>
+        <select id="brief-schedule-start-select" class="text-input">
+          <option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" for="brief-schedule-end-select">Till kl</label>
+        <select id="brief-schedule-end-select" class="text-input">
+          <option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option><option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option><option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
+        </select>
+      </div>
+    </div>
+    <label class="field-label" for="brief-schedule-interval-select">Uppdateringsintervall</label>
+    <select id="brief-schedule-interval-select" class="text-input">
+      <option value="1">Varje timme</option>
+      <option value="2">Var 2:a timme</option>
+      <option value="3">Var 3:e timme</option>
+      <option value="4">Var 4:e timme</option>
+      <option value="6">Var 6:e timme</option>
+    </select>
+    <p class="field-hint">Rutinen själv vaknar varje timme och kollar den här inställningen — den avgör bara om just den timmen faktiskt ska hämta och pusha en ny brief.</p>
+    <div id="brief-schedule-msg" class="panel-msg"></div>
+
     <h3 class="panel-subhead">Network status</h3>
     <p>Shows your public IPv4/IPv6 and a best-effort VPN guess (by ISP name) in small text at the top of the dashboard.</p>
     <label class="toggle-row">
