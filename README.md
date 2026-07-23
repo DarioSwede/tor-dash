@@ -102,7 +102,8 @@ tor-dashboard/
     { "title": "...", "url": null, "sentence": "..." }
   ],
   "sections": [
-    { "heading": "Tasks/to-dos", "items": [ { "title": "...", "sentence": "..." } ] }
+    { "heading": "Tasks/to-dos", "items": [ { "title": "...", "sentence": "..." } ] },
+    { "heading": "Bakgrund", "plain": true, "items": [ { "title": "...", "sentence": "..." } ] }
   ]
 }
 ```
@@ -110,13 +111,20 @@ tor-dashboard/
 `url` and `button` are optional per item; omit or set to `null` when there's
 nothing to link.
 
+A section's `plain: true` renders its items as an always-visible title +
+sentence (no chevron, no tap-to-expand) instead of the normal collapsed-
+until-tapped list. Use it for short, low-stakes context that's meant to be
+read at a glance, not investigated — right now that's just the multi-day
+calendar background items below, but the flag itself isn't specific to
+those.
+
 **Multi-day calendar events** (someone's vacation, a race/event spanning
 several days) that are still running today are worth a line even though
-they're not actionable — put them in a "Bakgrund" section. State how long
-the event runs and how much is left, plus which calendar it came from,
-abbreviated (a short name, not "according to the X calendar"): e.g.
-`"13 juli–10 augusti, 18 dagar kvar · Nettan"` rather than "Enligt Nettans
-kalender, till 10 augusti."
+they're not actionable — put them in a `"plain": true` "Bakgrund" section.
+State how long the event runs and how much is left, plus which calendar it
+came from, abbreviated (a short name, not "according to the X calendar"):
+e.g. `"13 juli–10 augusti, 18 dagar kvar · Nettan"` rather than "Enligt
+Nettans kalender, till 10 augusti."
 
 ## Not done yet (on purpose)
 

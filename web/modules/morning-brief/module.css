@@ -15,6 +15,16 @@
 
 .module-morning-brief .quiet-line{ font-size:15px; color:var(--ink-soft); padding:4px 0 6px; }
 
+/* Plain (non-collapsible) section items -- see module.js's
+   renderPlainItem. Same hairline-between-rows rhythm as .item, just
+   without the number/chevron column and with the sentence always
+   showing underneath the title instead of behind a tap. */
+.module-morning-brief .plain-item{ padding:8px 0; border-top:1px solid var(--hairline); }
+.module-morning-brief .plain-item:first-of-type{ border-top:none; }
+.module-morning-brief .plain-item-title{ font-weight:600; font-size:15px; color:var(--ink); margin:0 0 2px; }
+.module-morning-brief .plain-item-sentence{ font-size:14px; line-height:1.5; color:var(--ink-soft); margin:0; }
+body.has-custom-bg .module-morning-brief .plain-item-sentence{ color:#4A473F; }
+
 @media (max-width:640px){
   .module-morning-brief h1.headline{ font-size:19px; margin-bottom:14px; }
   .module-morning-brief .acts{ flex-direction:column; }

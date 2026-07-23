@@ -74,6 +74,21 @@ export default {
       setLastSeenBrief(data.created_at);
     }
 
+    // Non-interactive line for a `section.plain` item (see the README's
+    // payload-shape note on multi-day calendar background context, e.g.
+    // "Nettan is on vacation") -- title + sentence both always visible,
+    // no chevron/click. Collapsed-by-default via renderItem is right for
+    // needs_attention/resolved/news, where the point is a scannable list
+    // of *titles*; it's wrong here, where the whole point is a quick
+    // glance at the one short fact (how long, which calendar) without
+    // having to tap each line to find that out.
+    function renderPlainItem(item) {
+      const row = el("div", "plain-item");
+      row.appendChild(el("p", "plain-item-title", item.title));
+      if (item.sentence) row.appendChild(el("p", "plain-item-sentence", item.sentence));
+      return row;
+    }
+
     // One seamless card, not a two-band split -- there's only one running
     // brief now (see the module-level comment above), so a hard seam
     // between a "header half" and a "list half" no longer means anything,
@@ -124,7 +139,11 @@ export default {
       (payload.sections || []).forEach((section) => {
         if (!section.items || !section.items.length) return;
         wrap.appendChild(el("h2", "section-heading", section.heading));
-        section.items.forEach((item, i) => wrap.appendChild(renderItem(item, i)));
+        if (section.plain) {
+          section.items.forEach((item) => wrap.appendChild(renderPlainItem(item)));
+        } else {
+          section.items.forEach((item, i) => wrap.appendChild(renderItem(item, i)));
+        }
       });
 
       card.appendChild(wrap);
