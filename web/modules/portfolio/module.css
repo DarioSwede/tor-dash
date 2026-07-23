@@ -26,6 +26,60 @@
 .pf-app{ padding:24px; max-width:1400px; margin:0 auto; }
 
 /* ---- header ---- */
+/* Row so allokering/valutor/ravaror (headerSideEl) can sit top-right
+   next to the total/breakdown/chart (headerEl) -- wraps to a plain
+   stack on narrow screens via flex-wrap, no separate mobile override
+   needed. */
+.pf-header-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:28px; flex-wrap:wrap; margin-bottom:22px; }
+.pf-header-row .pf-header{ margin-bottom:0; flex:1 1 260px; }
+.pf-header-side{ display:flex; flex-direction:column; gap:18px; flex:1 1 260px; max-width:360px; }
+/* Same minimal, borderless typography as .pf-header-total instead of
+   the boxed .pf-card look -- these three are "at a glance" stats now,
+   not scrollable cards, so the heavy card chrome (surface bg, border,
+   padded head with a hairline under it) only made them look like a
+   stray card grid bolted onto the header. Refresh buttons/toggles/
+   symbol inputs inside are untouched -- same buildXCard() functions,
+   just restyled where they land. */
+.pf-header-side .pf-card{ background:none; border:none; border-radius:0; }
+.pf-header-side .pf-card-head{ padding:0 0 8px; border-bottom:none; }
+.pf-header-side .pf-card-body{ padding:0; }
+.pf-header-side .pf-section-title{
+  font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--pf-text-muted);
+}
+/* Valutor/Råvaror rows: a boxed .pf-row per currency/commodity (with a
+   category line above and a sub-label line below, on top of the name+
+   price line) is fine as a real card in the main grid, but stacked six
+   and four deep in a header column it made this whole area taller than
+   the rest of the page put together. One hairline-separated line per
+   item instead -- name/price/change share module.js's new
+   .pf-row-price-group flex row, and the old badge+sub-label collapse
+   into a single small caption underneath (see quoteRow() in
+   cards-market.js) instead of two separate lines. */
+.pf-header-side .pf-grid-list{ gap:0; }
+.pf-header-side .pf-row{
+  background:none; border:none; border-radius:0; padding:8px 0; margin:0;
+}
+.pf-header-side .pf-row + .pf-row{ border-top:1px solid var(--pf-border); }
+.pf-header-side .pf-row-clickable:hover{ border-color:var(--pf-border); }
+/* Valutor (4 items) and Råvaror (6 items) specifically go two-per-line
+   -- otherwise ten stacked rows (even at two lines each) run well past
+   the header total's own height and leave a lopsided gap on the left.
+   Aktier/Fonder/watchlist rows aren't touched -- this only targets the
+   two cards that actually live in the header column. */
+.pf-header-side [data-card-id="valutor"] .pf-grid-list,
+.pf-header-side [data-card-id="ravaror"] .pf-grid-list{
+  display:grid; grid-template-columns:1fr 1fr; gap:0 18px;
+}
+.pf-header-side [data-card-id="valutor"] .pf-row,
+.pf-header-side [data-card-id="ravaror"] .pf-row{ border-top:none; padding:6px 0; }
+.pf-header-side .pf-row-clickable:hover .pf-ticker{ color:var(--pf-gold); }
+.pf-header-side .pf-ticker{ font-size:12.5px; font-weight:500; }
+.pf-header-side .pf-price{ font-size:12.5px; }
+.pf-header-side .pf-change{ font-size:11px; min-width:50px; text-align:right; }
+.pf-header-side .pf-unit-suffix{ font-size:10.5px; margin-top:1px; }
+.pf-header-side .pf-meta{ margin-top:6px; }
+.pf-header-side .pf-switch-row{ margin-bottom:6px; }
+
 .pf-header{ margin-bottom:22px; }
 .pf-header-total-row{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
 .pf-header-total-value{ font-size:34px; font-weight:700; }
@@ -50,6 +104,42 @@
 .pf-toolbar{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px; }
 .pf-import-msg{ font-size:12px; color:var(--pf-text-muted); }
 
+/* ---- top grid: aktier/fonder/börsen/vinnare-förlorare ---- */
+/* Plain auto-fit stack until the desktop breakpoint below -- same
+   fallback every other grid in this module uses, so narrow screens get
+   the simple single-column flow with no separate override needed. */
+.pf-top-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; align-items:start; margin-bottom:16px; }
+
+@media (min-width:1100px){
+  /* Named areas: aktier+fonder share a wide left column (aktier gets
+     two rows of height so its two-column holdings list below has room
+     to breathe), börsen+vinnare share a narrower right column -- see
+     module.js's TOP_GRID_CARDS for why only these four cards use this
+     grid instead of the plain auto-fit one below. */
+  .pf-top-grid{
+    grid-template-columns:2fr 2fr 1.4fr;
+    grid-template-areas:
+      "aktier aktier borsen"
+      "aktier aktier vinnareforlorare"
+      "fonder fonder vinnareforlorare";
+  }
+  .pf-top-grid [data-card-id="aktier"]{ grid-area:aktier; }
+  .pf-top-grid [data-card-id="fonder"]{ grid-area:fonder; }
+  .pf-top-grid [data-card-id="borsen"]{ grid-area:borsen; }
+  .pf-top-grid [data-card-id="vinnareforlorare"]{ grid-area:vinnareforlorare; }
+
+  /* Two columns of holdings rows instead of one tall stack, so the
+     whole Aktier list is visible without scrolling inside the card --
+     column-count (newspaper-style top-to-bottom-then-next-column) reads
+     better here than a row-major CSS grid would for variable-height
+     rows. break-inside:avoid keeps a single row from splitting across
+     the column gap. */
+  .pf-top-grid [data-card-id="aktier"] .pf-grid-list{
+    display:block; column-count:2; column-gap:14px;
+  }
+  .pf-top-grid [data-card-id="aktier"] .pf-grid-list > *{ break-inside:avoid; margin-bottom:10px; }
+}
+
 /* ---- responsive grid ---- */
 .pf-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; align-items:start; }
 .pf-card-slot{ min-width:0; }
@@ -73,6 +163,7 @@
 .pf-row-category{ font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--pf-text-muted); margin-bottom:3px; }
 .pf-row-name{ font-weight:600; font-size:13.5px; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pf-row-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.pf-row-price-group{ display:flex; align-items:baseline; gap:9px; }
 .pf-ticker{ font-weight:600; font-size:13.5px; }
 .pf-price{ font-weight:600; font-size:13.5px; font-variant-numeric:tabular-nums; }
 .pf-row-sub{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:4px; font-size:12px; }
@@ -205,5 +296,6 @@ textarea.pf-field{ width:100%; min-height:70px; resize:vertical; }
   .pf-app{ padding:16px; }
   .pf-header-total-value{ font-size:26px; }
   .pf-overview-row{ grid-template-columns:1fr; }
+  .pf-top-grid{ grid-template-columns:1fr; }
   .pf-grid{ grid-template-columns:1fr; }
 }

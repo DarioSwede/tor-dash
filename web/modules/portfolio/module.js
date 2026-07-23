@@ -455,17 +455,37 @@ export default {
       return card;
     }
 
-    const CARD_ORDER = ["borsen", "aktier", "fonder", "allokering", "ravaror", "valutor", "bevakning", "vinnareforlorare", "utdelning", "veckanstips", "redeye"];
+    // Three placement groups instead of one flat CARD_ORDER, per the
+    // desktop redesign: allokering/valutor/ravaror move up next to the
+    // header total (headerSideEl, styled compact -- see module.css) as
+    // "at a glance" stats rather than full cards in the scroll; aktier/
+    // fonder/borsen/vinnareforlorare get a dedicated named-area grid
+    // (topGridEl) wide enough to give aktier a real two-column holdings
+    // list and put börsen+vinnare in their own right-hand column; the
+    // remaining cards keep the original simple auto-fit flow (gridEl).
+    // Same buildCard(id)/cardEls[id] machinery throughout -- only which
+    // container a slot lands in changed, not how a card is built or
+    // refreshed.
+    const HEADER_SIDE_CARDS = ["allokering", "valutor", "ravaror"];
+    const TOP_GRID_CARDS = ["aktier", "fonder", "borsen", "vinnareforlorare"];
+    const REST_CARDS = ["bevakning", "utdelning", "veckanstips", "redeye"];
+
+    function renderGroup(container, ids, extraClass) {
+      container.innerHTML = "";
+      ids.forEach((id) => {
+        const holder = el("div", "pf-card-slot" + (extraClass ? ` ${extraClass}` : ""));
+        holder.dataset.cardId = id;
+        cardEls[id] = holder;
+        holder.appendChild(buildCard(id));
+        container.appendChild(holder);
+      });
+    }
 
     function renderAll() {
       renderHeader();
-      gridEl.innerHTML = "";
-      CARD_ORDER.forEach((id) => {
-        const holder = el("div", "pf-card-slot");
-        cardEls[id] = holder;
-        holder.appendChild(buildCard(id));
-        gridEl.appendChild(holder);
-      });
+      renderGroup(headerSideEl, HEADER_SIDE_CARDS, "pf-card-slot-compact");
+      renderGroup(topGridEl, TOP_GRID_CARDS);
+      renderGroup(gridEl, REST_CARDS);
     }
 
     // ---------- import from FortPolio ----------
@@ -491,6 +511,9 @@ export default {
     // ---------- shell ----------
     const root = el("div", "pf-app");
     const headerEl = el("div", "pf-header");
+    const headerSideEl = el("div", "pf-header-side");
+    const headerRow = el("div", "pf-header-row");
+    headerRow.append(headerEl, headerSideEl);
     const toolbar = el("div", "pf-toolbar");
     const importBtn = el("button", "pf-btn", "Importera från FortPolio");
     importBtn.addEventListener("click", openImportDialog);
@@ -502,9 +525,10 @@ export default {
     });
     const importMsgEl = el("span", "pf-import-msg");
     toolbar.append(importBtn, notifyBtn, importMsgEl);
+    const topGridEl = el("div", "pf-top-grid");
     const gridEl = el("div", "pf-grid");
     const detailEl = el("div", "pf-detail-overlay");
-    root.append(headerEl, toolbar, gridEl, detailEl);
+    root.append(headerRow, toolbar, topGridEl, gridEl, detailEl);
     container.appendChild(root);
 
     renderAll();

@@ -7,16 +7,27 @@ import * as Format from "./format.js";
 import * as Market from "./market.js";
 import { cardHeader } from "./cards-holdings.js";
 
+// Used only by Råvaror/Valutor now that both live in the compact
+// header-side column (see module.js's HEADER_SIDE_CARDS) -- name,
+// price, and change all sit on one flex line instead of price/change
+// stacking on separate lines below, since a whole card's worth of
+// currencies/commodities needs to read as a tight "at a glance" list,
+// not a set of individually padded quote cards. badge/subLabel are
+// still appended (a currency's "1 USD i SEK" line is still genuinely
+// useful context) but sized down small via module.css rather than
+// hidden outright.
 function quoteRow({ id, badge, name, priceText, subLabel, changeText, changeClass, isOpen, symbolValue, onSymbolChange, onToggle }) {
   const row = el("div", "pf-row pf-row-clickable");
   row.addEventListener("click", onToggle);
-  row.appendChild(el("div", "pf-row-category", badge));
   const top = el("div", "pf-row-top");
   top.appendChild(el("span", "pf-ticker", name));
-  top.appendChild(el("span", "pf-price", priceText));
+  const priceGroup = el("span", "pf-row-price-group");
+  priceGroup.appendChild(el("span", "pf-price", priceText));
+  priceGroup.appendChild(el("span", `pf-change ${changeClass}`, changeText));
+  top.appendChild(priceGroup);
   row.appendChild(top);
-  if (subLabel) row.appendChild(el("div", "pf-unit-suffix", subLabel));
-  row.appendChild(el("span", `pf-change ${changeClass}`, changeText));
+  if (subLabel) row.appendChild(el("div", "pf-unit-suffix", `${badge} · ${subLabel}`));
+  else if (badge) row.appendChild(el("div", "pf-unit-suffix", badge));
   if (isOpen) {
     const meta = el("div", "pf-meta");
     meta.addEventListener("click", (e) => e.stopPropagation());
