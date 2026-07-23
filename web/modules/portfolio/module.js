@@ -42,14 +42,18 @@ const OPEN_INTERVAL_MS = 2 * 60 * 1000;
 const CLOSED_INTERVAL_MS = 60 * 60 * 1000;
 
 // Default reading order for a first-time doc (or one saved before
-// cardOrder existed). Aktier defaults wider (see CARD_SPAN) since its
+// cardOrder existed). "total" (the amount/breakdown/chart block) is
+// just the first card here now, not a fixed header pinned above the
+// grid -- that's what let cards actually get dragged up next to it
+// instead of always starting a fresh row below a block nothing could
+// ever move into. Aktier defaults wider (see CARD_SPAN) since its
 // holdings list reads better with room for multiple columns.
 const DEFAULT_CARD_ORDER = [
-  "allokering", "valutor", "ravaror",
+  "total", "allokering", "valutor", "ravaror",
   "vinnareforlorare", "aktier", "fonder", "borsen",
   "bevakning", "utdelning", "veckanstips", "redeye",
 ];
-const CARD_SPAN = { aktier: 3 };
+const CARD_SPAN = { total: 2, aktier: 3 };
 
 // Merges a saved order with the default rather than trusting it as-is:
 // drops any id that no longer corresponds to a real card (a card type
@@ -112,9 +116,15 @@ export default {
       return ex ? Market.exchangeStatus(ex).isOpen : false;
     }
 
-    // ---------- header ----------
-    function renderHeader() {
-      headerEl.innerHTML = "";
+    // ---------- total-amount card ----------
+    // Just another grid card now (id "total", see DEFAULT_CARD_ORDER/
+    // CARD_SPAN below) instead of a fixed block permanently pinned above
+    // the grid -- that fixed block was exactly why nothing could ever be
+    // dragged into the empty space beside it. Same look (no .pf-card
+    // border/box), just participates in the same drag-reorder grid as
+    // everything else now.
+    function buildTotalCard() {
+      const headerEl = el("div", "pf-header");
       const { aktier, fonder, total } = holdingsBreakdown(doc);
       const cost = currentCost(doc);
       const diff = total - cost;
@@ -124,7 +134,7 @@ export default {
       const totalRow = el("div", "pf-header-total-row");
       totalRow.appendChild(el("span", "pf-header-total-value", Format.amount(total, doc.hideAmounts)));
       const hideBtn = el("button", "pf-hide-toggle", doc.hideAmounts ? "Visa belopp" : "Dölj belopp");
-      hideBtn.addEventListener("click", () => { doc.hideAmounts = !doc.hideAmounts; save(); renderAll(); });
+      hideBtn.addEventListener("click", (e) => { e.stopPropagation(); doc.hideAmounts = !doc.hideAmounts; save(); renderAll(); });
       totalRow.appendChild(hideBtn);
       totalWrap.appendChild(totalRow);
 
@@ -158,7 +168,13 @@ export default {
       const flagSpan = el("span", "pf-market-flag" + (stockholmIsOpen() ? "" : " closed"), "🇸🇪");
       marketRow.append(flagSpan, stockholmIsOpen() ? "Svenska börsen öppen" : "Svenska börsen stängd");
       headerEl.appendChild(marketRow);
+      return headerEl;
     }
+    // Kept as a thin alias -- renders through the normal renderCard(id)
+    // path now, but every existing call site already says
+    // renderHeader() and there's no reason to touch all of them just
+    // for a rename.
+    function renderHeader() { renderCard("total"); }
 
     // ---------- market refresh ----------
     async function refreshCommodities() {
@@ -380,6 +396,7 @@ export default {
 
     function buildCard(id) {
       switch (id) {
+        case "total": return buildTotalCard();
         case "borsen": return buildBorsenCard(omxData, EXCHANGES, { onRefresh: refreshOMXIndex });
         case "aktier": return buildAktierCard(doc, {
           hideAmounts: doc.hideAmounts, filter: aktierFilter,
@@ -554,7 +571,6 @@ export default {
     }
 
     function renderAll() {
-      renderHeader();
       renderGrid();
     }
 
@@ -580,7 +596,6 @@ export default {
 
     // ---------- shell ----------
     const root = el("div", "pf-app");
-    const headerEl = el("div", "pf-header");
     const toolbar = el("div", "pf-toolbar");
     const importBtn = el("button", "pf-btn", "Importera från FortPolio");
     importBtn.addEventListener("click", openImportDialog);
@@ -606,7 +621,7 @@ export default {
       renderGrid();
     });
     const detailEl = el("div", "pf-detail-overlay");
-    root.append(headerEl, toolbar, gridEl, detailEl);
+    root.append(toolbar, gridEl, detailEl);
     container.appendChild(root);
 
     renderAll();
