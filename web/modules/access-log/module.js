@@ -152,7 +152,7 @@ export default {
 
     const toolbar = el("div", "log-toolbar");
     const allBtn = el("button", "active", "Alla");
-    const failBtn = el("button", "", "Bara misslyckade inloggningar");
+    const failBtn = el("button", "", "Misslyckade");
     toolbar.append(allBtn, failBtn);
     wrap.appendChild(toolbar);
 

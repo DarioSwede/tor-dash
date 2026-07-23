@@ -53,13 +53,22 @@ body.has-custom-bg .module-access-log .log-toolbar button:not(.active){ color:#4
 
 /* ---- card list (≤640px): same .item shell as the Morning Brief ---- */
 .module-access-log .log-cards{ display:none; }
-.module-access-log .log-item .status-dot{
-  width:8px; height:8px; border-radius:50%; flex:0 0 auto;
-  background:var(--ink-grey); opacity:.45;
-}
-.module-access-log .log-item.log-cat-ok .status-dot{ background:var(--status-ok); opacity:1; }
-.module-access-log .log-item.log-cat-warn .status-dot{ background:var(--status-warn); opacity:1; }
-.module-access-log .log-item.log-cat-danger .status-dot{ background:var(--status-danger); opacity:1; }
+/* No item-num column here (unlike Brief, where a numbered list within a
+   section reads naturally) -- for a flat chronological log it was just
+   dead space pushing the actual text away from the toolbar's left edge
+   above it. Hiding it removes both its width and its flex gap. */
+.module-access-log .log-item .item-num{ display:none; }
+.module-access-log .log-item{ padding:6px 0; }
+.module-access-log .log-item .item-title{ gap:4px; font-size:13px; }
+.module-access-log .log-item .item-detail-inner .item-sentence{ font-size:13px; }
+/* The chevron itself carries the category color instead of a separate
+   dot next to it -- one colored glyph doing both jobs (expand
+   affordance + status) sits closer to the toolbar's left edge above it
+   than a chevron-plus-dot pair would. */
+.module-access-log .log-item .status-dot{ display:none; }
+.module-access-log .log-item.log-cat-ok .item-title::before{ color:var(--status-ok); }
+.module-access-log .log-item.log-cat-warn .item-title::before{ color:var(--status-warn); }
+.module-access-log .log-item.log-cat-danger .item-title::before{ color:var(--status-danger); }
 .module-access-log .log-item.log-cat-ok .item-title-text{ color:var(--status-ok); }
 .module-access-log .log-item.log-cat-warn .item-title-text{ color:var(--status-warn); }
 .module-access-log .log-item.log-cat-danger .item-title-text{ color:var(--status-danger); }
@@ -67,7 +76,12 @@ body.has-custom-bg .module-access-log .log-toolbar button:not(.active){ color:#4
 .module-access-log .log-item .btn{ font-size:12.5px; padding:7px 14px; }
 
 @media (max-width:640px){
-  .module-access-log .log-toolbar{ flex-wrap:wrap; }
   .module-access-log .log-table-wrap{ display:none; }
   .module-access-log .log-cards{ display:block; }
+  /* Both filter buttons stay on one row at the top -- a shorter label
+     ("Misslyckade" instead of "Bara misslyckade inloggningar", see
+     module.js) plus tighter padding/font is what actually makes them
+     fit; flex-wrap was papering over that by letting the second button
+     drop to its own row instead. */
+  .module-access-log .log-toolbar button{ padding:5px 10px; font-size:12px; }
 }
