@@ -29,4 +29,9 @@ export const MODULES = [
     path: "./access-log/module.js",
     css: "./access-log/module.css",
   },
+  {
+    id: "todo",
+    path: "./todo/module.js",
+    css: "./todo/module.css",
+  },
 ];
