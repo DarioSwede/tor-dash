@@ -99,32 +99,37 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
 }
 .icon-btn:hover{ border-color:var(--ink-soft); color:var(--ink); }
 
-/* Idle-signout countdown -- sits directly left of the IP/network status
-   (see auth.js's startReauthGuard/updateSessionTimerDisplay, which own
-   the actual timer and just write text into this element every second).
-   No auto margin of its own: .network-status centers itself independently
-   via its own margin:0 auto below, and this fixed right-margin just tucks
-   the countdown in right before it. */
+/* Countdown + IP/VPN status + clock, grouped into one flex child of
+   .top-bar instead of three separate ones -- three separate items each
+   fighting for space alongside the nav-slot and icon group is what broke
+   down on a narrow phone: nothing left room for the others to wrap into,
+   so they visually crammed together and overlapped instead. As a single
+   wrapper, this is the *only* thing sharing the row with .top-bar-nav and
+   .top-bar-group; it takes whatever middle space is left and wraps its
+   own three children internally, which never affects those two siblings.
+   Also the one thing swapping sides never needs to touch -- it stays the
+   middle flex child (and so stays centered) whichever side nav vs the
+   icon group land on, exactly as before. */
+.top-bar-status{
+  flex:1 1 auto; min-width:0;
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
+  gap:4px 14px;
+}
 .session-timer{
-  flex:0 0 auto; margin-right:14px;
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); white-space:nowrap;
 }
 .session-timer:empty{ display:none; }
 .session-timer.session-timer-warn{ color:var(--status-warn); font-weight:600; }
 
 .network-status{
-  flex:0 1 320px; min-width:0; margin:0 auto;
+  min-width:0;
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); text-align:center;
   word-break:break-word;
 }
 .network-status:empty{ display:none; }
 
-/* Plain live clock, directly right of the IP/network status (see
-   shell.js's tickClock) -- same fixed-margin-on-one-side trick as
-   .session-timer above, just mirrored, so it tucks in without disturbing
-   .network-status's own self-centering. */
+/* Plain live clock (see shell.js's tickClock). */
 .topbar-clock{
-  flex:0 0 auto; margin-left:14px;
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); white-space:nowrap;
 }
 
