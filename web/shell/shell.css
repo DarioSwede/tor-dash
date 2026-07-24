@@ -282,7 +282,7 @@ html.has-custom-bg, body.has-custom-bg{ background:transparent; }
    underneath each surface. */
 body.has-custom-bg .band-top{
   width:auto;
-  background:rgba(249,249,247,.85);
+  background:rgba(249,249,247,.97);
   margin:20px; border-radius:22px;
   box-shadow:0 16px 48px rgba(15,14,10,.18);
 }
@@ -293,7 +293,16 @@ body.has-custom-bg .band-top{
    every possible photo without going nearly opaque and defeating the
    point of a translucent card at all. Cheaper fix: give secondary text
    its own darker shade only in this mode, measured at ≥4.5:1 against
-   the .85-alpha blend above (see the module's own contrast check). */
+   the .97-alpha blend above (see the module's own contrast check).
+
+   .97 rather than the .7-.85 tried earlier: dropping backdrop-filter
+   (see the note above this block) means a busy, detailed photo like
+   Dario's crest/map background no longer gets smoothed into a soft wash
+   by the blur -- at .85 alpha its sharp edges (the crest's crown, in
+   particular) still read as a distracting watermark right through the
+   card's own text. .97 leaves just enough of the photo's tone bleeding
+   through to still feel like a frame around the card, without the
+   legible pattern-through-text problem. */
 body.has-custom-bg .item-sentence,
 body.has-custom-bg .act-note,
 body.has-custom-bg .day-date,
