@@ -262,23 +262,27 @@ html.has-custom-bg, body.has-custom-bg{ background:transparent; }
 
 /* A custom dashboard background is otherwise only ever visible behind
    the toolbar strip, since every surface below it is fully opaque --
-   make it translucent instead, with a blur so body text set directly
-   against a busy photo stays readable, whenever a custom image is
-   actually active. The top bar goes almost fully transparent (10%
-   opaque) since it has no body text of its own to protect, just icons
-   and a short status line.
-   .band-top is one seamless floating card (there's only one running
-   brief, see module.js -- no more header/list split to seam), inset on
-   every side so the background image reads as a frame around it.
-   `width:auto` here is load-bearing: the base .band rule sets
-   `width:100%`, and adding left/right margin on TOP of an already-100%-
-   wide box overflows the viewport by exactly the margin instead of
-   shrinking to fit -- which is exactly the "right margin is missing"
-   bug this replaces (the box quietly overflowed off the right edge, so
-   only the left inset ever rendered). */
+   make it translucent instead, whenever a custom image is actually
+   active, so the photo still reads through as a frame around the real
+   content instead of being fully hidden.
+
+   No backdrop-filter/blur anywhere in this whole has-custom-bg block,
+   on purpose -- confirmed on a real iPhone that iOS Safari renders
+   *multiple simultaneous* backdrop-filter layers on one screen
+   incorrectly: with the top bar, the brief card, and the todo card all
+   blurring at once, some of them clipped their blurred backing to
+   roughly 70% of their own width, showing the raw un-blurred photo past
+   that point. Two rounds of trying to keep the blur (moving it to a
+   ::before, guessing it was a position:sticky-specific bug) didn't fix
+   it, because the real trigger was simply "more than one blurred layer
+   on screen at once" -- a single element's own backdrop-filter (like
+   the pre-existing .band-top, back when it was the only one) never
+   showed this. Plain alpha-blended color has no such compositing bug on
+   any browser, at the cost of the photo reading a bit less "frosted"
+   underneath each surface. */
 body.has-custom-bg .band-top{
   width:auto;
-  background:rgba(249,249,247,.7); backdrop-filter:blur(28px); -webkit-backdrop-filter:blur(28px);
+  background:rgba(249,249,247,.85);
   margin:20px; border-radius:22px;
   box-shadow:0 16px 48px rgba(15,14,10,.18);
 }
@@ -289,39 +293,13 @@ body.has-custom-bg .band-top{
    every possible photo without going nearly opaque and defeating the
    point of a translucent card at all. Cheaper fix: give secondary text
    its own darker shade only in this mode, measured at ≥4.5:1 against
-   the .7-alpha blend above (see the module's own contrast check). */
+   the .85-alpha blend above (see the module's own contrast check). */
 body.has-custom-bg .item-sentence,
 body.has-custom-bg .act-note,
 body.has-custom-bg .day-date,
 body.has-custom-bg .quiet-line{ color:#4A473F; }
-/* Was a near-transparent 10%-opaque *white* wash -- fine back when the
-   bar had no real text to protect, just icons (see the .top-bar-nav
-   comment above). Now that .top-bar-status carries three lines of real
-   status text, a separate darker "chip" just behind that text (an
-   earlier attempt at this fix) looked like a patched-on rectangle next
-   to the icon buttons' own light-outline style -- two different
-   treatments sitting side by side in the same bar. Darkening the *whole*
-   bar instead gives both zones one consistent backing: icons keep their
-   existing light-outline look (still visible against a darker wash),
-   and the status text is readable against the same surface everything
-   else sits on, rather than getting a surface of its own.
-
-   The background+blur live on ::before, not on .top-bar itself -- iOS
-   Safari has a long-standing bug where backdrop-filter on a
-   position:sticky element renders clipped to less than the element's
-   real width (confirmed on a real iPhone: the blurred backing stopped
-   at roughly 70% of the bar's width, with the raw un-blurred photo
-   showing past that point -- invisible in Chromium, which is why testing
-   this fix here never caught it). A plain position:absolute; inset:0
-   pseudo-element filling the sticky parent doesn't hit that bug. */
-.top-bar{ isolation:isolate; }
-body.has-custom-bg .top-bar{ background:transparent; border-bottom-color:rgba(228,227,220,.2); }
-body.has-custom-bg .top-bar::before{
-  content:""; position:absolute; inset:0; z-index:-1;
-  background:rgba(10,9,8,.42);
-  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-}
-body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+body.has-custom-bg .top-bar{ background:rgba(10,9,8,.55); border-bottom-color:rgba(228,227,220,.2); }
+body.has-custom-bg .side-nav{background:rgba(252,252,251,.92);}
 body.has-custom-bg .session-timer,
 body.has-custom-bg .network-status,
 body.has-custom-bg .topbar-clock{ color:#EDECE6; }
