@@ -18,6 +18,30 @@ import { fetchNetworkStatus } from "./network.js";
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 min of no interaction
 const BACKGROUND_TIMEOUT_MS = 5 * 60 * 1000; // 5 min hidden re-triggers a lock
 
+// The idleTimer/idleDeadline below are plain in-memory JS state -- they
+// reset to a fresh IDLE_TIMEOUT_MS allowance on every page load, with no
+// memory of how long it's actually been since real activity. That's fine
+// for "same tab, left open" (the timer keeps counting down correctly),
+// but on a phone the tab is often fully reloaded from scratch after being
+// backgrounded for a while (iOS reclaims it) rather than just resumed --
+// so reopening hours later silently started a brand new 15-minute
+// countdown instead of recognizing the real gap, leaving Supabase's own
+// (still perfectly valid) session token signed in indefinitely. This
+// persists the last real activity timestamp in localStorage so a fresh
+// page load can check "was it actually more than 15 minutes ago?" instead
+// of just assuming "no" because the in-memory timer never got the chance
+// to expire.
+const LAST_ACTIVE_KEY = "tor-dash:last-active";
+
+function markActive() {
+  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+}
+
+function isIdleExpired() {
+  const last = Number(localStorage.getItem(LAST_ACTIVE_KEY));
+  return !last || (Date.now() - last > IDLE_TIMEOUT_MS);
+}
+
 // Swipe-up-to-sign-in thresholds, tuned to read as a deliberate upward
 // swipe anywhere on the gate without fighting iOS's own edge gestures
 // (which own the bottom ~20px home-indicator strip regardless).
@@ -59,6 +83,7 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
       logAccessEvent(supabase, "signin_failure", { method, detail: error.message, statusPromise: networkStatusPromise });
     } else {
       gateMsg.textContent = "";
+      markActive(); // a fresh, deliberate sign-in always counts as "just active"
       logAccessEvent(supabase, "signin_success", { method, statusPromise: networkStatusPromise });
     }
   };
@@ -73,6 +98,15 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
   // race in the previous version.
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session) {
+      // A restored session (page load/reopen) whose last known activity
+      // is already older than the idle timeout is exactly the "still
+      // signed in hours later" bug -- sign out immediately instead of
+      // handing this session a brand new 15-minute allowance just
+      // because nothing in memory ever got the chance to expire.
+      if (isIdleExpired()) {
+        supabase.auth.signOut();
+        return;
+      }
       gateEl.style.display = "none";
       appEl.style.display = "block";
       startReauthGuard(supabase, timerEl);
@@ -149,6 +183,7 @@ function startReauthGuard(supabase, timerEl) {
     clearTimeout(idleTimer);
     idleDeadline = Date.now() + IDLE_TIMEOUT_MS;
     idleTimer = setTimeout(() => supabase.auth.signOut(), IDLE_TIMEOUT_MS);
+    markActive();
     updateSessionTimerDisplay();
   };
 
@@ -181,6 +216,7 @@ function stopReauthGuard() {
   idleDeadline = null;
   clearInterval(tickInterval);
   tickInterval = null;
+  localStorage.removeItem(LAST_ACTIVE_KEY);
   updateSessionTimerDisplay();
 }
 
