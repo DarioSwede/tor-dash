@@ -294,19 +294,19 @@ body.has-custom-bg .item-sentence,
 body.has-custom-bg .act-note,
 body.has-custom-bg .day-date,
 body.has-custom-bg .quiet-line{ color:#4A473F; }
-body.has-custom-bg .top-bar{background:rgba(252,252,251,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom-color:rgba(228,227,220,.35);}
+/* Was a near-transparent 10%-opaque *white* wash -- fine back when the
+   bar had no real text to protect, just icons (see the .top-bar-nav
+   comment above). Now that .top-bar-status carries three lines of real
+   status text, a separate darker "chip" just behind that text (an
+   earlier attempt at this fix) looked like a patched-on rectangle next
+   to the icon buttons' own light-outline style -- two different
+   treatments sitting side by side in the same bar. Darkening the *whole*
+   bar instead gives both zones one consistent backing: icons keep their
+   existing light-outline look (still visible against a darker wash),
+   and the status text is readable against the same surface everything
+   else sits on, rather than getting a surface of its own. */
+body.has-custom-bg .top-bar{background:rgba(10,9,8,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom-color:rgba(228,227,220,.2);}
 body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
-/* .top-bar-status (countdown/IP/clock) sat directly on the near-
-   transparent top bar above, at --ink-grey -- a light grey tuned for the
-   plain --bg top bar, which goes nearly invisible once that same top bar
-   is 90% see-through over an arbitrary dark photo. Same fix as the
-   band-top text above: give it its own small opaque-enough surface
-   (independent of how bright or dark the photo underneath happens to be)
-   rather than a text color chosen to work against one specific photo. */
-body.has-custom-bg .top-bar-status{
-  background:rgba(20,19,16,.4); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
-  padding:4px 12px; border-radius:8px;
-}
 body.has-custom-bg .session-timer,
 body.has-custom-bg .network-status,
 body.has-custom-bg .topbar-clock{ color:#EDECE6; }
