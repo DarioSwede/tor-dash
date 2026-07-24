@@ -50,6 +50,16 @@ view if you have write access.
 
 - [ ] Skim the dashboard's Log tab now and then for unexpected
       `signin_attempt` / `signin_failure` rows.
+- [ ] Before pushing any change to `web/shell/auth.js`'s idle/reauth
+      logic, run `web/shell/idle-timeout.test.html` (serve `web/` locally,
+      open the file in a browser, check for PASS) and make sure it still
+      passes. This regression-tests the "still signed in hours later" bug
+      fixed 2026-07-24 — the idle countdown was pure in-memory JS state
+      that reset to a fresh 15 minutes on every page load/reopen, so a
+      restored Supabase session never actually got signed out no matter
+      how much real time had passed. Easy to reintroduce by accident in a
+      future refactor of that file, since it only shows up after a real
+      page reload, not while testing within one open tab.
 - [ ] Bump the pinned `@supabase/supabase-js` CDN version in
       `web/index.html` occasionally (see the comment in
       `web/shell/supabase-client.js` — no auto-update).

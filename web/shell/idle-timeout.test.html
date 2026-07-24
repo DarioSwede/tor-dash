@@ -1,0 +1,140 @@
+<!doctype html>
+<!--
+  Regression test for the "still signed in hours later" bug (fixed
+  2026-07-24): the idle-timeout countdown in auth.js used to be pure
+  in-memory JS state that reset to a fresh 15-minute allowance on every
+  page load, so reopening the app after real hours of inactivity never
+  actually triggered a sign-out -- Supabase's own session token was still
+  valid, and nothing else ever checked how long it had actually been.
+
+  Run this whenever auth.js's idle/reauth logic changes, before pushing:
+    1. python3 -m http.server 8000   (from web/)
+    2. open http://localhost:8000/shell/idle-timeout.test.html in a
+       browser, or headlessly via Playwright -- either way, check the
+       page title / results table below for PASS vs FAIL.
+
+  No build step or dependency needed to run it -- it's a plain module
+  script importing the real auth.js against a minimal fake Supabase
+  client, exactly like the app itself does.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>idle-timeout regression test</title>
+<style>
+  body { font-family: system-ui, sans-serif; padding: 24px; max-width: 640px; margin: 0 auto; }
+  table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+  td, th { border: 1px solid #ccc; padding: 6px 10px; text-align: left; font-size: 14px; }
+  .pass { color: #0a7a3d; font-weight: 600; }
+  .fail { color: #c0392b; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1 id="heading">Running idle-timeout regression test…</h1>
+<table id="results"><tbody></tbody></table>
+
+<!-- Elements wireGate() expects to exist, exactly as in index.html -->
+<div id="gate" tabindex="-1" style="display:none"></div>
+<div id="app" style="display:none"></div>
+<div id="gate-msg"></div>
+<div id="session-timer"></div>
+<button id="passkey-signin-btn"></button>
+<button id="signout-btn"></button>
+
+<script type="module">
+import { wireGate } from "./auth.js";
+
+const LAST_ACTIVE_KEY = "tor-dash:last-active";
+const cases = [];
+
+function record(name, pass, detail) {
+  cases.push({ name, pass, detail });
+}
+
+function makeFakeSupabase() {
+  let authCallback = null;
+  let signOutCalls = 0;
+  const supabase = {
+    auth: {
+      onAuthStateChange(cb) { authCallback = cb; },
+      signOut() {
+        signOutCalls++;
+        if (authCallback) authCallback("SIGNED_OUT", null);
+        return Promise.resolve({ error: null });
+      },
+      signInWithPasskey() { return Promise.resolve({ error: null }); },
+    },
+  };
+  return {
+    supabase,
+    fire: (session) => authCallback("INITIAL_SESSION", session),
+    getSignOutCalls: () => signOutCalls,
+    resetSignOutCalls: () => { signOutCalls = 0; },
+  };
+}
+
+async function run() {
+  const gateEl = document.getElementById("gate");
+  const appEl = document.getElementById("app");
+  const { supabase, fire, getSignOutCalls, resetSignOutCalls } = makeFakeSupabase();
+  wireGate(supabase, {
+    gateEl, appEl,
+    gateMsg: document.getElementById("gate-msg"),
+    sessionTimerEl: document.getElementById("session-timer"),
+    onAuthenticated: () => {},
+    onSignedOut: () => {},
+  });
+
+  // Scenario A: last activity was 20 minutes ago (past the 15-min
+  // timeout) -- a restored session must be signed out immediately, not
+  // handed a fresh countdown just because nothing expired in memory.
+  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now() - 20 * 60 * 1000));
+  fire({ user: { id: "u1" } });
+  await new Promise((r) => setTimeout(r, 30));
+  record(
+    "Stale last-active (20 min ago) forces sign-out",
+    getSignOutCalls() === 1 && appEl.style.display === "none" && gateEl.style.display === "flex",
+    `signOutCalls=${getSignOutCalls()} appDisplay=${appEl.style.display} gateDisplay=${gateEl.style.display}`
+  );
+
+  // Scenario B: last activity was just now -- should stay signed in with
+  // the countdown showing the full allowance.
+  resetSignOutCalls();
+  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+  fire({ user: { id: "u1" } });
+  await new Promise((r) => setTimeout(r, 30));
+  const countdownText = document.getElementById("session-timer").textContent;
+  record(
+    "Fresh last-active stays signed in with a live countdown",
+    appEl.style.display === "block" && gateEl.style.display === "none" && /^Utloggning om \d+:\d{2}$/.test(countdownText),
+    `appDisplay=${appEl.style.display} gateDisplay=${gateEl.style.display} countdown="${countdownText}"`
+  );
+
+  // Scenario C: no last-active key at all (e.g. first load after this
+  // fix ships, or localStorage was cleared) -- must default to signed
+  // out rather than trusting an ambiguous state.
+  resetSignOutCalls();
+  localStorage.removeItem(LAST_ACTIVE_KEY);
+  fire({ user: { id: "u1" } });
+  await new Promise((r) => setTimeout(r, 30));
+  record(
+    "Missing last-active defaults to sign-out",
+    getSignOutCalls() === 1,
+    `signOutCalls=${getSignOutCalls()}`
+  );
+
+  const allPass = cases.every((c) => c.pass);
+  const tbody = document.querySelector("#results tbody");
+  cases.forEach((c) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${c.name}</td><td class="${c.pass ? "pass" : "fail"}">${c.pass ? "PASS" : "FAIL"}</td><td>${c.detail}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById("heading").textContent = allPass ? "PASS" : "FAIL";
+  document.title = allPass ? "PASS" : "FAIL";
+}
+
+run();
+</script>
+</body>
+</html>
