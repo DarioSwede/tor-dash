@@ -296,6 +296,21 @@ body.has-custom-bg .day-date,
 body.has-custom-bg .quiet-line{ color:#4A473F; }
 body.has-custom-bg .top-bar{background:rgba(252,252,251,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom-color:rgba(228,227,220,.35);}
 body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+/* .top-bar-status (countdown/IP/clock) sat directly on the near-
+   transparent top bar above, at --ink-grey -- a light grey tuned for the
+   plain --bg top bar, which goes nearly invisible once that same top bar
+   is 90% see-through over an arbitrary dark photo. Same fix as the
+   band-top text above: give it its own small opaque-enough surface
+   (independent of how bright or dark the photo underneath happens to be)
+   rather than a text color chosen to work against one specific photo. */
+body.has-custom-bg .top-bar-status{
+  background:rgba(20,19,16,.4); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  padding:4px 12px; border-radius:8px;
+}
+body.has-custom-bg .session-timer,
+body.has-custom-bg .network-status,
+body.has-custom-bg .topbar-clock{ color:#EDECE6; }
+body.has-custom-bg .session-timer.session-timer-warn{ color:#ffb454; }
 
 @media (max-width:640px){
   body.has-custom-bg .band-top{ margin:12px; border-radius:18px; }
