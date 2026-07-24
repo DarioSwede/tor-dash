@@ -77,13 +77,20 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
     // button itself so this still works when "hide the button entirely"
     // is on and there's no button to focus.
     gateEl.focus({ preventScroll: true });
+    // Mark activity *before* calling signInWithPasskey(), not after —
+    // establishing the session (inside this call) is what fires
+    // onAuthStateChange, which runs isIdleExpired() immediately. Marking
+    // active only on the success branch below ran after that check had
+    // already fired with a stale/missing timestamp, so it force-signed
+    // the brand new session right back out again -- every sign-in looked
+    // like it silently failed.
+    markActive();
     const { error } = await supabase.auth.signInWithPasskey();
     if (error) {
       gateMsg.textContent = `Couldn't sign in: ${error.message}`;
       logAccessEvent(supabase, "signin_failure", { method, detail: error.message, statusPromise: networkStatusPromise });
     } else {
       gateMsg.textContent = "";
-      markActive(); // a fresh, deliberate sign-in always counts as "just active"
       logAccessEvent(supabase, "signin_success", { method, statusPromise: networkStatusPromise });
     }
   };

@@ -62,7 +62,17 @@ function makeFakeSupabase() {
         if (authCallback) authCallback("SIGNED_OUT", null);
         return Promise.resolve({ error: null });
       },
-      signInWithPasskey() { return Promise.resolve({ error: null }); },
+      // Real Supabase fires onAuthStateChange *synchronously, inside*
+      // signInWithPasskey() as the new session is established -- before
+      // the caller's own `await` continuation runs. This mirrors that
+      // ordering exactly, which is what exposed the second bug: marking
+      // activity only in the post-await success branch ran too late, so
+      // the fresh session's own onAuthStateChange call saw a stale/
+      // missing timestamp and immediately signed it back out again.
+      signInWithPasskey() {
+        if (authCallback) authCallback("SIGNED_IN", { user: { id: "u1" } });
+        return Promise.resolve({ error: null });
+      },
     },
   };
   return {
@@ -121,6 +131,22 @@ async function run() {
     "Missing last-active defaults to sign-out",
     getSignOutCalls() === 1,
     `signOutCalls=${getSignOutCalls()}`
+  );
+
+  // Scenario D: a brand new, deliberate sign-in via the passkey button,
+  // starting from a stale/missing last-active timestamp (e.g. the very
+  // first sign-in ever on this device, or right after this feature
+  // shipped). Must NOT bounce straight back to the gate -- this is the
+  // exact "can't log in" regression from marking activity only after
+  // the await instead of before calling signInWithPasskey().
+  resetSignOutCalls();
+  localStorage.removeItem(LAST_ACTIVE_KEY);
+  document.getElementById("passkey-signin-btn").click();
+  await new Promise((r) => setTimeout(r, 30));
+  record(
+    "Fresh passkey sign-in is not immediately signed back out",
+    getSignOutCalls() === 0 && appEl.style.display === "block" && gateEl.style.display === "none",
+    `signOutCalls=${getSignOutCalls()} appDisplay=${appEl.style.display} gateDisplay=${gateEl.style.display}`
   );
 
   const allPass = cases.every((c) => c.pass);
