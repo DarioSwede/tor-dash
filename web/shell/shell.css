@@ -304,8 +304,23 @@ body.has-custom-bg .quiet-line{ color:#4A473F; }
    bar instead gives both zones one consistent backing: icons keep their
    existing light-outline look (still visible against a darker wash),
    and the status text is readable against the same surface everything
-   else sits on, rather than getting a surface of its own. */
-body.has-custom-bg .top-bar{background:rgba(10,9,8,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom-color:rgba(228,227,220,.2);}
+   else sits on, rather than getting a surface of its own.
+
+   The background+blur live on ::before, not on .top-bar itself -- iOS
+   Safari has a long-standing bug where backdrop-filter on a
+   position:sticky element renders clipped to less than the element's
+   real width (confirmed on a real iPhone: the blurred backing stopped
+   at roughly 70% of the bar's width, with the raw un-blurred photo
+   showing past that point -- invisible in Chromium, which is why testing
+   this fix here never caught it). A plain position:absolute; inset:0
+   pseudo-element filling the sticky parent doesn't hit that bug. */
+.top-bar{ isolation:isolate; }
+body.has-custom-bg .top-bar{ border-bottom-color:rgba(228,227,220,.2); }
+body.has-custom-bg .top-bar::before{
+  content:""; position:absolute; inset:0; z-index:-1;
+  background:rgba(10,9,8,.42);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+}
 body.has-custom-bg .side-nav{background:rgba(252,252,251,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 body.has-custom-bg .session-timer,
 body.has-custom-bg .network-status,
