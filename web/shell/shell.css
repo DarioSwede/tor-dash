@@ -315,7 +315,7 @@ body.has-custom-bg .quiet-line{ color:#4A473F; }
    this fix here never caught it). A plain position:absolute; inset:0
    pseudo-element filling the sticky parent doesn't hit that bug. */
 .top-bar{ isolation:isolate; }
-body.has-custom-bg .top-bar{ border-bottom-color:rgba(228,227,220,.2); }
+body.has-custom-bg .top-bar{ background:transparent; border-bottom-color:rgba(228,227,220,.2); }
 body.has-custom-bg .top-bar::before{
   content:""; position:absolute; inset:0; z-index:-1;
   background:rgba(10,9,8,.42);
