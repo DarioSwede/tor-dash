@@ -16,7 +16,7 @@
 /* A bit more breathing room than the shell default for every other card
    -- scoped to this module only (see the file-top comment) so Log/other
    pages relying on the shared .wrap don't change width too. */
-.module-morning-brief .wrap{ max-width:1000px; }
+.module-morning-brief .wrap{ max-width:1400px; }
 
 /* Day/headline on the left, world clock pinned top-right of the card --
    wraps to its own line under the headline on narrow screens instead of
