@@ -117,6 +117,13 @@ A section's optional `source` renders as a small, deliberately muted line
 right under its heading — provenance (e.g. `"Open-Meteo"`), not content.
 Omit it when a section's content doesn't come from one attributable place.
 
+A section whose `heading` is exactly `"Väder Stockholm"` is special-cased
+by module.js: instead of appearing in the normal sections list, its first
+item (+ `source`) renders as a hero block right under the header, centered
+under the `svg` weather icon — matched by heading text, not a dedicated
+payload field, so the payload shape itself doesn't change. Keep that exact
+heading string when building it.
+
 A section's `plain: true` renders its items as an always-visible title +
 sentence (no chevron, no tap-to-expand) instead of the normal collapsed-
 until-tapped list. Use it for short, low-stakes context that's meant to be
