@@ -33,6 +33,15 @@ export function renderItem(item, index) {
 
   title.appendChild(el("span", "item-title-text", item.title));
 
+  // Optional small pill next to the title (e.g. "Viktigt") -- badgeVariant
+  // just adds a second class (item-badge-<variant>) so a module can style
+  // severity levels itself rather than this shared helper hard-coding any
+  // particular color scheme.
+  if (item.badge) {
+    const badgeClass = item.badgeVariant ? `item-badge item-badge-${item.badgeVariant}` : "item-badge";
+    title.appendChild(el("span", badgeClass, item.badge));
+  }
+
   if (item.url) {
     const link = document.createElement("a");
     link.className = "item-link";

@@ -376,6 +376,15 @@ h2.section-heading{
 }
 .item-link:hover{ color:var(--clay); }
 
+/* Small severity/status pill next to a title -- see dom-utils.js's
+   renderItem. Generic grey by default; a module adds its own color
+   variants via the second item-badge-<variant> class rather than this
+   shared rule hard-coding any specific palette. */
+.item-badge{
+  flex:0 0 auto; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  padding:2px 8px; border-radius:999px; background:var(--hairline); color:var(--ink-soft);
+}
+
 /* Grid-rows accordion trick: animating 0fr → 1fr (rather than height:auto,
    which can't be transitioned) lets the collapsed/expanded swap slide
    instead of snap. The inner wrapper needs its own overflow:hidden since
