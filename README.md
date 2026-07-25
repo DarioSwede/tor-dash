@@ -120,6 +120,9 @@ tor-dashboard/
     { "heading": "Tasks/to-dos", "items": [ { "title": "...", "sentence": "..." } ] },
     { "heading": "Bakgrund", "plain": true, "items": [ { "title": "...", "sentence": "..." } ] },
     { "heading": "Väder Stockholm", "plain": true, "source": "Open-Meteo", "items": [ { "title": "...", "sentence": "..." } ] }
+  ],
+  "service_status": [                                  // optional, see "Driftstatus" below
+    { "name": "Telia", "level": "ok", "text": "Inga kända driftstörningar", "link": "https://..." }
   ]
 }
 ```
@@ -159,6 +162,33 @@ useful to see today rather than only in tomorrow's own brief). The frontend
 prefixes it with "Imorgon: " itself, so the string should just be the fact
 ("Vindelälvsloppets sista dag."), not restate "tomorrow". Omit or set to
 `null` on days with nothing worth a heads-up about — most days.
+
+**Driftstatus (service status):** the brief shows a Driftstatus card, but
+most of it is *not* pushed in the payload — it's fetched live in the
+browser on every render, because an hour-stale "BankID fungerar" is worth
+nothing at the moment you actually need it. Anything published as an
+Atlassian Statuspage (GitHub, Supabase, BankID, Claude, OpenAI — see the
+list in `web/modules/morning-brief/status-check.js`) is read client-side
+from its public, CORS-open `/api/v2/summary.json`. Adding another such
+service is one line in that list; nothing here needs to change.
+
+`service_status` is only for sources the browser *can't* read: Swedish
+telcos and banks publish driftinformation as HTML with no CORS and no API.
+Fill it from `scripts/status_check.py`:
+```
+python3 scripts/status_check.py                     # -> JSON array, paste in as service_status
+```
+`level` is one of `ok` / `warn` / `down` / `unknown`. Two caveats worth
+knowing: the Telia check is a **scrape** of a page with no API contract, so
+it can break whenever Telia rewords that page (it matches on visible
+phrases rather than markup, and fails to `unknown` rather than guessing) —
+and `telia.se` must be on the scheduled task's network allowlist, same as
+`*.supabase.co`, or every run returns `unknown`. Omit `service_status`
+entirely and the card just shows the live-checked services.
+
+Downdetector is deliberately not a source anywhere here: it has no official
+public API, so every "Downdetector API" in the wild is an unofficial
+scraper of a Cloudflare-protected page.
 
 **Väder (weather) section:** built from `scripts/weather.py`, not a web
 search — it calls Open-Meteo (free, no API key) and prints structured

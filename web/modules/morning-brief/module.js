@@ -34,9 +34,11 @@
 
 import { setLastSeenBrief } from "../../shell/last-seen.js";
 import { mountTodoPanel } from "../todo/module.js";
+import { mountStatusCard } from "./status-check.js";
 
 let requestSeq = 0;
 let clockInterval = null;
+let statusCard = null;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 function svgEl(tag, attrs) {
@@ -136,6 +138,8 @@ export default {
   unmount() {
     clearInterval(clockInterval);
     clockInterval = null;
+    statusCard?.cancel();
+    statusCard = null;
   },
 
   async mount(container, ctx) {
@@ -330,6 +334,16 @@ export default {
         }
         grid.appendChild(card);
       });
+
+      // Driftstatus -- unlike every other card here, its content isn't in
+      // the payload at all: it's fetched live from the services' own
+      // status pages on each render, because an hour-stale "BankID
+      // fungerar" is worth nothing. See status-check.js. Any previous
+      // card's in-flight fetches are cancelled first so their responses
+      // can't land in a card that's just been thrown away.
+      statusCard?.cancel();
+      statusCard = mountStatusCard(el, payload.service_status);
+      grid.appendChild(statusCard.card);
 
       // ToDo card -- collapsed by default (Dario wants it out of the way
       // until he actually wants it), expands in place on click instead of
