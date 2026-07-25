@@ -160,23 +160,44 @@ export default {
 
       const card = el("div", "band band-top");
       const wrap = el("div", "wrap");
-      wrap.appendChild(el("div", "day-date", `${payload.day_name} · ${payload.date_label}`));
-      wrap.appendChild(el("h1", "headline headline-font", payload.headline));
 
-      const iconRow = el("div", "icon-clock-row");
+      const header = el("div", "brief-header");
+      const headerMain = el("div", "brief-header-main");
+      headerMain.appendChild(el("div", "day-date", `${payload.day_name} · ${payload.date_label}`));
+      headerMain.appendChild(el("h1", "headline headline-font", payload.headline));
+      header.append(headerMain, renderWorldClock(el));
+      wrap.appendChild(header);
+
+      // The "Väder Stockholm" section (see README's payload-shape note)
+      // renders as a hero block right under the header -- icon + condition
+      // together, front and center -- instead of down in the normal
+      // sections list where it used to sit alongside Bakgrund/Sprylar.
+      // Matched by heading text rather than a dedicated payload field, so
+      // this stays a pure frontend/layout change with no payload-shape
+      // migration needed.
+      const sections = (payload.sections || []).slice();
+      const weatherIdx = sections.findIndex((s) => s.heading === "Väder Stockholm");
+      const weatherSection = weatherIdx >= 0 ? sections.splice(weatherIdx, 1)[0] : null;
+
+      const weatherHero = el("div", "weather-hero");
       if (payload.svg && isSafeSvg(payload.svg)) {
         const holder = document.createElement("div");
         holder.innerHTML = payload.svg;
         const svgEl = holder.querySelector("svg");
         if (svgEl) {
           svgEl.classList.add("drawing");
-          iconRow.appendChild(svgEl);
+          weatherHero.appendChild(svgEl);
         }
       } else if (payload.svg) {
         console.warn("Skipped rendering payload.svg: failed the safety allowlist check.");
       }
-      iconRow.appendChild(renderWorldClock(el));
-      wrap.appendChild(iconRow);
+      const weatherItem = weatherSection && weatherSection.items && weatherSection.items[0];
+      if (weatherItem) {
+        weatherHero.appendChild(el("p", "weather-hero-title", weatherItem.title));
+        if (weatherItem.sentence) weatherHero.appendChild(el("p", "weather-hero-sentence", weatherItem.sentence));
+        if (weatherSection.source) weatherHero.appendChild(el("p", "weather-hero-source", weatherSection.source));
+      }
+      if (weatherHero.children.length) wrap.appendChild(weatherHero);
 
       const acts = el("div", "acts");
       (payload.acts || []).forEach((act) => {
@@ -209,7 +230,7 @@ export default {
         }
       }
 
-      (payload.sections || []).forEach((section) => {
+      sections.forEach((section) => {
         if (!section.items || !section.items.length) return;
         wrap.appendChild(el("h2", "section-heading", section.heading));
         if (section.source) wrap.appendChild(el("p", "section-source", section.source));
