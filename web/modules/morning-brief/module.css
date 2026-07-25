@@ -12,9 +12,10 @@
   --mb-amber:#B8790A; --mb-amber-soft:#FBF0DC;
   --mb-page-bg:#F3F5F8;
   --mb-card-bg:#fff;
+  --mb-hero-bg:#EEF3FC;
   --mb-shadow:0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.07);
 }
-body.has-custom-bg .module-morning-brief{ --mb-page-bg:transparent; --mb-card-bg:rgba(255,255,255,.94); }
+body.has-custom-bg .module-morning-brief{ --mb-page-bg:transparent; --mb-card-bg:rgba(255,255,255,.94); --mb-hero-bg:rgba(238,243,252,.94); }
 
 /* A bit more breathing room than the shell default for every other card
    -- scoped to this module only so Log/other pages relying on the shared
@@ -22,9 +23,14 @@ body.has-custom-bg .module-morning-brief{ --mb-page-bg:transparent; --mb-card-bg
 .module-morning-brief .wrap{ max-width:1400px; }
 .module-morning-brief .band-top.mb-page{ background:var(--mb-page-bg); }
 
-/* ---- Hero: day/headline/acts on the left, weather icon + world clock +
-   location pin stacked on the right. ---- */
-.module-morning-brief .mb-hero{ display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap; margin-bottom:22px; }
+/* ---- Hero: its own card (like every other one -- see .mb-card below --
+   just tinted --mb-hero-bg instead of plain white, so it reads as "the
+   featured one" among the grid of cards beneath it), day/headline/acts
+   on the left, world clock + location pin on the right. ---- */
+.module-morning-brief .mb-hero{
+  display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap;
+  background:var(--mb-hero-bg); margin-bottom:16px;
+}
 .module-morning-brief .mb-hero-main{ flex:1 1 auto; min-width:0; }
 .module-morning-brief .mb-hero-side{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex:0 0 auto; }
 
@@ -32,24 +38,27 @@ body.has-custom-bg .module-morning-brief{ --mb-page-bg:transparent; --mb-card-bg
 .module-morning-brief h1.headline{
   font-weight:700; font-size:24px; line-height:1.3; color:var(--ink); margin:0 0 16px; max-width:640px;
 }
-.module-morning-brief .mb-hero-weather-icon{ width:110px; height:auto; display:block; }
 
 .module-morning-brief .mb-location-pin{
   display:flex; align-items:center; gap:5px; font-size:13px; font-weight:600; color:var(--mb-accent);
 }
 .module-morning-brief .mb-location-pin .mb-icon{ width:15px; height:15px; }
 
+/* 50% bigger (2026-07-25) than the original size across the board --
+   padding, digits, and city label all scaled together so it still reads
+   as one coherent widget rather than a big clock face with a
+   leftover-sized label underneath. */
 .module-morning-brief .world-clock{
-  cursor:pointer; user-select:none; padding:8px 16px; background:var(--mb-card-bg); box-shadow:var(--mb-shadow);
-  border-radius:12px; text-align:center; transition:box-shadow .15s ease; flex:0 0 auto;
+  cursor:pointer; user-select:none; padding:12px 24px; background:var(--mb-card-bg); box-shadow:var(--mb-shadow);
+  border-radius:16px; text-align:center; transition:box-shadow .15s ease; flex:0 0 auto;
 }
 .module-morning-brief .world-clock:hover,
 .module-morning-brief .world-clock:focus-visible{ box-shadow:0 0 0 2px var(--mb-accent-soft), var(--mb-shadow); outline:none; }
 .module-morning-brief .world-clock-time{
   font-family:"SF Mono", ui-monospace, Menlo, Consolas, monospace; font-variant-numeric:tabular-nums;
-  font-size:19px; font-weight:700; color:var(--ink); letter-spacing:.02em;
+  font-size:29px; font-weight:700; color:var(--ink); letter-spacing:.02em;
 }
-.module-morning-brief .world-clock-city{ font-size:10px; color:var(--ink-soft); margin-top:2px; letter-spacing:.03em; text-transform:uppercase; }
+.module-morning-brief .world-clock-city{ font-size:13px; color:var(--ink-soft); margin-top:3px; letter-spacing:.03em; text-transform:uppercase; }
 
 .module-morning-brief .acts{ display:flex; margin-top:2px; }
 .module-morning-brief .act{ flex:1; padding:10px 20px; border-left:1px solid var(--hairline); }
@@ -63,16 +72,11 @@ body.has-custom-bg .module-morning-brief{ --mb-page-bg:transparent; --mb-card-bg
 .module-morning-brief .tomorrow-line{ font-size:13px; color:var(--ink-soft); padding:10px 0 0; }
 .module-morning-brief .quiet-line{ font-size:15px; color:var(--ink-soft); padding:10px 0 0; }
 
-/* ---- Generic small icon set (checkmark/alert/pin/sun/cloud-sun/moon) --
-   colored via CSS, not SVG attributes, so theming (incl. has-custom-bg)
-   stays in one place. See module.js's icon()/iconX() builders. ---- */
+/* ---- Generic small icon set (pin/sun/cloud-sun/moon) -- colored via
+   CSS, not SVG attributes, so theming (incl. has-custom-bg) stays in one
+   place. See module.js's icon()/iconX() builders. ---- */
 .module-morning-brief .mb-icon{ width:22px; height:22px; flex-shrink:0; display:block; }
 .module-morning-brief .mb-icon-bg{ fill:var(--mb-card-bg); }
-.module-morning-brief .mb-icon-check .mb-icon-bg{ fill:var(--mb-green-soft); }
-.module-morning-brief .mb-icon-check .mb-icon-fg{ stroke:var(--mb-green); }
-.module-morning-brief .mb-icon-alert .mb-icon-bg{ fill:var(--mb-red-soft); }
-.module-morning-brief .mb-icon-alert .mb-icon-fg,
-.module-morning-brief .mb-icon-alert .mb-icon-fg-fill{ stroke:var(--mb-red); fill:var(--mb-red); }
 .module-morning-brief .mb-icon-pin .mb-icon-fg-fill{ fill:var(--mb-accent); }
 .module-morning-brief .mb-icon-pin .mb-icon-bg{ fill:#fff; }
 .module-morning-brief .mb-icon-sun .mb-icon-fg-fill,
@@ -133,8 +137,8 @@ body.has-custom-bg .module-morning-brief{ --mb-page-bg:transparent; --mb-card-bg
 .module-morning-brief .plain-item-sentence{ font-size:13.5px; line-height:1.5; color:var(--ink-soft); margin:0; }
 
 /* ---- Weather detail card: full width, icon + big number + condition +
-   sentence, at the end of the grid. ---- */
-.module-morning-brief .mb-weather-card{ display:block; }
+   sentence, right above the grid (moved up from the bottom 2026-07-25). ---- */
+.module-morning-brief .mb-weather-card{ display:block; margin-bottom:16px; }
 .module-morning-brief .mb-weather-body{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
 .module-morning-brief .mb-weather-icon{ width:64px; height:auto; flex-shrink:0; }
 .module-morning-brief .mb-weather-text{ min-width:0; }
@@ -149,89 +153,3 @@ body.has-custom-bg .module-morning-brief{ --mb-page-bg:transparent; --mb-card-bg
   .module-morning-brief .mb-hero{ flex-direction:column; }
   .module-morning-brief .mb-hero-side{ align-items:flex-start; width:100%; }
 }
-
-/* ---- ToDo: slide-out drawer from the right edge (same open/close
-   mechanics as shell.css's #side-nav, separate classes so the two don't
-   collide), instead of a permanent side column. ---- */
-.module-morning-brief .todo-toggle-tab{
-  position:fixed; right:0; top:50%; transform:translateY(-50%); z-index:16;
-  background:var(--mb-accent); color:#fff; border:none; border-radius:10px 0 0 10px;
-  padding:14px 8px; font-family:inherit; font-size:13px; font-weight:600; letter-spacing:.04em;
-  writing-mode:vertical-rl; cursor:pointer; box-shadow:var(--mb-shadow);
-}
-.module-morning-brief .todo-toggle-tab.hidden{ display:none; }
-
-.module-morning-brief .todo-drawer-backdrop{
-  position:fixed; inset:0; z-index:19; background:rgba(16,24,40,.28);
-  opacity:0; pointer-events:none; transition:opacity .2s ease;
-}
-.module-morning-brief .todo-drawer-backdrop.open{ opacity:1; pointer-events:auto; }
-
-.module-morning-brief .todo-drawer{
-  position:fixed; top:0; right:0; bottom:0; z-index:20; width:400px; max-width:90vw;
-  background:var(--bg); border-left:1px solid var(--hairline);
-  transform:translateX(100%); transition:transform .2s ease;
-  display:flex; flex-direction:column;
-}
-.module-morning-brief .todo-drawer.open{ transform:none; }
-.module-morning-brief .todo-drawer-header{
-  display:flex; align-items:center; justify-content:space-between; padding:18px 20px;
-  border-bottom:1px solid var(--hairline); flex:0 0 auto;
-}
-.module-morning-brief .todo-drawer-title{ font-weight:700; font-size:15px; color:var(--ink); }
-.module-morning-brief .todo-drawer-close{
-  background:none; border:none; font-size:22px; line-height:1; color:var(--ink-soft); cursor:pointer; padding:2px 6px;
-}
-.module-morning-brief .todo-drawer-close:hover{ color:var(--ink); }
-.module-morning-brief .todo-drawer-body{ flex:1 1 auto; overflow-y:auto; padding:20px; }
-
-/* The todo panel (see modules/todo/module.js) still builds its own
-   .band.band-top.todo-panel > .wrap shell -- inside the drawer body that
-   just reads as the drawer's own content, no double-boxing, since the
-   drawer already provides the padding/background. */
-.module-morning-brief .todo-drawer-body .band-top{ background:none; box-shadow:none; margin:0; padding:0; }
-.module-morning-brief .todo-drawer-body .wrap{ max-width:none; padding:0; margin:0; }
-
-.module-morning-brief .todo-form{ display:flex; gap:8px; margin-bottom:16px; }
-.module-morning-brief .todo-form .text-input{ flex:1; }
-.module-morning-brief .todo-panel .text-input{
-  font-family:inherit; font-size:13.5px; color:var(--ink);
-  background:none; border:1px solid var(--hairline); border-radius:8px; padding:9px 12px;
-}
-.module-morning-brief .todo-panel .text-input:focus{ outline:none; border-color:var(--mb-accent); }
-
-/* The shared .empty-state rule (shell.css) is sized for a full-page
-   empty state -- 48px/32px padding, centered, 860px max-width. Inside
-   the drawer that reads as a big block of dead air under "Inget att
-   göra just nu.", so it's cut down to the same compact, left-aligned
-   rhythm as a real .todo-item row. */
-.module-morning-brief .todo-panel .empty-state{ max-width:none; margin:0; padding:8px 0; text-align:left; font-size:14px; }
-
-.module-morning-brief .todo-item{
-  display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-top:1px solid var(--hairline);
-}
-.module-morning-brief .todo-list .todo-item:first-child{ border-top:none; }
-.module-morning-brief .todo-check{ width:15px; height:15px; margin-top:3px; accent-color:var(--mb-accent); cursor:pointer; flex-shrink:0; }
-.module-morning-brief .todo-body{ flex:1; min-width:0; }
-.module-morning-brief .todo-text{ font-size:14px; line-height:1.4; color:var(--ink); }
-.module-morning-brief .todo-item.todo-done .todo-text{ color:var(--ink-soft); text-decoration:line-through; }
-
-.module-morning-brief .todo-claude-btn{
-  background:none; border:1px solid var(--hairline); border-radius:8px; font-size:14px;
-  padding:4px 8px; cursor:pointer; flex-shrink:0; line-height:1;
-}
-.module-morning-brief .todo-claude-note{ font-size:12.5px; margin-top:3px; display:flex; align-items:center; gap:8px; }
-.module-morning-brief .todo-claude-pending{ color:var(--status-warn); }
-.module-morning-brief .todo-claude-done{ color:var(--status-ok); }
-.module-morning-brief .todo-claude-clear{
-  background:none; border:none; color:var(--ink-soft); font-size:11.5px; text-decoration:underline;
-  cursor:pointer; padding:0; font-family:inherit;
-}
-
-.module-morning-brief .todo-done-toggle{
-  display:block; margin-top:14px; background:none; border:1px solid var(--hairline); border-radius:8px;
-  padding:6px 14px; font-family:inherit; font-size:12.5px; color:var(--ink-soft); cursor:pointer;
-}
-.module-morning-brief .todo-done-toggle.active{ background:var(--mb-accent); color:#fff; border-color:var(--mb-accent); }
-.module-morning-brief .todo-done-list{ margin-top:4px; }
-.module-morning-brief .todo-done-list.hidden{ display:none; }

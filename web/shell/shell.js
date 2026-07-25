@@ -14,10 +14,12 @@ import { renderNetworkStatus, fetchShowOnGate, wireNetworkSettingToggle } from "
 import { loadGateTitle, wireGateTitleSetting } from "./gate-title.js";
 import { loadGateButton, wireGateButtonSetting } from "./gate-button.js";
 import { renderPasskeyList } from "./passkeys.js";
-import { loadDashboardBackground, wireDashboardBackgroundSetting, loadTopBarLayout, wireTopBarLayoutSetting } from "./dashboard-background.js";
+import { loadDashboardBackground, wireDashboardBackgroundSetting } from "./dashboard-background.js";
 import { lookupIp } from "./ip-lookup.js";
 import { getLastSeenBrief } from "./last-seen.js";
 import { wireBriefScheduleSetting } from "./brief-schedule.js";
+import { mountTodoDrawer } from "./todo-drawer.js";
+import { mountLogDrawer } from "./log-drawer.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -28,29 +30,24 @@ const settingsPanel = document.getElementById("settings-panel");
 const sideNav = document.getElementById("side-nav");
 const sideNavBackdrop = document.getElementById("side-nav-backdrop");
 const navToggleBtn = document.getElementById("nav-toggle-btn");
-const topBarNavSlot = document.getElementById("top-bar-nav-slot");
+const navEdgeTabs = document.getElementById("nav-edge-tabs");
 const themeColorMeta = document.getElementById("theme-color-meta");
-const topbarClockEl = document.getElementById("topbar-clock");
 
-// Plain live clock, device-local time -- no session/auth dependency, so
-// it just runs for the page's whole lifetime rather than being started/
-// stopped alongside sign-in like the idle-timeout countdown is.
-function tickClock() {
-  topbarClockEl.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-tickClock();
-setInterval(tickClock, 1000);
+let todoDrawer = null;
+let logDrawer = null;
 
-// Wide screens get the nav buttons in the top bar itself, not a second
-// bar underneath it -- this physically reparents #module-nav between
-// the drawer (mobile) and the top bar (desktop) on every breakpoint
-// crossing, rather than trying to fake "in the top bar" with CSS on an
-// element that's a sibling of .top-bar, not a child of it. #module-nav
-// itself is never rebuilt here, just moved -- module-registry.js
-// doesn't need to know where it currently lives.
+// Wide screens get the nav buttons as a fixed right-edge tab stack
+// (alongside Log/ToDo, see shell.css's .edge-tab-stack) instead of a
+// second bar underneath the top one -- this physically reparents
+// #module-nav between the mobile drawer (#side-nav) and that desktop
+// stack (#nav-edge-tabs) on every breakpoint crossing, rather than
+// trying to fake "in the edge stack" with CSS on an element that's a
+// sibling of it, not a child. #module-nav itself is never rebuilt here,
+// just moved -- module-registry.js doesn't need to know where it
+// currently lives.
 const desktopNavQuery = window.matchMedia("(min-width: 860px)");
 function placeNavForViewport() {
-  const target = desktopNavQuery.matches ? topBarNavSlot : sideNav;
+  const target = desktopNavQuery.matches ? navEdgeTabs : sideNav;
   if (navEl.parentElement !== target) target.appendChild(navEl);
 }
 desktopNavQuery.addEventListener("change", placeNavForViewport);
@@ -98,12 +95,11 @@ function boot() {
       setThemeColor("#FCFCFB"); // --bg, tokens.css
       renderNetworkStatus(document.getElementById("network-status"));
       loadDashboardBackground(supabase);
-      loadTopBarLayout(supabase);
       try {
         await refreshDeviceList();
         await refreshPasskeyList();
         const preferredInitialId = await computePreferredInitialId();
-        await initModules(navEl, contentEl, {
+        const ctx = {
           supabase,
           session,
           el,
@@ -111,7 +107,13 @@ function boot() {
           isSafeSvg,
           decryptPayload,
           lookupIp,
-        }, preferredInitialId);
+        };
+        await initModules(navEl, contentEl, ctx, preferredInitialId);
+        // ToDo/Log are global chrome now, not tied to any one module's
+        // mount/unmount lifecycle -- mounted once, ever, so a sign-out
+        // followed by signing back in doesn't stack up duplicate tabs.
+        if (!todoDrawer) todoDrawer = mountTodoDrawer(navEdgeTabs, ctx);
+        if (!logDrawer) logDrawer = mountLogDrawer(navEdgeTabs, ctx);
       } catch (e) {
         // Last-resort net: anything unexpected here previously meant a
         // silently blank page (an unhandled rejection inside an
@@ -126,6 +128,8 @@ function boot() {
       setThemeColor("#0A0A0C"); // --gate-bg, tokens.css
       contentEl.innerHTML = "";
       settingsPanel.classList.remove("open");
+      todoDrawer?.close();
+      logDrawer?.close();
     },
   });
 
@@ -163,11 +167,6 @@ function boot() {
     textInputEl: document.getElementById("gate-button-text-input"),
     hiddenToggleEl: document.getElementById("gate-button-hidden-toggle"),
     msgEl: document.getElementById("gate-button-msg"),
-  });
-
-  wireTopBarLayoutSetting(supabase, {
-    toggleEl: document.getElementById("top-bar-swap-toggle"),
-    msgEl: document.getElementById("top-bar-layout-msg"),
   });
 
   wireDashboardBackgroundSetting(supabase, {

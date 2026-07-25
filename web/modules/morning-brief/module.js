@@ -22,13 +22,14 @@
 //    checks to decide whether landing here (instead of wherever the URL
 //    hash points) is actually warranted.
 // 5. (2026-07-25) Card-grid dashboard redesign: the single flowing list
-//    became a hero header + a grid of small cards, and the ToDo panel
-//    moved from a permanent side column into a slide-out drawer (see
-//    mountTodoDrawer below). See backup/pre-card-redesign-2026-07-25 for
-//    the previous look if this ever needs reverting.
+//    became a hero header + a grid of small cards. ToDo moved out to a
+//    global slide-out drawer (see shell/todo-drawer.js) that same day,
+//    then Log followed it (see shell/log-drawer.js) -- neither is built
+//    here any more. See backup/pre-card-redesign-2026-07-25 and
+//    backup/pre-nav-redesign-2026-07-25 for the previous looks if either
+//    round ever needs reverting.
 
 import { setLastSeenBrief } from "../../shell/last-seen.js";
-import { mountTodoPanel } from "../todo/module.js";
 
 let requestSeq = 0;
 let clockInterval = null;
@@ -49,19 +50,6 @@ function icon(viewBox, cls, children) {
   const svg = svgEl("svg", { viewBox, class: `mb-icon ${cls}` });
   children.forEach((c) => svg.appendChild(c));
   return svg;
-}
-function iconCheck() {
-  return icon("0 0 24 24", "mb-icon-check", [
-    svgEl("circle", { cx: 12, cy: 12, r: 11, class: "mb-icon-bg" }),
-    svgEl("path", { d: "M7 12.5l3 3 7-7", class: "mb-icon-fg", fill: "none", "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round" }),
-  ]);
-}
-function iconAlert() {
-  return icon("0 0 24 24", "mb-icon-alert", [
-    svgEl("circle", { cx: 12, cy: 12, r: 11, class: "mb-icon-bg" }),
-    svgEl("line", { x1: 12, y1: 7, x2: 12, y2: 13, class: "mb-icon-fg", "stroke-width": 2, "stroke-linecap": "round" }),
-    svgEl("circle", { cx: 12, cy: 16.4, r: 1.15, class: "mb-icon-fg-fill" }),
-  ]);
 }
 function iconPin() {
   return icon("0 0 24 24", "mb-icon-pin", [
@@ -159,14 +147,6 @@ export default {
     const briefRoot = el("div", "brief-main");
     container.appendChild(briefRoot);
 
-    // ToDo lives here now, as a slide-out drawer (see mountTodoDrawer)
-    // instead of a permanent side column -- Dario wants the brief itself
-    // to be the only thing on screen by default, with ToDo tucked away
-    // until he actually wants it. Its own load/save cycle is entirely
-    // independent of the brief's, so it mounts once, up front, rather
-    // than being rebuilt on every loadBrief() re-render.
-    mountTodoDrawer(container, ctx);
-
     async function loadBrief() {
       const myRequest = ++requestSeq;
       briefRoot.innerHTML = ""; // synchronous, before any await — every branch below can safely append
@@ -230,23 +210,24 @@ export default {
       return head;
     }
 
-    // Card-grid dashboard. One hero block (day/headline/acts/clock/pin +
-    // a small weather icon), then a responsive grid of small cards --
-    // needs_attention/resolved get an icon-led checklist look (green
-    // check / red alert, re-skinning renderItem's existing item-num
-    // bullet purely via CSS -- see module.css's .mb-check-list/
-    // .mb-alert-list), every other payload.sections entry becomes its
-    // own plain card, and "Väder Stockholm" (matched by heading text, as
-    // before) becomes a full-width detail card at the end instead of
-    // living in the grid.
+    // Card-grid dashboard. A hero card (day/headline/acts/clock/pin, its
+    // own distinct background tint), then the weather detail card, then
+    // a responsive grid of small cards -- needs_attention/resolved get
+    // an icon-led checklist look (green check / red alert, re-skinning
+    // renderItem's existing item-num bullet purely via CSS -- see
+    // module.css's .mb-check-list/.mb-alert-list), every other
+    // payload.sections entry becomes its own plain card, and "Väder
+    // Stockholm" (matched by heading text, as before) is pulled out to
+    // become that full-width detail card instead of living in the grid.
     function render(payload) {
       briefRoot.innerHTML = "";
 
       const page = el("div", "band band-top mb-page");
       const wrap = el("div", "wrap");
 
-      // ---- Hero ----
-      const hero = el("div", "mb-hero");
+      // ---- Hero (its own card, tinted differently from the plain white
+      // cards below so it reads as "the featured one") ----
+      const hero = el("div", "mb-card mb-hero");
       const heroMain = el("div", "mb-hero-main");
       heroMain.appendChild(el("div", "day-date", `${payload.day_name} · ${payload.date_label}`));
       heroMain.appendChild(el("h1", "headline headline-font", payload.headline));
@@ -277,18 +258,10 @@ export default {
       }
       hero.appendChild(heroMain);
 
+      // Just clock + location pin now -- the weather icon that used to
+      // sit above the clock moved down to the weather detail card below
+      // instead (see "Väder Stockholm" handling further down).
       const heroSide = el("div", "mb-hero-side");
-      if (payload.svg && isSafeSvg(payload.svg)) {
-        const holder = document.createElement("div");
-        holder.innerHTML = payload.svg; // the one documented innerHTML exception (isSafeSvg-gated)
-        const svgNode = holder.querySelector("svg");
-        if (svgNode) {
-          svgNode.classList.add("mb-hero-weather-icon");
-          heroSide.appendChild(svgNode);
-        }
-      } else if (payload.svg) {
-        console.warn("Skipped rendering payload.svg: failed the safety allowlist check.");
-      }
       const pinLabel = el("span", "", "Stockholm");
       const pin = el("div", "mb-location-pin");
       pin.appendChild(iconPin());
@@ -298,6 +271,37 @@ export default {
       hero.appendChild(heroSide);
 
       wrap.appendChild(hero);
+
+      // ---- Weather detail card (full width, right above Avklarat) ----
+      // "Väder Stockholm" (matched by heading text) is pulled out of the
+      // normal sections list to become this instead of a grid card.
+      const sections = (payload.sections || []).slice();
+      const weatherIdx = sections.findIndex((s) => s.heading === "Väder Stockholm");
+      const weatherSection = weatherIdx >= 0 ? sections.splice(weatherIdx, 1)[0] : null;
+      const weatherItem = weatherSection && weatherSection.items && weatherSection.items[0];
+      if (weatherItem) {
+        const wcard = mbCard("mb-weather-card");
+        wcard.appendChild(mbCardHeading(weatherSection.heading));
+        const body = el("div", "mb-weather-body");
+        if (payload.svg && isSafeSvg(payload.svg)) {
+          const holder = document.createElement("div");
+          holder.innerHTML = payload.svg; // the one documented innerHTML exception (isSafeSvg-gated)
+          const svgNode = holder.querySelector("svg");
+          if (svgNode) {
+            svgNode.classList.add("mb-weather-icon");
+            body.appendChild(svgNode);
+          }
+        } else if (payload.svg) {
+          console.warn("Skipped rendering payload.svg: failed the safety allowlist check.");
+        }
+        const text = el("div", "mb-weather-text");
+        text.appendChild(el("p", "mb-weather-title", weatherItem.title));
+        if (weatherItem.sentence) text.appendChild(el("p", "mb-weather-sentence", weatherItem.sentence));
+        body.appendChild(text);
+        wcard.appendChild(body);
+        if (weatherSection.source) wcard.appendChild(el("p", "section-source", weatherSection.source));
+        wrap.appendChild(wcard);
+      }
 
       // ---- Card grid ----
       const grid = el("div", "mb-grid");
@@ -320,12 +324,6 @@ export default {
         }
       }
 
-      // "Väder Stockholm" (matched by heading text) is pulled out of the
-      // grid to become the full-width detail card below instead.
-      const sections = (payload.sections || []).slice();
-      const weatherIdx = sections.findIndex((s) => s.heading === "Väder Stockholm");
-      const weatherSection = weatherIdx >= 0 ? sections.splice(weatherIdx, 1)[0] : null;
-
       sections.forEach((section) => {
         if (!section.items || !section.items.length) return;
         const card = mbCard();
@@ -340,30 +338,6 @@ export default {
       });
 
       if (grid.children.length) wrap.appendChild(grid);
-
-      // ---- Weather detail card (full width) ----
-      const weatherItem = weatherSection && weatherSection.items && weatherSection.items[0];
-      if (weatherItem) {
-        const wcard = mbCard("mb-weather-card");
-        wcard.appendChild(mbCardHeading(weatherSection.heading));
-        const body = el("div", "mb-weather-body");
-        if (payload.svg && isSafeSvg(payload.svg)) {
-          const holder = document.createElement("div");
-          holder.innerHTML = payload.svg;
-          const svgNode = holder.querySelector("svg");
-          if (svgNode) {
-            svgNode.classList.add("mb-weather-icon");
-            body.appendChild(svgNode);
-          }
-        }
-        const text = el("div", "mb-weather-text");
-        text.appendChild(el("p", "mb-weather-title", weatherItem.title));
-        if (weatherItem.sentence) text.appendChild(el("p", "mb-weather-sentence", weatherItem.sentence));
-        body.appendChild(text);
-        wcard.appendChild(body);
-        if (weatherSection.source) wcard.appendChild(el("p", "section-source", weatherSection.source));
-        wrap.appendChild(wcard);
-      }
 
       page.appendChild(wrap);
       briefRoot.appendChild(page);

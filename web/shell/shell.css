@@ -92,21 +92,18 @@
    whatever's left" track, and grid guarantees the last column's own
    edge is the container's own edge -- no flex-basis-vs-wrapped-content
    judgment call left for any browser to get wrong. */
+/* Nav (Brief/Sarek/Portfolio/Log) and ToDo now live in a fixed right-edge
+   tab stack (see .edge-tab-stack below), and settings/sign-out move to a
+   fixed left-edge stack on desktop -- the top bar itself is down to just
+   the hamburger (mobile only) and the status line, so a plain two-column
+   grid replaces the old three-zone auto/1fr/auto one. */
 .top-bar{
   position:sticky; top:0; z-index:15;
-  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px;
+  display:grid; grid-template-columns:1fr auto; align-items:center; gap:12px;
   padding:12px 20px;
   background:var(--bg); border-bottom:1px solid var(--hairline);
 }
-.top-bar-nav{ order:1; justify-self:start; }
-.top-bar-status{ order:2; justify-self:stretch; }
-.top-bar-group{ order:3; justify-self:end; display:flex; align-items:center; gap:8px; }
-/* Lets the menu+settings group and sign-out swap which side they're on
-   (see the "Swap button sides" setting) -- the network status stays in
-   the middle regardless, since its order (2) always sits between
-   whichever of the other two is 1 vs 3. */
-body.top-bar-swapped .top-bar-nav{ order:3; }
-body.top-bar-swapped .top-bar-group{ order:1; }
+.top-bar-group{ display:flex; align-items:center; gap:8px; }
 .icon-btn{
   display:inline-flex; align-items:center; justify-content:center;
   width:34px; height:34px; padding:0;
@@ -114,6 +111,7 @@ body.top-bar-swapped .top-bar-group{ order:1; }
   color:var(--ink-soft); cursor:pointer;
 }
 .icon-btn:hover{ border-color:var(--ink-soft); color:var(--ink); }
+.icon-btn .edge-tab-label{ display:none; }
 
 /* Countdown + IP/VPN status + clock, grouped into one grid child of
    .top-bar instead of three separate ones -- three separate items each
@@ -140,11 +138,6 @@ body.top-bar-swapped .top-bar-group{ order:1; }
   word-break:break-word;
 }
 .network-status:empty{ display:none; }
-
-/* Plain live clock (see shell.js's tickClock). */
-.topbar-clock{
-  font-size:11px; letter-spacing:.01em; color:var(--ink-grey); white-space:nowrap;
-}
 
 /* Plain IPv4/IPv6/VPN line, no frame — colors inherit via currentColor
    so this reads correctly both here (light, on --ink-grey) and on the
@@ -205,43 +198,73 @@ body.top-bar-swapped .top-bar-group{ order:1; }
 .side-nav .nav-badge{ top:50%; right:10px; transform:translateY(-50%); }
 .nav button.active .nav-badge{ border-color:var(--clay); }
 
-/* Real, always-visible nav buttons in the top bar on a wide-enough
-   screen instead of hiding navigation behind a hamburger -- a phone
-   pattern that only existed here because the drawer was this shell's
-   one nav implementation. shell.js's placeNavForViewport() physically
-   moves #module-nav from #side-nav into #top-bar-nav-slot (a child of
-   .top-bar) once the viewport crosses this same breakpoint, so there's
-   no second bar sitting underneath .top-bar -- the buttons live in the
-   same row as the settings/sign-out icons. #side-nav and its backdrop
-   are simply unused once #module-nav has moved out of them (nothing
-   left to open), so no CSS override is needed for them here at all. */
-.top-bar-nav{ display:flex; align-items:center; }
-.top-bar-nav .nav{ flex-direction:row; flex-wrap:wrap; }
-.top-bar-nav .nav button{ text-align:center; padding:6px 14px; }
-.top-bar-nav .nav-badge{ top:4px; right:4px; transform:none; }
+/* ---- Edge tabs (2026-07-25): on a wide-enough screen, navigation
+   (Brief/Sarek/Portfolio, built by module-registry.js's buildNav) plus
+   Log and ToDo (both bespoke drawers, see shell/log-drawer.js and
+   shell/todo-drawer.js) sit as a stack of small vertical tabs pinned to
+   the right edge of the viewport, instead of inline buttons in the top
+   bar -- shell.js's placeNavForViewport() physically moves #module-nav
+   from #side-nav into #nav-edge-tabs once the viewport crosses this same
+   breakpoint. Settings/sign-out get the mirrored treatment on the left
+   (pure CSS repositioning, no reparenting needed -- see further down).
+   Below that breakpoint everything reverts to the old phone layout:
+   nav lives in the hamburger drawer, settings/sign-out are plain top-bar
+   icons -- a phone screen doesn't have edge real estate to spare for a
+   permanent tab stack on *two* sides. */
+.edge-tab-stack{
+  position:fixed; top:50%; transform:translateY(-50%); z-index:16;
+  display:flex; flex-direction:column; gap:8px;
+}
+.edge-tab-stack.right{ right:0; }
+.edge-tab-stack.left{ left:0; }
+.edge-tab-stack .nav{ display:contents; } /* the row/column flex on .nav doesn't matter here -- buttons join the stack's own flex column directly */
+
+#nav-edge-tabs .nav button,
+.edge-tab{
+  cursor:pointer; user-select:none; border:none; font-family:inherit;
+  font-size:13px; font-weight:600; letter-spacing:.04em; color:#fff;
+  padding:14px 8px; writing-mode:vertical-rl; box-shadow:var(--mb-shadow, 0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.07));
+}
+.edge-tab-stack.right #nav-edge-tabs .nav button,
+.edge-tab-stack.right .edge-tab{ border-radius:10px 0 0 10px; }
+.edge-tab-stack.left .edge-tab{ transform:rotate(180deg); border-radius:0 10px 10px 0; }
+/* Page-navigation tabs (Brief/Sarek/Portfolio) vs fold-out-drawer tabs
+   (Log, ToDo, Settings) get visibly different colors -- clicking one
+   replaces the whole page, the other slides a panel over it, and that
+   distinction is exactly what Dario asked to see at a glance. Sign-out
+   isn't really either (it's a confirmation prompt, not navigation or a
+   panel), so it just stays neutral alongside the page tabs. */
+#nav-edge-tabs .nav button{ background:var(--ink); }
+#nav-edge-tabs .nav button.active{ background:var(--clay); }
+#nav-edge-tabs .nav-badge{ top:4px; right:4px; transform:none; }
+.edge-tab.edge-tab-page{ background:var(--ink); }
+.edge-tab.edge-tab-drawer{ background:#2F6FE4; }
+
 @media (min-width:860px){
   #nav-toggle-btn{ display:none; }
-  /* Three clear zones instead of one flat row of mixed controls:
-     navigation | status (countdown/IP/clock) | settings/sign-out. Only
-     scoped to desktop, since #top-bar-nav-slot is empty on mobile (nav
-     lives in the side-nav drawer there instead, see shell.js's
-     placeNavForViewport) -- a divider next to nothing would look stray. */
-  .top-bar-nav:has(.nav button){ padding-right:16px; border-right:1px solid var(--hairline); }
-  .top-bar-group{ padding-left:16px; border-left:1px solid var(--hairline); }
-  /* "Swap button sides" (settings, see dashboard-background.js) flips the
-     whole row via flex-direction:row-reverse -- a physical border-right/
-     border-left doesn't follow that reversal on its own (it stays on the
-     same edge of the *box*, which is now the bar's outer edge instead of
-     the one facing the status cluster), so the two rules above get
-     mirrored here rather than left to silently end up on the wrong side. */
-  body.top-bar-swapped .top-bar-nav:has(.nav button){
-    border-right:none; padding-right:0;
-    border-left:1px solid var(--hairline); padding-left:16px;
+  /* Settings/sign-out stay physically inside .top-bar-group in the DOM
+     (so mobile keeps them exactly where they've always been -- see
+     auth.js/shell.js, nothing about their wiring changes) but escape its
+     layout entirely here, becoming their own small left-edge tab stack. */
+  #open-settings-btn, #signout-btn{
+    display:inline-block; position:fixed; left:0; z-index:16;
+    width:auto; height:auto; padding:14px 8px; border:none; border-radius:0 10px 10px 0;
+    writing-mode:vertical-rl; transform:rotate(180deg); /* pure visual flip -- top below positions the box itself, unaffected by this */
+    font-size:13px; font-weight:600; letter-spacing:.04em; color:#fff;
+    box-shadow:0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.07);
   }
-  body.top-bar-swapped .top-bar-group{
-    border-left:none; padding-left:0;
-    border-right:1px solid var(--hairline); padding-right:16px;
-  }
+  #open-settings-btn svg, #signout-btn svg{ display:none; } /* icon only makes sense un-rotated in the top bar */
+  #open-settings-btn .edge-tab-label, #signout-btn .edge-tab-label{ display:inline; }
+  /* Settings opens a drawer (drawer-blue, same as Log/ToDo); sign-out
+     triggers a confirm prompt, not a panel, so it stays neutral. `top`
+     (a layout property, resolved before `transform`) positions each box
+     directly -- rotate() above only spins each one in place around its
+     own center afterward, so it can't shift these positions around the
+     way mixing rotate() with translateY() in the same transform did (the
+     first version had settings and sign-out swapped top-to-bottom for
+     exactly that reason). */
+  #open-settings-btn{ top:calc(50% - 96px); background:#2F6FE4; }
+  #signout-btn{ top:calc(50% + 6px); background:var(--ink); }
 }
 
 .btn{
@@ -402,10 +425,13 @@ h2.section-heading{
 .module-error{ max-width:860px;margin:0 auto;padding:40px 32px;color:var(--clay-hover);font-size:14px; }
 
 /* ---- settings panel (appearance + sign-in + this device's encryption key) ---- */
+/* Opens from the left now (2026-07-25) -- mirrors ToDo/Log opening from
+   the right, and pairs with the settings tab itself moving to the left
+   edge (see the #open-settings-btn rules above). */
 .security-panel{
-  position:fixed; top:0; right:0; bottom:0; width:360px; max-width:90vw;
-  background:var(--bg); border-left:1px solid var(--hairline); padding:28px;
-  transform:translateX(100%); transition:transform .2s ease; z-index:20;
+  position:fixed; top:0; left:0; bottom:0; width:360px; max-width:90vw;
+  background:var(--bg); border-right:1px solid var(--hairline); padding:28px;
+  transform:translateX(-100%); transition:transform .2s ease; z-index:20;
   overflow-y:auto;
 }
 .security-panel.open{ transform:none; }
@@ -480,7 +506,109 @@ h2.section-heading{
   font-size:20px; color:var(--ink-grey); line-height:1;
 }
 
+/* ---- Sign-out confirmation (see auth.js) -- a small centered dialog
+   rather than the browser's native confirm(), so it matches the rest of
+   the app's look instead of a jarring native popup. ---- */
+.confirm-backdrop{
+  position:fixed; inset:0; z-index:24; background:rgba(16,24,40,.35);
+  opacity:0; pointer-events:none; transition:opacity .15s ease;
+}
+.confirm-backdrop.open{ opacity:1; pointer-events:auto; }
+.confirm-dialog{
+  position:fixed; top:50%; left:50%; z-index:25; width:320px; max-width:88vw;
+  background:var(--bg); border-radius:14px; padding:22px; text-align:center;
+  box-shadow:0 20px 60px rgba(16,24,40,.25);
+  opacity:0; pointer-events:none; transform:translate(-50%,-50%) scale(.96);
+  transition:opacity .15s ease, transform .15s ease;
+}
+.confirm-dialog.open{ opacity:1; pointer-events:auto; transform:translate(-50%,-50%) scale(1); }
+.confirm-dialog p{ font-size:15px; color:var(--ink); margin:0 0 18px; }
+.confirm-dialog-actions{ display:flex; gap:10px; justify-content:center; }
+.confirm-dialog-cancel{
+  background:none; border:1px solid var(--hairline); border-radius:8px; padding:10px 18px;
+  font-family:inherit; font-size:13.5px; color:var(--ink-soft); cursor:pointer;
+}
+.confirm-dialog-cancel:hover{ border-color:var(--ink-soft); color:var(--ink); }
+
+/* ---- ToDo + Log slide-out drawers (see shell/todo-drawer.js and
+   shell/log-drawer.js) -- global chrome now (2026-07-25), not tied to
+   any one module's mount/unmount lifecycle, so they stay reachable from
+   every page. Same right-edge open/close mechanics as #side-nav, just
+   its own backdrop/z-index so the two never fight over the same one. */
+.todo-drawer-backdrop, .log-drawer-backdrop{
+  position:fixed; inset:0; z-index:19; background:rgba(16,24,40,.28);
+  opacity:0; pointer-events:none; transition:opacity .2s ease;
+}
+.todo-drawer-backdrop.open, .log-drawer-backdrop.open{ opacity:1; pointer-events:auto; }
+
+.todo-drawer, .log-drawer{
+  position:fixed; top:0; right:0; bottom:0; z-index:20; width:420px; max-width:90vw;
+  background:var(--bg); border-left:1px solid var(--hairline);
+  transform:translateX(100%); transition:transform .2s ease;
+  display:flex; flex-direction:column;
+}
+.todo-drawer.open, .log-drawer.open{ transform:none; }
+.todo-drawer-header, .log-drawer-header{
+  display:flex; align-items:center; justify-content:space-between; padding:18px 20px;
+  border-bottom:1px solid var(--hairline); flex:0 0 auto;
+}
+.todo-drawer-title, .log-drawer-title{ font-weight:700; font-size:15px; color:var(--ink); }
+.todo-drawer-close, .log-drawer-close{
+  background:none; border:none; font-size:22px; line-height:1; color:var(--ink-soft); cursor:pointer; padding:2px 6px;
+}
+.todo-drawer-close:hover, .log-drawer-close:hover{ color:var(--ink); }
+.todo-drawer-body, .log-drawer-body{ flex:1 1 auto; overflow-y:auto; padding:20px; }
+
+/* The todo panel and access-log module both still build their own
+   .band.band-top > .wrap shell -- inside a drawer body that just reads
+   as the drawer's own content, no double-boxing, since the drawer
+   already provides the padding/background. */
+.todo-drawer-body .band-top, .log-drawer-body .band-top{ background:none; box-shadow:none; margin:0; padding:0; }
+.todo-drawer-body .wrap, .log-drawer-body .wrap{ max-width:none; padding:0; margin:0; }
+
+.todo-form{ display:flex; gap:8px; margin-bottom:16px; }
+.todo-form .text-input{ flex:1; }
+.todo-panel .text-input{
+  font-family:inherit; font-size:13.5px; color:var(--ink);
+  background:none; border:1px solid var(--hairline); border-radius:8px; padding:9px 12px;
+}
+.todo-panel .text-input:focus{ outline:none; border-color:#2F6FE4; }
+
+/* The shared .empty-state rule above is sized for a full-page empty
+   state -- 48px/32px padding, centered, 860px max-width. Inside a
+   420px-wide drawer that reads as a big block of dead air, so it's cut
+   down to the same compact, left-aligned rhythm as a real .todo-item row. */
+.todo-panel .empty-state, .log-drawer-body .empty-state{ max-width:none; margin:0; padding:8px 0; text-align:left; font-size:14px; }
+
+.todo-item{ display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-top:1px solid var(--hairline); }
+.todo-list .todo-item:first-child{ border-top:none; }
+.todo-check{ width:15px; height:15px; margin-top:3px; accent-color:#2F6FE4; cursor:pointer; flex-shrink:0; }
+.todo-body{ flex:1; min-width:0; }
+.todo-text{ font-size:14px; line-height:1.4; color:var(--ink); }
+.todo-item.todo-done .todo-text{ color:var(--ink-soft); text-decoration:line-through; }
+
+.todo-claude-btn{
+  background:none; border:1px solid var(--hairline); border-radius:8px; font-size:14px;
+  padding:4px 8px; cursor:pointer; flex-shrink:0; line-height:1;
+}
+.todo-claude-note{ font-size:12.5px; margin-top:3px; display:flex; align-items:center; gap:8px; }
+.todo-claude-pending{ color:var(--status-warn); }
+.todo-claude-done{ color:var(--status-ok); }
+.todo-claude-clear{
+  background:none; border:none; color:var(--ink-soft); font-size:11.5px; text-decoration:underline;
+  cursor:pointer; padding:0; font-family:inherit;
+}
+
+.todo-done-toggle{
+  display:block; margin-top:14px; background:none; border:1px solid var(--hairline); border-radius:8px;
+  padding:6px 14px; font-family:inherit; font-size:12.5px; color:var(--ink-soft); cursor:pointer;
+}
+.todo-done-toggle.active{ background:#2F6FE4; color:#fff; border-color:#2F6FE4; }
+.todo-done-list{ margin-top:4px; }
+.todo-done-list.hidden{ display:none; }
+
 @media (max-width:640px){
   .security-panel{width:100%;}
+  .todo-drawer, .log-drawer{width:100%;}
   .bottom-bar{ gap:18px; padding:12px 20px; }
 }

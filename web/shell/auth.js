@@ -98,7 +98,23 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
   document.getElementById("passkey-signin-btn").addEventListener("click", () => triggerPasskeySignIn("tap"));
   wireSwipeToSignIn(gateEl, () => triggerPasskeySignIn("swipe"));
 
-  document.getElementById("signout-btn").addEventListener("click", () => supabase.auth.signOut());
+  // "Vill du verkligen logga ut?" -- a real click on the sign-out edge
+  // tab is easy to trigger by accident (it's a permanent fixture now,
+  // not tucked inside a menu), so this asks before actually ending the
+  // session instead of signing out immediately.
+  const signoutBackdrop = document.getElementById("signout-confirm-backdrop");
+  const signoutDialog = document.getElementById("signout-confirm-dialog");
+  function setSignoutConfirmOpen(open) {
+    signoutBackdrop.classList.toggle("open", open);
+    signoutDialog.classList.toggle("open", open);
+  }
+  document.getElementById("signout-btn").addEventListener("click", () => setSignoutConfirmOpen(true));
+  document.getElementById("signout-confirm-yes").addEventListener("click", () => {
+    setSignoutConfirmOpen(false);
+    supabase.auth.signOut();
+  });
+  document.getElementById("signout-confirm-no").addEventListener("click", () => setSignoutConfirmOpen(false));
+  signoutBackdrop.addEventListener("click", () => setSignoutConfirmOpen(false));
 
   // The single source of truth for session state — no duplicate
   // getSession() call alongside this, which is what caused the dup-render

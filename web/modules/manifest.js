@@ -24,9 +24,7 @@ export const MODULES = [
     path: "./portfolio/module.js",
     css: "./portfolio/module.css",
   },
-  {
-    id: "access-log",
-    path: "./access-log/module.js",
-    css: "./access-log/module.css",
-  },
+  // access-log ("Log") is deliberately NOT here any more (2026-07-25) --
+  // it opens as a slide-out drawer instead of a normal nav tab now, see
+  // shell/log-drawer.js, which loads it independently of this list.
 ];
