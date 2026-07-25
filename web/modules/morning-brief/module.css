@@ -31,6 +31,12 @@ body.has-custom-bg .module-morning-brief .tomorrow-line{ color:#4A473F; }
 
 .module-morning-brief .quiet-line{ font-size:15px; color:var(--ink-soft); padding:4px 0 6px; }
 
+/* Small source attribution right under a section-heading (e.g. "Open-Meteo"
+   under "Väder Stockholm") -- deliberately weaker than every other text in
+   the brief, since it's provenance, not content. */
+.module-morning-brief .section-source{ font-size:11px; color:var(--ink-soft); opacity:.7; margin:-2px 0 8px; }
+body.has-custom-bg .module-morning-brief .section-source{ color:#4A473F; }
+
 /* Plain (non-collapsible) section items -- see module.js's
    renderPlainItem. Same hairline-between-rows rhythm as .item, just
    without the number/chevron column and with the sentence always

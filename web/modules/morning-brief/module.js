@@ -158,6 +158,7 @@ export default {
       (payload.sections || []).forEach((section) => {
         if (!section.items || !section.items.length) return;
         wrap.appendChild(el("h2", "section-heading", section.heading));
+        if (section.source) wrap.appendChild(el("p", "section-source", section.source));
         if (section.plain) {
           section.items.forEach((item) => wrap.appendChild(renderPlainItem(item)));
         } else {

@@ -104,13 +104,18 @@ tor-dashboard/
   ],
   "sections": [
     { "heading": "Tasks/to-dos", "items": [ { "title": "...", "sentence": "..." } ] },
-    { "heading": "Bakgrund", "plain": true, "items": [ { "title": "...", "sentence": "..." } ] }
+    { "heading": "Bakgrund", "plain": true, "items": [ { "title": "...", "sentence": "..." } ] },
+    { "heading": "Väder Stockholm", "plain": true, "source": "Open-Meteo", "items": [ { "title": "...", "sentence": "..." } ] }
   ]
 }
 ```
 
 `url` and `button` are optional per item; omit or set to `null` when there's
 nothing to link.
+
+A section's optional `source` renders as a small, deliberately muted line
+right under its heading — provenance (e.g. `"Open-Meteo"`), not content.
+Omit it when a section's content doesn't come from one attributable place.
 
 A section's `plain: true` renders its items as an always-visible title +
 sentence (no chevron, no tap-to-expand) instead of the normal collapsed-
