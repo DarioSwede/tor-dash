@@ -239,7 +239,16 @@
    to shell.css's much older, unrelated 8px .nav button default instead. */
 #nav-edge-tabs .nav button{ border-radius:14px 0 0 14px; }
 .edge-tab-stack.right .edge-tab{ border-radius:14px 0 0 14px; }
-.edge-tab-stack.left .edge-tab{ transform:rotate(180deg); border-radius:0 14px 14px 0; }
+/* border-radius is painted in the box's own *un-rotated* frame, then
+   transform:rotate(180deg) flips the whole rendered result -- so to end
+   up with the rounded side visually facing the page content (and the
+   flat side against the screen edge) after that flip, the radius has to
+   be defined backwards from what you'd expect for an unrotated left-edge
+   box (round-then-flip = round on the *opposite* physical side you
+   drew it on). Wrong the first time (0 14px 14px 0), which put the flat
+   side facing the content and the round side jammed into the edge --
+   exactly backwards, and exactly what Dario flagged. */
+.edge-tab-stack.left .edge-tab{ transform:rotate(180deg); border-radius:14px 0 0 14px; }
 /* A small nudge away from the edge plus a brighter fill on hover -- the
    flat, static blocks felt inert/"iffy" (Dario's word) with no feedback
    at all under the mouse, unlike every other clickable surface in the
@@ -271,7 +280,10 @@
      layout entirely here, becoming their own small left-edge tab stack. */
   #open-settings-btn, #signout-btn{
     display:inline-block; position:fixed; left:0; z-index:16;
-    width:auto; height:auto; min-height:84px; padding:18px 11px; border:none; border-radius:0 14px 14px 0;
+    /* Same backwards-from-usual radius as .edge-tab-stack.left .edge-tab
+       above, for the same reason: rotate(180deg) flips which physical
+       side the rounded corners land on. */
+    width:auto; height:auto; min-height:84px; padding:18px 11px; border:none; border-radius:14px 0 0 14px;
     writing-mode:vertical-rl; transform:rotate(180deg); /* pure visual flip -- top below positions the box itself, unaffected by this */
     font-size:13.5px; font-weight:600; letter-spacing:.03em; color:#fff;
     box-shadow:0 1px 2px rgba(16,24,40,.06), 0 6px 16px rgba(16,24,40,.12);

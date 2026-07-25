@@ -61,8 +61,8 @@ body.has-custom-bg .module-morning-brief{ --mb-page-bg:transparent; --mb-card-bg
 .module-morning-brief .act:last-child{ padding-right:0; }
 .module-morning-brief .act-icon{ margin-bottom:6px; }
 .module-morning-brief .act-icon .mb-icon{ width:20px; height:20px; }
-.module-morning-brief .act-time{ font-weight:700; font-size:12px; color:var(--mb-accent); margin-bottom:4px; }
-.module-morning-brief .act-note{ font-size:13px; line-height:1.45; color:var(--ink-soft); }
+.module-morning-brief .act-time{ font-weight:700; font-size:14px; color:var(--mb-accent); margin-bottom:4px; }
+.module-morning-brief .act-note{ font-size:14.5px; line-height:1.5; color:var(--ink-soft); }
 
 .module-morning-brief .tomorrow-line{ font-size:13px; color:var(--ink-soft); padding:10px 0 0; }
 .module-morning-brief .quiet-line{ font-size:15px; color:var(--ink-soft); padding:10px 0 0; }
