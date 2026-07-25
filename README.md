@@ -163,32 +163,56 @@ prefixes it with "Imorgon: " itself, so the string should just be the fact
 ("Vindelälvsloppets sista dag."), not restate "tomorrow". Omit or set to
 `null` on days with nothing worth a heads-up about — most days.
 
-**Driftstatus (service status):** the brief shows a Driftstatus card, but
-most of it is *not* pushed in the payload — it's fetched live in the
+**Driftstatus (service status):** the brief shows a Driftstatus card as one
+horizontal strip of service dots. A healthy day is just a line of green
+with nothing to read; only degraded services get a written explanation
+underneath (amber for a disruption, red for an outage, worst first).
+`unknown` — a check that couldn't run — stays a quiet grey dot with the
+reason in its tooltip, and deliberately counts as neither, since "I
+couldn't check" is not evidence of an outage.
+
+Most of the card is *not* pushed in the payload: it's fetched live in the
 browser on every render, because an hour-stale "BankID fungerar" is worth
 nothing at the moment you actually need it. Anything published as an
-Atlassian Statuspage (GitHub, Supabase, BankID, Claude, OpenAI — see the
-list in `web/modules/morning-brief/status-check.js`) is read client-side
-from its public, CORS-open `/api/v2/summary.json`. Adding another such
-service is one line in that list; nothing here needs to change.
+Atlassian Statuspage (GitHub, Supabase, BankID, Claude, OpenAI — see
+`STATUSPAGE_SOURCES` in `web/modules/morning-brief/status-check.js`) is
+read client-side from its public, CORS-open `/api/v2/summary.json`. Adding
+another such service is one line in that list; nothing here changes.
 
-`service_status` is only for sources the browser *can't* read: Swedish
-telcos and banks publish driftinformation as HTML with no CORS and no API.
-Fill it from `scripts/status_check.py`:
+`service_status` is only for sources the browser *can't* read — currently
+Telia, Gmail and Loopia. Fill it from `scripts/status_check.py`:
 ```
 python3 scripts/status_check.py                     # -> JSON array, paste in as service_status
+python3 scripts/status_check.py --only gmail
 ```
-`level` is one of `ok` / `warn` / `down` / `unknown`. Two caveats worth
-knowing: the Telia check is a **scrape** of a page with no API contract, so
-it can break whenever Telia rewords that page (it matches on visible
-phrases rather than markup, and fails to `unknown` rather than guessing) —
-and `telia.se` must be on the scheduled task's network allowlist, same as
-`*.supabase.co`, or every run returns `unknown`. Omit `service_status`
-entirely and the card just shows the live-checked services.
+`level` is one of `ok` / `warn` / `down` / `unknown`. Why each one is stuck
+server-side, and how much to trust it:
+
+| Source | Why not client-side | Reliability |
+|---|---|---|
+| Gmail | Google's Workspace dashboard, not Statuspage, and not CORS-open | Good — real documented JSON feed, not a scrape |
+| Telia | HTML only, no CORS, no API | Scrape; matches visible phrases, not markup |
+| Loopia | No status API or status page at all; they point at driftbloggen.se | Weakest — a blog is a poor "is it down now" source, so it only reports a problem for current-year entries near the top of the page |
+
+Every check fails **soft**: any network error, unexpected shape or
+unrecognized wording returns `unknown` rather than a confident `ok`, since
+a status check that wrongly says "fine" is worse than one that admits it
+doesn't know. Omit `service_status` entirely and the card just shows the
+live-checked services.
+
+Two operational caveats: none of the three were verifiable against their
+live sources when written (this dev environment's proxy 403s telia.se,
+google.com and driftbloggen.se), and `telia.se`, `www.google.com` and
+`driftbloggen.se` each have to be on the scheduled task's network
+allowlist — same constraint as `*.supabase.co` — or that source returns
+`unknown` every run.
 
 Downdetector is deliberately not a source anywhere here: it has no official
 public API, so every "Downdetector API" in the wild is an unofficial
-scraper of a Cloudflare-protected page.
+scraper of a Cloudflare-protected page. StatusGator does have an API on all
+plans including free, and covers ~3 500 services (Telia, Tele2, Swedbank…) —
+worth revisiting if the scrapes above become annoying, but it needs an
+account and an API key.
 
 **Väder (weather) section:** built from `scripts/weather.py`, not a web
 search — it calls Open-Meteo (free, no API key) and prints structured

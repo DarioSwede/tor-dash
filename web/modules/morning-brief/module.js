@@ -301,6 +301,18 @@ export default {
         wrap.appendChild(wcard);
       }
 
+      // ---- Driftstatus (full width, above the grid) ----
+      // Unlike every other card here its content isn't in the payload at
+      // all: the Statuspage services are fetched live on each render,
+      // because an hour-stale "BankID fungerar" is worth nothing. Full
+      // width rather than a grid cell so the whole strip of services fits
+      // on one line, which is the entire point of the layout. Any previous
+      // card's in-flight fetches are cancelled first so their responses
+      // can't land in a card that's just been thrown away.
+      statusCard?.cancel();
+      statusCard = mountStatusCard(el, payload.service_status);
+      wrap.appendChild(statusCard.card);
+
       // ---- Card grid ----
       const grid = el("div", "mb-grid");
 
@@ -334,16 +346,6 @@ export default {
         }
         grid.appendChild(card);
       });
-
-      // Driftstatus -- unlike every other card here, its content isn't in
-      // the payload at all: it's fetched live from the services' own
-      // status pages on each render, because an hour-stale "BankID
-      // fungerar" is worth nothing. See status-check.js. Any previous
-      // card's in-flight fetches are cancelled first so their responses
-      // can't land in a card that's just been thrown away.
-      statusCard?.cancel();
-      statusCard = mountStatusCard(el, payload.service_status);
-      grid.appendChild(statusCard.card);
 
       // ToDo card -- collapsed by default (Dario wants it out of the way
       // until he actually wants it), expands in place on click instead of
