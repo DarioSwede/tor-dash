@@ -19,7 +19,7 @@
 }
 .module-morning-brief .drawing{ width:auto; max-width:100%; height:auto; max-height:88px; display:block; }
 
-.module-morning-brief .icon-clock-row{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:2px; }
+.module-morning-brief .icon-clock-row{ display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap; margin-bottom:2px; }
 .module-morning-brief .world-clock{
   cursor:pointer; user-select:none; padding:8px 16px; border:1px solid var(--hairline); border-radius:12px;
   text-align:center; transition:border-color .15s ease;
