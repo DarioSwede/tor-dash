@@ -18,7 +18,6 @@ import { loadDashboardBackground, wireDashboardBackgroundSetting } from "./dashb
 import { lookupIp } from "./ip-lookup.js";
 import { getLastSeenBrief } from "./last-seen.js";
 import { wireBriefScheduleSetting } from "./brief-schedule.js";
-import { mountTodoDrawer } from "./todo-drawer.js";
 import { mountLogDrawer } from "./log-drawer.js";
 
 const gateEl = document.getElementById("gate");
@@ -33,7 +32,6 @@ const navToggleBtn = document.getElementById("nav-toggle-btn");
 const navEdgeTabs = document.getElementById("nav-edge-tabs");
 const themeColorMeta = document.getElementById("theme-color-meta");
 
-let todoDrawer = null;
 let logDrawer = null;
 
 // Wide screens get the nav buttons as a fixed right-edge tab stack
@@ -109,10 +107,12 @@ function boot() {
           lookupIp,
         };
         await initModules(navEl, contentEl, ctx, preferredInitialId);
-        // ToDo/Log are global chrome now, not tied to any one module's
-        // mount/unmount lifecycle -- mounted once, ever, so a sign-out
-        // followed by signing back in doesn't stack up duplicate tabs.
-        if (!todoDrawer) todoDrawer = mountTodoDrawer(navEdgeTabs, ctx);
+        // Log is global chrome, not tied to any one module's mount/
+        // unmount lifecycle -- mounted once, ever, so a sign-out followed
+        // by signing back in doesn't stack up duplicate tabs. ToDo went
+        // back to living inside the Morning Brief module itself
+        // (2026-07-25) as a collapsible card -- see that module's own
+        // mountTodoCard.
         if (!logDrawer) logDrawer = mountLogDrawer(navEdgeTabs, ctx);
       } catch (e) {
         // Last-resort net: anything unexpected here previously meant a

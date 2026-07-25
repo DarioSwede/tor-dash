@@ -200,17 +200,18 @@
 
 /* ---- Edge tabs (2026-07-25): on a wide-enough screen, navigation
    (Brief/Sarek/Portfolio, built by module-registry.js's buildNav) plus
-   Log and ToDo (both bespoke drawers, see shell/log-drawer.js and
-   shell/todo-drawer.js) sit as a stack of small vertical tabs pinned to
-   the right edge of the viewport, instead of inline buttons in the top
-   bar -- shell.js's placeNavForViewport() physically moves #module-nav
-   from #side-nav into #nav-edge-tabs once the viewport crosses this same
-   breakpoint. Settings/sign-out get the mirrored treatment on the left
-   (pure CSS repositioning, no reparenting needed -- see further down).
-   Below that breakpoint everything reverts to the old phone layout:
-   nav lives in the hamburger drawer, settings/sign-out are plain top-bar
-   icons -- a phone screen doesn't have edge real estate to spare for a
-   permanent tab stack on *two* sides. */
+   Log (a bespoke drawer, see shell/log-drawer.js) sit as a stack of
+   small vertical tabs pinned to the right edge of the viewport, instead
+   of inline buttons in the top bar -- shell.js's placeNavForViewport()
+   physically moves #module-nav from #side-nav into #nav-edge-tabs once
+   the viewport crosses this same breakpoint. Settings/sign-out get the
+   mirrored treatment on the left (pure CSS repositioning, no reparenting
+   needed -- see further down). Below that breakpoint everything reverts
+   to the old phone layout: nav lives in the hamburger drawer, settings/
+   sign-out are plain top-bar icons -- a phone screen doesn't have edge
+   real estate to spare for a permanent tab stack on *two* sides. (ToDo
+   was part of this same stack too until 2026-07-25, when it moved back
+   inside the Morning Brief module as a collapsible card instead.) */
 .edge-tab-stack{
   position:fixed; top:50%; transform:translateY(-50%); z-index:16;
   display:flex; flex-direction:column; gap:8px;
@@ -222,14 +223,36 @@
 #nav-edge-tabs .nav button,
 .edge-tab{
   cursor:pointer; user-select:none; border:none; font-family:inherit;
-  font-size:13px; font-weight:600; letter-spacing:.04em; color:#fff;
-  padding:14px 8px; writing-mode:vertical-rl; box-shadow:var(--mb-shadow, 0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.07));
+  font-size:13.5px; font-weight:600; letter-spacing:.03em; color:#fff;
+  padding:18px 11px; min-height:84px; writing-mode:vertical-rl;
+  box-shadow:0 1px 2px rgba(16,24,40,.06), 0 6px 16px rgba(16,24,40,.12);
+  transition:box-shadow .15s ease, transform .15s ease, filter .15s ease;
 }
-.edge-tab-stack.right #nav-edge-tabs .nav button,
-.edge-tab-stack.right .edge-tab{ border-radius:10px 0 0 10px; }
-.edge-tab-stack.left .edge-tab{ transform:rotate(180deg); border-radius:0 10px 10px 0; }
-/* Page-navigation tabs (Brief/Sarek/Portfolio) vs fold-out-drawer tabs
-   (Log, ToDo, Settings) get visibly different colors -- clicking one
+/* #nav-edge-tabs is always the *right* stack (hardcoded "right" in
+   index.html, there's only ever one) -- no need to qualify it with
+   .edge-tab-stack.right, that combination can only ever describe a
+   *different* .edge-tab living inside it (like the Log tab), never
+   #nav-edge-tabs itself. An earlier version got this backwards (chained
+   .edge-tab-stack.right as an ancestor of #nav-edge-tabs, which can't
+   ever match since they're the same element) and silently no-opped
+   every rule below -- the border-radius/hover-nudge quietly fell back
+   to shell.css's much older, unrelated 8px .nav button default instead. */
+#nav-edge-tabs .nav button{ border-radius:14px 0 0 14px; }
+.edge-tab-stack.right .edge-tab{ border-radius:14px 0 0 14px; }
+.edge-tab-stack.left .edge-tab{ transform:rotate(180deg); border-radius:0 14px 14px 0; }
+/* A small nudge away from the edge plus a brighter fill on hover -- the
+   flat, static blocks felt inert/"iffy" (Dario's word) with no feedback
+   at all under the mouse, unlike every other clickable surface in the
+   app (.icon-btn, .nav button, .btn all already give some). */
+#nav-edge-tabs .nav button:hover,
+.edge-tab:hover{ filter:brightness(1.12); box-shadow:0 2px 6px rgba(16,24,40,.1), 0 10px 22px rgba(16,24,40,.16); }
+#nav-edge-tabs .nav button:hover{ transform:translateX(-3px); }
+.edge-tab-stack.right .edge-tab:hover{ transform:translateX(-3px); }
+.edge-tab-stack.left .edge-tab:hover{ transform:rotate(180deg) translateX(-3px); }
+#nav-edge-tabs .nav button:focus-visible,
+.edge-tab:focus-visible{ outline:2px solid #fff; outline-offset:-4px; }
+/* Page-navigation tabs (Brief/Sarek/Portfolio) vs the fold-out-drawer
+   tabs (Log, Settings) get visibly different colors -- clicking one
    replaces the whole page, the other slides a panel over it, and that
    distinction is exactly what Dario asked to see at a glance. Sign-out
    isn't really either (it's a confirmation prompt, not navigation or a
@@ -248,14 +271,20 @@
      layout entirely here, becoming their own small left-edge tab stack. */
   #open-settings-btn, #signout-btn{
     display:inline-block; position:fixed; left:0; z-index:16;
-    width:auto; height:auto; padding:14px 8px; border:none; border-radius:0 10px 10px 0;
+    width:auto; height:auto; min-height:84px; padding:18px 11px; border:none; border-radius:0 14px 14px 0;
     writing-mode:vertical-rl; transform:rotate(180deg); /* pure visual flip -- top below positions the box itself, unaffected by this */
-    font-size:13px; font-weight:600; letter-spacing:.04em; color:#fff;
-    box-shadow:0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.07);
+    font-size:13.5px; font-weight:600; letter-spacing:.03em; color:#fff;
+    box-shadow:0 1px 2px rgba(16,24,40,.06), 0 6px 16px rgba(16,24,40,.12);
+    transition:box-shadow .15s ease, filter .15s ease;
   }
+  #open-settings-btn:hover, #signout-btn:hover{
+    filter:brightness(1.12); box-shadow:0 2px 6px rgba(16,24,40,.1), 0 10px 22px rgba(16,24,40,.16);
+    transform:rotate(180deg) translateX(-3px); /* real screen-space +3px (away from the left edge) -- rotate(180deg) flips a local translateX's sign */
+  }
+  #open-settings-btn:focus-visible, #signout-btn:focus-visible{ outline:2px solid #fff; outline-offset:-4px; }
   #open-settings-btn svg, #signout-btn svg{ display:none; } /* icon only makes sense un-rotated in the top bar */
   #open-settings-btn .edge-tab-label, #signout-btn .edge-tab-label{ display:inline; }
-  /* Settings opens a drawer (drawer-blue, same as Log/ToDo); sign-out
+  /* Settings opens a drawer (drawer-blue, same as Log); sign-out
      triggers a confirm prompt, not a panel, so it stays neutral. `top`
      (a layout property, resolved before `transform`) positions each box
      directly -- rotate() above only spins each one in place around its
@@ -263,8 +292,8 @@
      way mixing rotate() with translateY() in the same transform did (the
      first version had settings and sign-out swapped top-to-bottom for
      exactly that reason). */
-  #open-settings-btn{ top:calc(50% - 96px); background:#2F6FE4; }
-  #signout-btn{ top:calc(50% + 6px); background:var(--ink); }
+  #open-settings-btn{ top:calc(50% - 100px); background:#2F6FE4; }
+  #signout-btn{ top:calc(50% + 8px); background:var(--ink); }
 }
 
 .btn{
@@ -530,42 +559,49 @@ h2.section-heading{
 }
 .confirm-dialog-cancel:hover{ border-color:var(--ink-soft); color:var(--ink); }
 
-/* ---- ToDo + Log slide-out drawers (see shell/todo-drawer.js and
-   shell/log-drawer.js) -- global chrome now (2026-07-25), not tied to
-   any one module's mount/unmount lifecycle, so they stay reachable from
-   every page. Same right-edge open/close mechanics as #side-nav, just
-   its own backdrop/z-index so the two never fight over the same one. */
-.todo-drawer-backdrop, .log-drawer-backdrop{
+/* ---- Log slide-out drawer (see shell/log-drawer.js) -- global chrome,
+   not tied to any one module's mount/unmount lifecycle, so it stays
+   reachable from every page. Same right-edge open/close mechanics as
+   #side-nav, just its own backdrop/z-index so the two never fight over
+   the same one. (ToDo used to be a twin of this -- see
+   backup/pre-nav-redesign-2026-07-25 -- but moved back inside the
+   Morning Brief module as a collapsible card on 2026-07-25.) */
+.log-drawer-backdrop{
   position:fixed; inset:0; z-index:19; background:rgba(16,24,40,.28);
   opacity:0; pointer-events:none; transition:opacity .2s ease;
 }
-.todo-drawer-backdrop.open, .log-drawer-backdrop.open{ opacity:1; pointer-events:auto; }
+.log-drawer-backdrop.open{ opacity:1; pointer-events:auto; }
 
-.todo-drawer, .log-drawer{
+.log-drawer{
   position:fixed; top:0; right:0; bottom:0; z-index:20; width:420px; max-width:90vw;
   background:var(--bg); border-left:1px solid var(--hairline);
   transform:translateX(100%); transition:transform .2s ease;
   display:flex; flex-direction:column;
 }
-.todo-drawer.open, .log-drawer.open{ transform:none; }
-.todo-drawer-header, .log-drawer-header{
+.log-drawer.open{ transform:none; }
+.log-drawer-header{
   display:flex; align-items:center; justify-content:space-between; padding:18px 20px;
   border-bottom:1px solid var(--hairline); flex:0 0 auto;
 }
-.todo-drawer-title, .log-drawer-title{ font-weight:700; font-size:15px; color:var(--ink); }
-.todo-drawer-close, .log-drawer-close{
+.log-drawer-title{ font-weight:700; font-size:15px; color:var(--ink); }
+.log-drawer-close{
   background:none; border:none; font-size:22px; line-height:1; color:var(--ink-soft); cursor:pointer; padding:2px 6px;
 }
-.todo-drawer-close:hover, .log-drawer-close:hover{ color:var(--ink); }
-.todo-drawer-body, .log-drawer-body{ flex:1 1 auto; overflow-y:auto; padding:20px; }
+.log-drawer-close:hover{ color:var(--ink); }
+.log-drawer-body{ flex:1 1 auto; overflow-y:auto; padding:20px; }
 
-/* The todo panel and access-log module both still build their own
-   .band.band-top > .wrap shell -- inside a drawer body that just reads
-   as the drawer's own content, no double-boxing, since the drawer
-   already provides the padding/background. */
-.todo-drawer-body .band-top, .log-drawer-body .band-top{ background:none; box-shadow:none; margin:0; padding:0; }
-.todo-drawer-body .wrap, .log-drawer-body .wrap{ max-width:none; padding:0; margin:0; }
+/* The access-log module still builds its own .band.band-top > .wrap
+   shell -- inside a drawer body that just reads as the drawer's own
+   content, no double-boxing, since the drawer already provides the
+   padding/background. */
+.log-drawer-body .band-top{ background:none; box-shadow:none; margin:0; padding:0; }
+.log-drawer-body .wrap{ max-width:none; padding:0; margin:0; }
+.log-drawer-body .empty-state{ max-width:none; margin:0; padding:8px 0; text-align:left; font-size:14px; }
 
+/* ---- ToDo (modules/todo/module.js) -- rendered inline inside the
+   Morning Brief module's own collapsible card now (see that module's
+   mountTodoCard), not a drawer -- these rules are shared/generic enough
+   to live here rather than duplicated into module.css. */
 .todo-form{ display:flex; gap:8px; margin-bottom:16px; }
 .todo-form .text-input{ flex:1; }
 .todo-panel .text-input{
@@ -573,12 +609,7 @@ h2.section-heading{
   background:none; border:1px solid var(--hairline); border-radius:8px; padding:9px 12px;
 }
 .todo-panel .text-input:focus{ outline:none; border-color:#2F6FE4; }
-
-/* The shared .empty-state rule above is sized for a full-page empty
-   state -- 48px/32px padding, centered, 860px max-width. Inside a
-   420px-wide drawer that reads as a big block of dead air, so it's cut
-   down to the same compact, left-aligned rhythm as a real .todo-item row. */
-.todo-panel .empty-state, .log-drawer-body .empty-state{ max-width:none; margin:0; padding:8px 0; text-align:left; font-size:14px; }
+.todo-panel .empty-state{ max-width:none; margin:0; padding:8px 0; text-align:left; font-size:14px; }
 
 .todo-item{ display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-top:1px solid var(--hairline); }
 .todo-list .todo-item:first-child{ border-top:none; }
@@ -609,6 +640,6 @@ h2.section-heading{
 
 @media (max-width:640px){
   .security-panel{width:100%;}
-  .todo-drawer, .log-drawer{width:100%;}
+  .log-drawer{width:100%;}
   .bottom-bar{ gap:18px; padding:12px 20px; }
 }

@@ -22,14 +22,18 @@
 //    checks to decide whether landing here (instead of wherever the URL
 //    hash points) is actually warranted.
 // 5. (2026-07-25) Card-grid dashboard redesign: the single flowing list
-//    became a hero header + a grid of small cards. ToDo moved out to a
-//    global slide-out drawer (see shell/todo-drawer.js) that same day,
-//    then Log followed it (see shell/log-drawer.js) -- neither is built
-//    here any more. See backup/pre-card-redesign-2026-07-25 and
+//    became a hero header + a grid of small cards. ToDo briefly moved out
+//    to a global slide-out drawer, then Log followed it (see
+//    shell/log-drawer.js) -- but ToDo moved back in the same day as a
+//    collapsed-by-default card in this module's own grid (see
+//    mountTodoCard below), since Dario wanted it part of the brief again
+//    rather than a separate always-present tab. See
+//    backup/pre-card-redesign-2026-07-25 and
 //    backup/pre-nav-redesign-2026-07-25 for the previous looks if either
 //    round ever needs reverting.
 
 import { setLastSeenBrief } from "../../shell/last-seen.js";
+import { mountTodoPanel } from "../todo/module.js";
 
 let requestSeq = 0;
 let clockInterval = null;
@@ -50,12 +54,6 @@ function icon(viewBox, cls, children) {
   const svg = svgEl("svg", { viewBox, class: `mb-icon ${cls}` });
   children.forEach((c) => svg.appendChild(c));
   return svg;
-}
-function iconPin() {
-  return icon("0 0 24 24", "mb-icon-pin", [
-    svgEl("path", { d: "M12 21s7-6.1 7-11.6A7 7 0 0 0 5 9.4C5 14.9 12 21 12 21z", class: "mb-icon-fg-fill" }),
-    svgEl("circle", { cx: 12, cy: 9.3, r: 2.3, class: "mb-icon-bg" }),
-  ]);
 }
 // Purely decorative per-slot glyphs next to the day's three "acts" --
 // there's no real hourly forecast behind these (weather.py only gives
@@ -99,7 +97,7 @@ const WORLD_CLOCK_CITIES = [
   { label: "Los Angeles", tz: "America/Los_Angeles" },
 ];
 
-function renderWorldClock(el, onCityChange) {
+function renderWorldClock(el) {
   let idx = 0;
   const clockEl = el("div", "world-clock");
   clockEl.setAttribute("role", "button");
@@ -115,7 +113,6 @@ function renderWorldClock(el, onCityChange) {
       timeZone: tz, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
     }).format(new Date());
     cityEl.textContent = label;
-    if (onCityChange) onCityChange(label);
   }
   function cycle() {
     idx = (idx + 1) % WORLD_CLOCK_CITIES.length;
@@ -258,16 +255,13 @@ export default {
       }
       hero.appendChild(heroMain);
 
-      // Just clock + location pin now -- the weather icon that used to
-      // sit above the clock moved down to the weather detail card below
-      // instead (see "Väder Stockholm" handling further down).
+      // Just the clock now -- a separate location-pin line under it used
+      // to duplicate the city name the clock's own world-clock-city label
+      // already shows, so it was dropped rather than kept in sync with
+      // two copies of the same text (see backup/pre-nav-redesign-
+      // 2026-07-25 for that version).
       const heroSide = el("div", "mb-hero-side");
-      const pinLabel = el("span", "", "Stockholm");
-      const pin = el("div", "mb-location-pin");
-      pin.appendChild(iconPin());
-      pin.appendChild(pinLabel);
-      heroSide.appendChild(renderWorldClock(el, (city) => { pinLabel.textContent = city; }));
-      heroSide.appendChild(pin);
+      heroSide.appendChild(renderWorldClock(el));
       hero.appendChild(heroSide);
 
       wrap.appendChild(hero);
@@ -337,6 +331,13 @@ export default {
         grid.appendChild(card);
       });
 
+      // ToDo card -- collapsed by default (Dario wants it out of the way
+      // until he actually wants it), expands in place on click instead of
+      // sliding out as a separate panel. Mounted once per render() call,
+      // same as every other card here -- ToDo keeps its own independent
+      // load/save cycle regardless (see modules/todo/module.js).
+      grid.appendChild(mountTodoCard(el, ctx));
+
       if (grid.children.length) wrap.appendChild(grid);
 
       page.appendChild(wrap);
@@ -347,39 +348,33 @@ export default {
   },
 };
 
-// Slide-out ToDo drawer: a fixed-position tab on the right edge of the
-// viewport toggles a panel sliding in from the right, backed by a
-// click-to-close backdrop -- same open/close mechanics as shell.css's
-// #side-nav drawer, just a separate set of classes (todo-drawer*) so the
-// two don't collide, and scoped under .module-morning-brief since this
-// only exists on the Brief page.
-function mountTodoDrawer(container, ctx) {
-  const { el } = ctx;
+// Collapsed-by-default card: only the heading (+ chevron) shows until
+// clicked, same grid-rows-0fr-to-1fr accordion trick shell.css's
+// .item-detail already uses for the same "hidden until tapped" effect,
+// just with its own class names since this wraps a whole mounted module
+// rather than one row of text.
+function mountTodoCard(el, ctx) {
+  const card = el("div", "mb-card mb-todo-card");
+  const head = el("div", "mb-todo-head");
+  head.setAttribute("role", "button");
+  head.setAttribute("tabindex", "0");
+  head.setAttribute("aria-expanded", "false");
+  head.appendChild(el("h2", "mb-card-heading", "ToDo"));
 
-  const backdrop = el("div", "todo-drawer-backdrop");
-  const drawer = el("div", "todo-drawer");
-  const drawerHeader = el("div", "todo-drawer-header");
-  drawerHeader.appendChild(el("span", "todo-drawer-title", "ToDo"));
-  const closeBtn = el("button", "todo-drawer-close", "×");
-  closeBtn.type = "button";
-  closeBtn.setAttribute("aria-label", "Stäng ToDo");
-  drawerHeader.appendChild(closeBtn);
-  const body = el("div", "todo-drawer-body");
-  drawer.append(drawerHeader, body);
+  const bodyOuter = el("div", "mb-todo-body");
+  const bodyInner = el("div", "mb-todo-body-inner");
+  bodyOuter.appendChild(bodyInner);
 
-  const tab = el("button", "todo-toggle-tab", "ToDo");
-  tab.type = "button";
-  tab.setAttribute("aria-label", "Öppna ToDo");
-
-  function setOpen(open) {
-    drawer.classList.toggle("open", open);
-    backdrop.classList.toggle("open", open);
-    tab.classList.toggle("hidden", open);
+  function toggle() {
+    const expanded = card.classList.toggle("expanded");
+    head.setAttribute("aria-expanded", String(expanded));
   }
-  tab.addEventListener("click", () => setOpen(true));
-  closeBtn.addEventListener("click", () => setOpen(false));
-  backdrop.addEventListener("click", () => setOpen(false));
+  head.addEventListener("click", toggle);
+  head.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+  });
 
-  container.append(backdrop, drawer, tab);
-  mountTodoPanel(body, ctx);
+  card.append(head, bodyOuter);
+  mountTodoPanel(bodyInner, ctx);
+  return card;
 }

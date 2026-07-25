@@ -23,7 +23,7 @@
      were still in effect). Neither file is referenced with a build-time
      hash since there's no build step -- bump this number by hand
      whenever shell.css changes and this stops being purely cosmetic. -->
-<link rel="stylesheet" href="shell/shell.css?v=4">
+<link rel="stylesheet" href="shell/shell.css?v=5">
 </head>
 <body>
 
@@ -56,7 +56,7 @@
         </button>
         <!-- Desktop (>=860px): repositioned by CSS alone into a fixed
              left-edge tab stack (see shell.css's .edge-tab-stack.left),
-             same visual language as the right-edge nav/Log/ToDo tabs.
+             same visual language as the right-edge nav/Log tabs.
              Mobile: stay right here as plain top-bar icon buttons. -->
         <button class="icon-btn" id="open-settings-btn" aria-label="Settings" title="Settings">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -74,9 +74,8 @@
     </nav>
     <!-- Desktop: shell.js moves #module-nav in here instead of the old
          inline top-bar slot, styled as a right-edge tab stack alongside
-         the Log/ToDo tabs (see shell/log-drawer.js, shell/todo-drawer.js,
-         both mounted here too). Mobile: stays empty, #module-nav lives in
-         #side-nav above instead. -->
+         the Log tab (see shell/log-drawer.js, mounted here too). Mobile:
+         stays empty, #module-nav lives in #side-nav above instead. -->
     <div class="edge-tab-stack right" id="nav-edge-tabs"></div>
 
     <!-- "Vill du verkligen logga ut?" confirmation, see auth.js. -->
