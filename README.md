@@ -33,6 +33,20 @@ tor-dashboard/
   wiring those up later doesn't require a schema migration first — just a
   new push script and a new section in the frontend.
 
+## Workflow
+
+- **Restore point before any large/risky change.** Before a big visual
+  redesign, a structural rewrite, or anything else non-trivial to hand-undo,
+  push a `backup/<short-description>-<date>` branch at the current `main`
+  HEAD first (`git branch backup/... && git push -u origin backup/...`),
+  *then* make the change directly on `main` as usual. Reverting is then
+  just checking that branch back out — no need to hand-reconstruct what
+  changed. (Annotated tags would be the more usual tool for this, but this
+  repo's environment's git proxy 403s on tag pushes — a plain branch works
+  fine and is just as easy to restore from, so that's the standard here.)
+  Small, easily-reversible tweaks (a color, a spacing value, a copy change)
+  don't need one — use judgment.
+
 ## One-time setup
 
 1. **Create a Supabase project** at supabase.com (free tier is enough).
