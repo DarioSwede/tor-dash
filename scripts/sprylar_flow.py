@@ -13,6 +13,9 @@ Usage:
 Prints one JSON object to stdout:
     {
       "unsold_count": 5, "unsold_bids": 3,
+      "bid_items": [
+        {"title": "...", "bids": 1, "price": 99, "end_date": "2026-07-25T18:52:24Z", "url": "..."}
+      ],
       "sold_count": 2, "paid_count": 1, "shipping_count": 0, "receipt_count": 60
     }
 """
@@ -115,9 +118,23 @@ def main():
         if st in counts:
             counts[st] += 1
 
+    bid_items = [
+        {
+            "title": l.get("title", ""),
+            "bids": l.get("bids", 0),
+            "price": l.get("price", 0),
+            "end_date": l.get("end_date", ""),
+            "url": l.get("url", ""),
+        }
+        for l in listings
+        if l.get("bids", 0) > 0
+    ]
+    bid_items.sort(key=lambda x: x["end_date"])
+
     out = {
         "unsold_count": len(listings),
         "unsold_bids": sum(l.get("bids", 0) for l in listings),
+        "bid_items": bid_items,
         "sold_count": counts["sold"],
         "paid_count": counts["paid"],
         "shipping_count": counts["shipping"],
