@@ -80,17 +80,33 @@
    sign out (right) — sticky so it, and the icons on it, stay reachable
    while scrolling a long module, without needing a second fixed bar at
    the bottom. ---- */
+/* Grid, not flex, for the three top-bar zones -- a real device (iOS
+   Safari) rendered the middle zone's flex:1 1 auto as if it were only
+   ever as wide as its own (wrapped, centered) content, instead of
+   growing to fill the leftover row space the way it does in every
+   Chromium-based browser used to test this locally. That left the icon
+   buttons stranded wherever the middle zone's content happened to end,
+   nowhere near the bar's actual right edge. `auto 1fr auto` sidesteps
+   the ambiguity entirely: the outer two columns are always exactly their
+   own content's width, the middle column is a plain, unambiguous "eat
+   whatever's left" track, and grid guarantees the last column's own
+   edge is the container's own edge -- no flex-basis-vs-wrapped-content
+   judgment call left for any browser to get wrong. */
 .top-bar{
   position:sticky; top:0; z-index:15;
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px;
   padding:12px 20px;
   background:var(--bg); border-bottom:1px solid var(--hairline);
 }
-.top-bar-group{ display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+.top-bar-nav{ order:1; justify-self:start; }
+.top-bar-status{ order:2; justify-self:stretch; }
+.top-bar-group{ order:3; justify-self:end; display:flex; align-items:center; gap:8px; }
 /* Lets the menu+settings group and sign-out swap which side they're on
-   (see the "Swap button sides" setting) -- the network status stays
-   centered regardless, since it's the middle flex child either way. */
-body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
+   (see the "Swap button sides" setting) -- the network status stays in
+   the middle regardless, since its order (2) always sits between
+   whichever of the other two is 1 vs 3. */
+body.top-bar-swapped .top-bar-nav{ order:3; }
+body.top-bar-swapped .top-bar-group{ order:1; }
 .icon-btn{
   display:inline-flex; align-items:center; justify-content:center;
   width:34px; height:34px; padding:0;
@@ -99,19 +115,16 @@ body.top-bar-swapped .top-bar{ flex-direction:row-reverse; }
 }
 .icon-btn:hover{ border-color:var(--ink-soft); color:var(--ink); }
 
-/* Countdown + IP/VPN status + clock, grouped into one flex child of
+/* Countdown + IP/VPN status + clock, grouped into one grid child of
    .top-bar instead of three separate ones -- three separate items each
    fighting for space alongside the nav-slot and icon group is what broke
    down on a narrow phone: nothing left room for the others to wrap into,
    so they visually crammed together and overlapped instead. As a single
-   wrapper, this is the *only* thing sharing the row with .top-bar-nav and
-   .top-bar-group; it takes whatever middle space is left and wraps its
-   own three children internally, which never affects those two siblings.
-   Also the one thing swapping sides never needs to touch -- it stays the
-   middle flex child (and so stays centered) whichever side nav vs the
-   icon group land on, exactly as before. */
+   wrapper, this is the *only* thing occupying the middle (1fr) column;
+   it wraps its own three children internally, which never affects the
+   nav/icon columns on either side. */
 .top-bar-status{
-  flex:1 1 auto; min-width:0;
+  min-width:0; width:100%;
   display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
   gap:4px 14px;
 }
