@@ -26,10 +26,61 @@ import { setLastSeenBrief } from "../../shell/last-seen.js";
 import { mountTodoPanel } from "../todo/module.js";
 
 let requestSeq = 0;
+let clockInterval = null;
+
+// Click-to-cycle world clock, next to the brief's weather icon. Always
+// starts on Stockholm on a fresh mount (i.e. every login/page load) --
+// there's deliberately no persisted "last city" state, since that's
+// exactly what was asked for: Stockholm as the default you land on, not
+// whatever you last clicked to in a previous session.
+const WORLD_CLOCK_CITIES = [
+  { label: "Stockholm", tz: "Europe/Stockholm" },
+  { label: "Peking", tz: "Asia/Shanghai" },
+  { label: "Kiev", tz: "Europe/Kyiv" },
+  { label: "New York", tz: "America/New_York" },
+  { label: "Los Angeles", tz: "America/Los_Angeles" },
+];
+
+function renderWorldClock(el) {
+  let idx = 0;
+  const clockEl = el("div", "world-clock");
+  clockEl.setAttribute("role", "button");
+  clockEl.setAttribute("tabindex", "0");
+  clockEl.title = "Klicka för att växla stad";
+  const timeEl = el("div", "world-clock-time");
+  const cityEl = el("div", "world-clock-city");
+  clockEl.append(timeEl, cityEl);
+
+  function tick() {
+    const { label, tz } = WORLD_CLOCK_CITIES[idx];
+    timeEl.textContent = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: tz, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+    }).format(new Date());
+    cityEl.textContent = label;
+  }
+  function cycle() {
+    idx = (idx + 1) % WORLD_CLOCK_CITIES.length;
+    tick();
+  }
+  clockEl.addEventListener("click", cycle);
+  clockEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); cycle(); }
+  });
+
+  tick();
+  if (clockInterval) clearInterval(clockInterval);
+  clockInterval = setInterval(tick, 1000);
+  return clockEl;
+}
 
 export default {
   id: "morning-brief",
   navLabel: "Brief",
+
+  unmount() {
+    clearInterval(clockInterval);
+    clockInterval = null;
+  },
 
   async mount(container, ctx) {
     const { supabase, el, renderItem, isSafeSvg, decryptPayload } = ctx;
@@ -112,17 +163,20 @@ export default {
       wrap.appendChild(el("div", "day-date", `${payload.day_name} · ${payload.date_label}`));
       wrap.appendChild(el("h1", "headline headline-font", payload.headline));
 
+      const iconRow = el("div", "icon-clock-row");
       if (payload.svg && isSafeSvg(payload.svg)) {
         const holder = document.createElement("div");
         holder.innerHTML = payload.svg;
         const svgEl = holder.querySelector("svg");
         if (svgEl) {
           svgEl.classList.add("drawing");
-          wrap.appendChild(svgEl);
+          iconRow.appendChild(svgEl);
         }
       } else if (payload.svg) {
         console.warn("Skipped rendering payload.svg: failed the safety allowlist check.");
       }
+      iconRow.appendChild(renderWorldClock(el));
+      wrap.appendChild(iconRow);
 
       const acts = el("div", "acts");
       (payload.acts || []).forEach((act) => {
