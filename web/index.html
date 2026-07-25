@@ -14,7 +14,16 @@
 <title>Dashboard</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="shell/tokens.css">
-<link rel="stylesheet" href="shell/shell.css">
+<!-- ?v= cache-buster on shell.css specifically -- Safari in particular
+     has served a stale cached copy of this file after a deploy while
+     index.html itself (and/or module CSS) came back fresh, producing
+     exactly the "looks right on some loads, broken on others, flips on
+     reload" symptom this bit us with (2026-07-25: a genuine top-bar grid
+     fix landed, but some reloads kept rendering as if the old flex rules
+     were still in effect). Neither file is referenced with a build-time
+     hash since there's no build step -- bump this number by hand
+     whenever shell.css changes and this stops being purely cosmetic. -->
+<link rel="stylesheet" href="shell/shell.css?v=3">
 </head>
 <body>
 
