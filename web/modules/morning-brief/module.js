@@ -34,6 +34,7 @@
 
 import { setLastSeenBrief } from "../../shell/last-seen.js";
 import { mountTodoPanel } from "../todo/module.js";
+import { mountArchivePanel } from "../archive/module.js";
 import { mountStatusCard } from "./status-check.js";
 
 let requestSeq = 0;
@@ -353,6 +354,7 @@ export default {
       // same as every other card here -- ToDo keeps its own independent
       // load/save cycle regardless (see modules/todo/module.js).
       grid.appendChild(mountTodoCard(el, ctx));
+      grid.appendChild(mountArchiveCard(el, ctx));
 
       if (grid.children.length) wrap.appendChild(grid);
 
@@ -369,16 +371,27 @@ export default {
 // .item-detail already uses for the same "hidden until tapped" effect,
 // just with its own class names since this wraps a whole mounted module
 // rather than one row of text.
-function mountTodoCard(el, ctx) {
-  const card = el("div", "mb-card mb-todo-card");
-  const head = el("div", "mb-todo-head");
+//
+// Shared by ToDo and Arkiv rather than copied: both are whole panels that
+// belong to the brief but shouldn't take up room until asked for. Returns
+// the card plus a setBadge, because a panel that's shut still needs a way
+// to say "there's something in here" -- Arkiv's review queue is invisible
+// otherwise.
+function mountFoldCard(el, title, mountBody) {
+  const card = el("div", "mb-card mb-fold-card");
+  const head = el("div", "mb-fold-head");
   head.setAttribute("role", "button");
   head.setAttribute("tabindex", "0");
   head.setAttribute("aria-expanded", "false");
-  head.appendChild(el("h2", "mb-card-heading", "ToDo"));
+  head.appendChild(el("h2", "mb-card-heading", title));
 
-  const bodyOuter = el("div", "mb-todo-body");
-  const bodyInner = el("div", "mb-todo-body-inner");
+  // Built detached and only attached when non-zero -- .mb-count-badge sets
+  // display:inline-flex, which beats the UA stylesheet's [hidden] rule on
+  // specificity and would otherwise leave an empty circle sitting there.
+  const badge = el("span", "mb-count-badge");
+
+  const bodyOuter = el("div", "mb-fold-body");
+  const bodyInner = el("div", "mb-fold-body-inner");
   bodyOuter.appendChild(bodyInner);
 
   function toggle() {
@@ -390,7 +403,33 @@ function mountTodoCard(el, ctx) {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
   });
 
+  function setBadge(n) {
+    if (n > 0) {
+      badge.textContent = String(n);
+      if (!badge.isConnected) head.appendChild(badge);
+    } else if (badge.isConnected) {
+      badge.remove();
+    }
+  }
+
   card.append(head, bodyOuter);
-  mountTodoPanel(bodyInner, ctx);
+  // setBadge is handed to the body mounter rather than only returned, so a
+  // panel can wire it up without closing over a binding that isn't assigned
+  // yet at call time.
+  mountBody(bodyInner, setBadge);
+
   return card;
+}
+
+function mountTodoCard(el, ctx) {
+  return mountFoldCard(el, "ToDo", (body) => mountTodoPanel(body, ctx));
+}
+
+// Arkiv lives inside the brief for now (2026-07-26), but the panel itself is
+// container-agnostic -- see modules/archive/module.js. Moving it back out to
+// its own nav tab is one line in modules/manifest.js plus deleting this call.
+function mountArchiveCard(el, ctx) {
+  return mountFoldCard(el, "Arkiv", (body, setBadge) =>
+    mountArchivePanel(body, ctx, { onReviewCount: setBadge })
+  );
 }

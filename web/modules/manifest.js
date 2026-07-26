@@ -24,11 +24,12 @@ export const MODULES = [
     path: "./portfolio/module.js",
     css: "./portfolio/module.css",
   },
-  {
-    id: "archive",
-    path: "./archive/module.js",
-    css: "./archive/module.css",
-  },
+  // archive ("Arkiv") is deliberately NOT here (2026-07-26) -- it's mounted
+  // as a collapsible card inside the Morning Brief instead of its own tab,
+  // see that module's mountArchiveCard. The module still default-exports a
+  // full nav module, so giving it its own tab again is just uncommenting
+  // the block below; nothing else changes.
+  // { id: "archive", path: "./archive/module.js", css: "./archive/module.css" },
   // access-log ("Log") is deliberately NOT here any more (2026-07-25) --
   // it opens as a slide-out drawer instead of a normal nav tab now, see
   // shell/log-drawer.js, which loads it independently of this list.

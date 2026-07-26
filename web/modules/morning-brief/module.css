@@ -114,35 +114,38 @@ body.has-custom-bg .module-morning-brief{ --mb-page-bg:transparent; --mb-card-bg
 .module-morning-brief .mb-alert-list .item-num{ background:var(--mb-red-soft); }
 .module-morning-brief .mb-alert-list .item-num::after{ content:"!"; font-size:13px; font-weight:800; color:var(--mb-red); }
 
-/* ---- ToDo card: collapsed by default, expands in place on click (see
-   module.js's mountTodoCard) -- same grid-rows-0fr-to-1fr accordion
-   trick shell.css's .item-detail uses, just for a whole mounted module
-   instead of one row of text. ---- */
-.module-morning-brief .mb-todo-head{
+/* ---- Fold cards (ToDo, Arkiv): collapsed by default, expand in place on
+   click (see module.js's mountFoldCard) -- same grid-rows-0fr-to-1fr
+   accordion trick shell.css's .item-detail uses, just for a whole mounted
+   panel instead of one row of text. Shared between both cards rather than
+   duplicated per panel. ---- */
+.module-morning-brief .mb-fold-head{
   display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
   margin:-4px 0; padding:4px 0; border-radius:6px;
 }
-.module-morning-brief .mb-todo-head::before{
+.module-morning-brief .mb-fold-head::before{
   content:"›"; flex:0 0 auto; font-size:15px; line-height:1; color:var(--ink-grey);
   transition:transform .15s ease, color .15s ease;
 }
-.module-morning-brief .mb-todo-head:hover::before{ color:#2F6FE4; }
-.module-morning-brief .mb-todo-head:focus-visible{ outline:2px solid #2F6FE4; outline-offset:3px; }
-.module-morning-brief .mb-todo-card.expanded .mb-todo-head::before{ transform:rotate(90deg); }
-.module-morning-brief .mb-todo-card .mb-card-heading{ margin:0; }
-.module-morning-brief .mb-todo-body{
+.module-morning-brief .mb-fold-head:hover::before{ color:#2F6FE4; }
+.module-morning-brief .mb-fold-head:focus-visible{ outline:2px solid #2F6FE4; outline-offset:3px; }
+.module-morning-brief .mb-fold-card.expanded .mb-fold-head::before{ transform:rotate(90deg); }
+.module-morning-brief .mb-fold-card .mb-card-heading{ margin:0; }
+/* Pushes the count badge to the right edge of the header row. */
+.module-morning-brief .mb-fold-head .mb-count-badge{ margin-left:auto; }
+.module-morning-brief .mb-fold-body{
   display:grid; grid-template-rows:0fr; opacity:0;
   transition:grid-template-rows .2s ease, opacity .15s ease;
 }
-.module-morning-brief .mb-todo-card.expanded .mb-todo-body{ grid-template-rows:1fr; opacity:1; }
-.module-morning-brief .mb-todo-body-inner{ overflow:hidden; padding-top:14px; }
+.module-morning-brief .mb-fold-card.expanded .mb-fold-body{ grid-template-rows:1fr; opacity:1; }
+.module-morning-brief .mb-fold-body-inner{ overflow:hidden; padding-top:14px; }
 
-/* The todo panel (see modules/todo/module.js) still builds its own
-   .band.band-top.todo-panel > .wrap shell -- inside this card that just
-   reads as the card's own content, no double-boxing, since the card
-   already provides the padding/background. */
-.module-morning-brief .mb-todo-card .band-top{ background:none; box-shadow:none; margin:0; padding:0; }
-.module-morning-brief .mb-todo-card .wrap{ max-width:none; padding:0; margin:0; }
+/* Both panels build their own .band.band-top > .wrap page shell (they can
+   also be mounted standalone). Inside a card that would be double-boxing,
+   since the card already provides padding, background and radius -- so it's
+   flattened back out here rather than made conditional in each panel. */
+.module-morning-brief .mb-fold-card .band-top{ background:none; box-shadow:none; margin:0; padding:0; }
+.module-morning-brief .mb-fold-card .wrap{ max-width:none; padding:0; margin:0; }
 
 /* ---- Driftstatus card: one row per service, coloured dot + name +
    state. Rows are deliberately quiet when everything is fine (grey text,
