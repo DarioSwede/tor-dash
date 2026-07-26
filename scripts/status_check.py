@@ -14,7 +14,9 @@ headers and no JSON API.
 
 Sources: Telia (HTML scrape), Gmail (Google's Workspace status JSON feed --
 real JSON, but not Statuspage and not CORS-open, so it can't be read from
-the browser either) and Loopia (HTML scrape of driftbloggen.se).
+the browser either) and Loopia mail (a live reachability check of the mail
+server for torbjornzimmerman.se -- IMAPS greeting, falling back to webmail
+over HTTPS, falling back to DNS).
 
 Usage:
     python3 scripts/status_check.py                  # all sources below
@@ -43,15 +45,24 @@ IMPORTANT -- read before trusting this
    a scrape, not a contract.
 2. NONE of these were verified against their live sources when written: the
    environment they were developed in blocks outbound requests to telia.se,
-   google.com and driftbloggen.se (the proxy answers 403 to CONNECT), so
-   the phrase lists and the Gmail feed's field names come from documented/
-   standard shapes rather than observed responses. The first real run is
-   the real test -- if something reports "unknown" with an HTTP error,
-   that's this caveat, not a bug in the caller.
-3. The scheduled task's environment has its own network allowlist.
-   telia.se, www.google.com and driftbloggen.se each have to be on it, or
-   that source returns "unknown" every run. Same constraint
-   push_snapshot.py documents for *.supabase.co.
+   google.com and loopia.se (the proxy answers 403 to CONNECT), and times
+   out on raw TCP to any mail port, so the phrase lists and the Gmail feed's
+   field names come from documented/standard shapes rather than observed
+   responses. The first real run is the real test -- if something reports
+   "unknown" with a network error, that's this caveat, not a bug in the
+   caller.
+3. The scheduled task's environment has its own network allowlist, and each
+   check needs its hosts on it or it returns "unknown" every run -- same
+   constraint push_snapshot.py documents for *.supabase.co:
+     Telia        telia.se                       (HTTPS)
+     Gmail        www.google.com                 (HTTPS)
+     Loopia mail  mailcluster.loopia.se:993      (raw TCP -- the real check)
+                  webmail.loopia.se              (HTTPS -- weaker fallback)
+   Measured in the dev environment 2026-07-26: DNS resolution works, raw TCP
+   to 993/143/465 times out, non-allowlisted HTTPS 403s. If raw TCP can't be
+   allowed at all, Loopia mail degrades to the webmail HTTPS check, which
+   only proves the front end is serving -- an external uptime monitor doing
+   a real IMAP probe would be the stronger answer.
 4. Every check is written to fail *soft*: any network error, unexpected
    shape or unrecognized wording returns level "unknown" (a neutral grey
    dot in the UI, with the reason in its tooltip) rather than a confident
@@ -230,68 +241,124 @@ def check_gmail(timeout=20):
 
 
 # ---------------------------------------------------------------------------
-# Loopia -- no status API and no status page of their own; their support wiki
-# points at driftbloggen.se for current/planned disruptions. So this is a
-# scrape with the same caveats as Telia, and one extra: a *blog* is a poor
-# "is it down right now" source, because a two-year-old post about an
-# outage matches the same words as a live one. This therefore only reports
-# a problem when disruption wording appears alongside a current-year date
-# near the top of the page, and otherwise says "ok" only on an explicit
-# all-clear -- falling back to "unknown" rather than guessing.
+# Loopia mail -- the actual question is narrow: "is the mailbox for
+# torbjornzimmerman.se reachable right now", not "has Loopia blogged about
+# an incident". So this talks to the mail server instead of reading about
+# it. Three layers, most conclusive first:
 #
-# Of the three sources here this is the least certain, precisely because
-# Loopia publishes no status contract at all. If Dario has a page he
-# actually trusts for Loopia, pointing LOOPIA_LINK at it is the whole fix.
+#   1. IMAPS banner on the mail host (port 993). A real "* OK ..." greeting
+#      is proof the mail service is actually serving, which no status page
+#      can give you. No credentials involved -- the greeting comes before
+#      any LOGIN.
+#   2. HTTPS to Loopia's webmail. Weaker (it says the front end is up, not
+#      that IMAP is), but it survives environments where only HTTP(S) egress
+#      is permitted.
+#   3. DNS. If the mail host doesn't even resolve, something is definitely
+#      wrong; if it resolves but nothing above could run, that's "unknown",
+#      not "ok".
+#
+# Layering matters because sandboxes differ: measured in the dev environment
+# (2026-07-26), raw TCP to 993/143/465 times out and non-allowlisted HTTPS
+# gets a 403 from the proxy, while plain DNS resolution works fine. So step 1
+# is the one worth having and the one most likely to be blocked -- and a
+# blocked step must read as "couldn't check", never as an outage. A firewall
+# on our side is not evidence about Loopia.
 # ---------------------------------------------------------------------------
 
-LOOPIA_LINK = "https://www.driftbloggen.se/"
+LOOPIA_DOMAIN = "torbjornzimmerman.se"
+# Loopia points every hosted domain's MX at this shared cluster, so it is the
+# host to test even though the mailbox is domain-specific. (An MX lookup
+# would be more principled, but needs a DNS library that isn't in the
+# stdlib -- and the answer here is a documented constant, not a guess.)
+LOOPIA_MAIL_HOST = "mailcluster.loopia.se"
+LOOPIA_WEBMAIL = "https://webmail.loopia.se/"
+LOOPIA_LINK = LOOPIA_WEBMAIL
 
-_LOOPIA_DISRUPTION = [
-    r"p(å|a)g(å|a)ende\s+driftst(ö|o)rning",
-    r"akut\s+driftst(ö|o)rning",
-    r"driftst(ö|o)rning",
-    r"st(ö|o)rning",
-]
-_LOOPIA_CLEAR = [
-    r"inga\s+k(ä|a)nda\s+driftst(ö|o)rningar",
-    r"inga\s+p(å|a)g(å|a)ende\s+driftst(ö|o)rningar",
-    r"inga\s+aktuella\s+st(ö|o)rningar",
-]
+
+def _imap_banner(host, port=993, timeout=12):
+    """Return the IMAPS greeting, or raise. Nothing is sent -- read only."""
+    import socket
+    import ssl
+
+    ip = socket.gethostbyname(host)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        sock.connect((ip, port))
+        with ssl.create_default_context().wrap_socket(sock, server_hostname=host) as tls:
+            return tls.recv(200).decode("utf-8", "replace").strip()
+    finally:
+        try:
+            sock.close()
+        except OSError:
+            pass
 
 
 def check_loopia(timeout=20):
-    from datetime import datetime
+    import socket
 
+    name = "Loopia mail"
+
+    # --- 1. The real thing: does the IMAP server greet us? ---
     try:
-        html = _fetch(LOOPIA_LINK, timeout)
-    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError) as exc:
+        banner = _imap_banner(LOOPIA_MAIL_HOST, timeout=min(timeout, 12))
+        if banner.startswith("* OK"):
+            return {
+                "name": name, "level": "ok",
+                "text": f"IMAP svarar för {LOOPIA_DOMAIN}",
+                "link": LOOPIA_LINK,
+            }
+        # Connected, TLS fine, but the greeting isn't an OK -- e.g. "* BYE
+        # temporarily unavailable", which is the server explicitly refusing
+        # service rather than a network problem on our side.
         return {
-            "name": "Loopia", "level": "unknown",
-            "text": f"Kunde inte nå driftbloggen ({exc.__class__.__name__})",
+            "name": name, "level": "down",
+            "text": f"Mailservern nekar anslutning: {banner[:80]}",
             "link": LOOPIA_LINK,
         }
+    except (TimeoutError, socket.timeout, socket.gaierror, OSError):
+        # Almost certainly our own egress rather than Loopia (a sandbox that
+        # only permits HTTP(S) times out here every time), so fall through to
+        # the weaker checks instead of calling it an outage.
+        pass
 
-    text = _strip_html(html)
-    if any(re.search(p, text) for p in _LOOPIA_CLEAR):
-        return {"name": "Loopia", "level": "ok", "text": _TEXT_BY_LEVEL["ok"], "link": LOOPIA_LINK}
+    # --- 2. Fallback: is Loopia's webmail serving over HTTPS? ---
+    try:
+        req = urllib.request.Request(LOOPIA_WEBMAIL, headers={"User-Agent": _UA}, method="HEAD")
+        with urllib.request.urlopen(req, timeout=min(timeout, 15)) as resp:
+            if 200 <= resp.status < 400:
+                return {
+                    "name": name, "level": "ok",
+                    "text": "Webmail svarar (IMAP kunde inte testas härifrån)",
+                    "link": LOOPIA_LINK,
+                }
+            return {
+                "name": name, "level": "warn",
+                "text": f"Webmail svarar med HTTP {resp.status}",
+                "link": LOOPIA_LINK,
+            }
+    except urllib.error.HTTPError as exc:
+        # A 4xx/5xx from the webmail host is still Loopia answering.
+        if exc.code >= 500:
+            return {"name": name, "level": "down", "text": f"Webmail svarar HTTP {exc.code}", "link": LOOPIA_LINK}
+        return {"name": name, "level": "ok", "text": "Webmail svarar (IMAP kunde inte testas härifrån)", "link": LOOPIA_LINK}
+    except (urllib.error.URLError, TimeoutError, OSError):
+        pass
 
-    # Only the top of the page: on a reverse-chronological blog that's the
-    # recent material, and it keeps an old archived incident further down
-    # from reading as today's news.
-    head = text[:2500]
-    year = str(datetime.now().year)
-    if year in head and any(re.search(p, head) for p in _LOOPIA_DISRUPTION):
+    # --- 3. Last resort: does the mail host even resolve? ---
+    try:
+        socket.gethostbyname(LOOPIA_MAIL_HOST)
         return {
-            "name": "Loopia", "level": "warn",
-            "text": "Möjlig driftstörning i år – kolla driftbloggen",
+            "name": name, "level": "unknown",
+            "text": "Nätverket här tillåter varken IMAP eller HTTPS mot Loopia",
             "link": LOOPIA_LINK,
         }
-
-    return {
-        "name": "Loopia", "level": "unknown",
-        "text": "Ingen tydlig statusuppgift på driftbloggen",
-        "link": LOOPIA_LINK,
-    }
+    except OSError:
+        return {
+            "name": name, "level": "down",
+            "text": f"{LOOPIA_MAIL_HOST} går inte att slå upp i DNS",
+            "link": LOOPIA_LINK,
+        }
 
 
 CHECKS = {"telia": check_telia, "gmail": check_gmail, "loopia": check_loopia}

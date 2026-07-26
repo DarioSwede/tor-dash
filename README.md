@@ -192,7 +192,32 @@ server-side, and how much to trust it:
 |---|---|---|
 | Gmail | Google's Workspace dashboard, not Statuspage, and not CORS-open | Good — real documented JSON feed, not a scrape |
 | Telia | HTML only, no CORS, no API | Scrape; matches visible phrases, not markup |
-| Loopia | No status API or status page at all; they point at driftbloggen.se | Weakest — a blog is a poor "is it down now" source, so it only reports a problem for current-year entries near the top of the page |
+| Loopia mail | Needs a raw TCP socket, which no browser has | Best of the three *when the network allows it* — it talks to the actual mail server instead of reading about it |
+
+**Loopia mail** answers a deliberately narrow question — "is the mailbox for
+`torbjornzimmerman.se` reachable right now" — and does it by probing rather
+than by reading a status page, in three layers, most conclusive first:
+
+1. **IMAPS greeting** on `mailcluster.loopia.se:993`. A real `* OK …` is
+   proof the mail service is serving, which no status page can give you. No
+   credentials are involved — the greeting precedes any `LOGIN`.
+2. **HTTPS to `webmail.loopia.se`** — weaker (the front end being up doesn't
+   prove IMAP is), but survives environments that only allow HTTP(S).
+3. **DNS**. If the mail host doesn't resolve, something is genuinely wrong;
+   if it resolves but neither probe could run, that's `unknown`, not `ok`.
+
+The layering matters because a blocked probe must never read as an outage —
+a firewall on our side is not evidence about Loopia. Measured in the dev
+environment 2026-07-26: DNS works, raw TCP to 993/143/465 times out, and
+non-allowlisted HTTPS 403s, so without an allowlist entry this correctly
+degrades to `unknown`. If raw TCP can't be allowed at all, an external
+uptime monitor doing a real IMAP probe (UptimeRobot's free tier does port
+checks and has a JSON API) would be the stronger answer.
+
+Services in `SERVER_CHECKED` render a chip **whether or not** the payload
+carries a result for them — an unchecked service shows grey with the reason
+in its tooltip rather than disappearing. Without that, a service silently
+vanishes whenever the snapshot predates the check, which reads as a bug.
 
 Every check fails **soft**: any network error, unexpected shape or
 unrecognized wording returns `unknown` rather than a confident `ok`, since
@@ -202,10 +227,12 @@ live-checked services.
 
 Two operational caveats: none of the three were verifiable against their
 live sources when written (this dev environment's proxy 403s telia.se,
-google.com and driftbloggen.se), and `telia.se`, `www.google.com` and
-`driftbloggen.se` each have to be on the scheduled task's network
-allowlist — same constraint as `*.supabase.co` — or that source returns
-`unknown` every run.
+google.com and loopia.se, and times out on raw TCP to any mail port), and
+each check's hosts have to be on the scheduled task's network allowlist —
+same constraint as `*.supabase.co` — or it returns `unknown` every run:
+`telia.se`, `www.google.com`, and for Loopia mail
+`mailcluster.loopia.se:993` (the real check) plus `webmail.loopia.se` (the
+HTTPS fallback).
 
 Downdetector is deliberately not a source anywhere here: it has no official
 public API, so every "Downdetector API" in the wild is an unofficial

@@ -42,6 +42,22 @@ const STATUSPAGE_SOURCES = [
   { name: "OpenAI", url: "https://status.openai.com" },
 ];
 
+// Services checked server-side (scripts/status_check.py) and delivered via
+// payload.service_status.
+//
+// They are listed here as well, rather than only being rendered when the
+// payload happens to carry them, because otherwise a service silently
+// vanishes from the card whenever the snapshot predates the check or the
+// check couldn't run -- which is exactly what happened the first time this
+// shipped, and reads as "you forgot Loopia" rather than "not checked yet".
+// A grey dot saying so is the honest state; an absent chip is a lie by
+// omission.
+const SERVER_CHECKED = [
+  { name: "Telia", link: "https://www.telia.se/privat/support/driftinformation" },
+  { name: "Gmail", link: "https://www.google.com/appsstatus/dashboard/" },
+  { name: "Loopia mail", link: "https://webmail.loopia.se/" },
+];
+
 // Statuspage's own severity vocabulary, collapsed to the three states this
 // card actually distinguishes. "maintenance" folds into warn deliberately:
 // from where Dario sits, planned or not, it's the same practical fact --
@@ -199,13 +215,30 @@ export function mountStatusCard(el, extraEntries) {
       });
   });
 
-  // Snapshot-carried entries (Telia, Gmail, Loopia) render exactly like the
-  // live ones, just already resolved.
-  for (const entry of extraEntries || []) {
-    if (!entry || !entry.name) continue;
+  // Snapshot-carried entries render exactly like the live ones, just
+  // already resolved. Every SERVER_CHECKED service gets a chip whether or
+  // not the payload actually has a result for it -- an unchecked service
+  // shows as grey with the reason in its tooltip rather than disappearing.
+  const carried = new Map(
+    (extraEntries || []).filter((e) => e && e.name).map((e) => [e.name, e])
+  );
+  const shown = [
+    ...SERVER_CHECKED.map((s) => ({ ...s, entry: carried.get(s.name) })),
+    // Anything the payload adds beyond the known list still renders, so a
+    // new source can be introduced server-side without a frontend change.
+    ...[...carried.values()]
+      .filter((e) => !SERVER_CHECKED.some((s) => s.name === e.name))
+      .map((e) => ({ name: e.name, link: e.link, entry: e })),
+  ];
+
+  for (const { name, link, entry } of shown) {
+    const node = chip(name, entry?.link || link);
+    if (!entry) {
+      set(name, node, "unknown", "Ingen statuskoll i senaste briefen");
+      continue;
+    }
     const level = ["ok", "warn", "down", "unknown"].includes(entry.level) ? entry.level : "unknown";
-    const node = chip(entry.name, entry.link);
-    set(entry.name, node, level, entry.text || TEXT_BY_LEVEL[level]);
+    set(name, node, level, entry.text || TEXT_BY_LEVEL[level]);
   }
 
   refresh();
