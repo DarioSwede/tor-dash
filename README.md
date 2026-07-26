@@ -253,11 +253,49 @@ and turn the result into the "Väder Stockholm" plain section's one-line
 sentence. Requires `api.open-meteo.com` on the scheduled task's network
 allowlist (same mechanism as the Supabase domain in step 6 above).
 
+## Arkiv (receipts & bookings)
+
+Its own module (`web/modules/archive/`), backed by
+`supabase/migrations/0018_archive.sql`. Exists for a concrete need: trips
+like Sarek and Holland generate receipts that later have to be reported,
+and those must not sit scattered in an inbox where they get missed — which
+is exactly how the IKEA receipt was lost on 2026-07-26.
+
+Two design points worth keeping:
+
+**Review queue, not direct filing.** The hourly Routine may only insert
+rows with `status = 'review'`; nothing counts as archived until Dario
+presses Spara in the UI. A misread newsletter landing in an expense report
+is worse than a missed receipt, because nobody notices until someone else
+audits it. The queue renders at the top of the page and disappears entirely
+when empty.
+
+**Both a link and the file.** `email_link` takes you to the original in
+context; `file_path` is what survives the mail being deleted and what you
+can actually hand over when reporting. The `archive-files` bucket is
+**private** (unlike `gate-backgrounds`, which must be public because it
+renders before sign-in), so the UI uses `createSignedUrl`, never
+`getPublicUrl` — a receipt should not be reachable from a guessed URL.
+
+`email_message_id` carries a partial unique index. That's the dedupe: the
+Routine sweeps the same 7-day window every hour and would otherwise
+recreate the same receipt endlessly, including ones already discarded.
+
+Amounts are summed **per currency, never across** — 3 499 SEK + 412 EUR is
+not 3 911 of anything, and a Holland trip will have both.
+
 ## Not done yet (on purpose)
 
-- `mail@torbjornzimmerman.se` (Loopia IMAP) isn't part of the automated
-  gather step — there's no IMAP connector available yet, so that mailbox
-  is still manual (webmail) until either a connector shows up or
-  forwarding to the connected Gmail is set up.
 - `sarek_gear` and `stocks_watchlist` tables exist but nothing writes to
   or reads from them yet — next steps when that's prioritized.
+- Attachments are uploaded by hand for now. The Routine files the metadata
+  and the link; pulling the PDF out of the mail and into the bucket
+  server-side is the obvious next step.
+
+**Resolved 2026-07-26:** `mail@torbjornzimmerman.se` (Loopia) used to be
+outside the automated gather step, since no IMAP connector exists. Loopia
+now forwards it server-side to the connected Gmail, so it is covered. Note
+that the forward was the right fix rather than Gmail's own "check mail from
+other accounts": that uses POP3 and races the Outlook app on the same
+mailbox — evidence being exactly one fetched message in ten days, archived
+straight past the inbox.

@@ -1,0 +1,107 @@
+/* Arkiv — allt nästlat under .module-archive så det aldrig kan läcka in i
+   eller krocka med någon annan moduls styling (samma regel som
+   morning-brief/module.css följer). */
+
+.module-archive{
+  --ar-accent:#2F6FE4; --ar-accent-soft:#EAF1FE;
+  --ar-amber:#B8790A; --ar-amber-soft:#FBF0DC;
+  --ar-card-bg:#fff;
+  --ar-shadow:0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.07);
+}
+body.has-custom-bg .module-archive{ --ar-card-bg:rgba(255,255,255,.94); }
+
+.module-archive .wrap{ max-width:1000px; }
+
+/* ---- Granskningskö: ligger överst och är visuellt varmare än resten,
+   så den läses som "det här väntar på dig" och inte som ännu en lista.
+   Renderas inte alls när den är tom. ---- */
+.module-archive .archive-review:not(:empty){ margin-bottom:24px; }
+.module-archive .archive-review-head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.module-archive .archive-review-title{
+  font-family:var(--font-body); font-weight:700; font-size:12.5px; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-soft); margin:0;
+}
+.module-archive .archive-review-count{
+  display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px;
+  border-radius:999px; background:var(--ar-amber); color:#fff; font-size:11px; font-weight:700;
+}
+.module-archive .archive-item-review{ background:var(--ar-amber-soft); border:1px solid rgba(184,121,10,.25); }
+
+/* ---- Verktygsrad ---- */
+.module-archive .archive-toolbar{
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:16px;
+}
+.module-archive .archive-search{ flex:1 1 200px; min-width:0; }
+.module-archive .archive-select{
+  font-family:inherit; font-size:14px; padding:8px 10px; border-radius:8px;
+  border:1px solid var(--hairline); background:var(--ar-card-bg); color:var(--ink); cursor:pointer;
+}
+
+/* ---- Poster ---- */
+.module-archive .archive-total{
+  font-size:13px; color:var(--ink-soft); margin-bottom:10px; font-weight:600;
+}
+.module-archive .archive-item{
+  display:flex; align-items:flex-start; gap:14px; justify-content:space-between;
+  background:var(--ar-card-bg); border-radius:12px; box-shadow:var(--ar-shadow);
+  padding:14px 16px; margin-bottom:10px;
+}
+.module-archive .archive-body{ min-width:0; flex:1 1 auto; }
+.module-archive .archive-title{ font-weight:600; font-size:15px; color:var(--ink); margin-bottom:3px; }
+.module-archive .archive-meta{ font-size:13px; color:var(--ink-soft); margin-bottom:8px; }
+.module-archive .archive-notes{ font-size:13px; color:var(--ink-soft); margin-top:8px; line-height:1.5; }
+
+.module-archive .archive-tags{ display:flex; flex-wrap:wrap; gap:6px; }
+.module-archive .archive-tag{
+  font-size:11px; font-weight:600; letter-spacing:.03em; padding:2px 8px; border-radius:999px;
+  background:var(--hairline); color:var(--ink-soft);
+}
+.module-archive .archive-tag-trip{ background:var(--ar-accent-soft); color:var(--ar-accent); }
+.module-archive .archive-tag-kvitto{ background:#E6F7EE; color:#1DA35E; }
+.module-archive .archive-tag-bokning{ background:var(--ar-accent-soft); color:var(--ar-accent); }
+.module-archive .archive-tag-auto{ background:#F0EBFA; color:#6B4FA8; }
+
+/* ---- Fil och länkar ---- */
+.module-archive .archive-attach{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:10px; }
+.module-archive .archive-link{
+  background:none; border:none; padding:0; font-family:inherit; font-size:13px; font-weight:600;
+  color:var(--ar-accent); cursor:pointer; text-decoration:none;
+}
+.module-archive .archive-link:hover{ text-decoration:underline; }
+/* Filinput göms bakom sin label -- en <input type=file> går inte att
+   styla konsekvent mellan webbläsare, men labeln gör det. */
+.module-archive .archive-upload{
+  font-size:13px; font-weight:600; color:var(--ar-accent); cursor:pointer;
+}
+.module-archive .archive-upload:hover{ text-decoration:underline; }
+.module-archive .archive-upload input{ display:none; }
+
+/* ---- Knappar ---- */
+.module-archive .archive-actions{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+.module-archive .archive-keep{ padding:6px 14px; font-size:13px; }
+.module-archive .archive-discard{
+  background:none; border:none; padding:6px 4px; font-family:inherit; font-size:13px;
+  color:var(--ink-soft); cursor:pointer;
+}
+.module-archive .archive-discard:hover{ color:#E0393E; text-decoration:underline; }
+
+/* ---- Formulär ---- */
+.module-archive .archive-form{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px;
+  background:var(--ar-card-bg); border-radius:12px; box-shadow:var(--ar-shadow);
+  padding:16px; margin-bottom:16px;
+}
+.module-archive .archive-field{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+.module-archive .archive-field-label{
+  font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-soft);
+}
+.module-archive .archive-field .text-input,
+.module-archive .archive-field .archive-select{ width:100%; box-sizing:border-box; }
+.module-archive .archive-form-actions{
+  grid-column:1/-1; display:flex; align-items:center; gap:12px; margin-top:4px;
+}
+
+@media (max-width:640px){
+  .module-archive .archive-item{ flex-direction:column; gap:10px; }
+  .module-archive .archive-actions{ width:100%; justify-content:flex-end; }
+}
