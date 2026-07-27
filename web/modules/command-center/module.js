@@ -11,7 +11,7 @@ function node(tag, className, text) {
 
 function icon(name) {
   const icons = {
-    focus: "⌁", mission: "◉", depot: "↗", marketplace: "◇",
+    calendar: "○", focus: "⌁", mission: "◉", depot: "↗", marketplace: "◇",
     expedition: "△", veteran: "✦", ai: "✣", links: "↳",
   };
   return node("span", "cc-icon", icons[name] || "•");
@@ -93,6 +93,38 @@ function renderBrief(data) {
 function render(data) {
   const page = node("main", "command-center");
   page.appendChild(renderBrief(data.brief));
+
+  const calendar = card("Kalender", "calendar", {
+    className: "cc-calendar",
+    action: deepLink("Öppna hela briefen", "#morning-brief"),
+  });
+  const calendarGrid = node("div", "cc-calendar-grid");
+  if (data.calendar.acts.length) {
+    data.calendar.acts.forEach((act) => {
+      const slot = node("div", "cc-calendar-slot");
+      slot.append(node("strong", null, act.time), node("span", null, act.note));
+      calendarGrid.appendChild(slot);
+    });
+  } else {
+    calendarGrid.appendChild(node("p", "cc-empty", "Inga tider i dagens brief."));
+  }
+  calendar.appendChild(calendarGrid);
+
+  if (data.calendar.context.length || data.calendar.tomorrow) {
+    const context = node("div", "cc-calendar-context");
+    data.calendar.context.forEach((item) => {
+      const row = node("div", "cc-calendar-context-row");
+      row.append(node("strong", null, item.title), node("span", null, item.meta));
+      context.appendChild(row);
+    });
+    if (data.calendar.tomorrow) {
+      const tomorrow = node("div", "cc-calendar-context-row cc-calendar-tomorrow");
+      tomorrow.append(node("strong", null, "Imorgon"), node("span", null, data.calendar.tomorrow));
+      context.appendChild(tomorrow);
+    }
+    calendar.appendChild(context);
+  }
+  page.appendChild(calendar);
 
   const focus = card("Dagens fokus", "focus", { className: "cc-focus" });
   focus.appendChild(itemList(data.focus, "Inget kräver din uppmärksamhet just nu."));

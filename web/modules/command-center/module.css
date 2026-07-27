@@ -97,7 +97,8 @@
   border-bottom: 1px solid var(--cc-line);
 }
 
-.cc-focus { padding-top: 62px; }
+.cc-calendar { padding-top: 62px; }
+.cc-focus { padding-top: 56px; }
 .cc-card-head {
   display: flex;
   align-items: baseline;
@@ -145,6 +146,60 @@
 .cc-grid .cc-card:nth-child(odd) { padding-right: 8px; }
 .cc-grid .cc-card:nth-child(even) { padding-left: 8px; }
 .cc-list, .cc-service-grid { display: grid; gap: 22px; }
+
+.cc-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cc-calendar-slot {
+  display: grid;
+  gap: 8px;
+  min-height: 64px;
+  padding: 0 28px;
+  border-left: 1px solid var(--cc-line);
+}
+
+.cc-calendar-slot:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.cc-calendar-slot:last-child { padding-right: 0; }
+.cc-calendar-slot strong {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .02em;
+}
+
+.cc-calendar-slot span {
+  color: var(--cc-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.cc-calendar-context {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 48px;
+  margin-top: 42px;
+  padding-top: 32px;
+  border-top: 1px solid var(--cc-line);
+}
+
+.cc-calendar-context-row {
+  display: grid;
+  gap: 6px;
+}
+
+.cc-calendar-context-row strong { font-size: 15px; line-height: 1.35; }
+.cc-calendar-context-row span {
+  color: var(--cc-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cc-calendar-tomorrow strong { color: var(--cc-accent); }
 
 .cc-list-row {
   display: grid;
@@ -244,6 +299,16 @@
   }
 
   .cc-grid { grid-template-columns: 1fr; column-gap: 0; }
+  .cc-calendar-grid { grid-template-columns: 1fr; }
+  .cc-calendar-slot,
+  .cc-calendar-slot:first-child,
+  .cc-calendar-slot:last-child {
+    min-height: 0;
+    padding: 16px 0;
+    border-top: 1px solid var(--cc-line);
+    border-left: 0;
+  }
+  .cc-calendar-context { grid-template-columns: 1fr; gap: 24px; margin-top: 30px; }
   .cc-grid .cc-card:nth-child(odd),
   .cc-grid .cc-card:nth-child(even) { padding-right: 0; padding-left: 0; }
   .cc-card { padding: 46px 0; }
