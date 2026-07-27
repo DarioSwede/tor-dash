@@ -85,6 +85,33 @@ function attentionItems(brief, todos) {
   return [...fromBrief, ...fromTodos];
 }
 
+function calendarSummary(brief) {
+  if (!brief) return { acts: [], context: [], tomorrow: null };
+
+  const acts = (brief.acts || []).map((act) => ({
+    time: act.time || "Idag",
+    note: act.note || "",
+  }));
+
+  // Multi-day events such as vacations are deliberately stored in a
+  // plain "Bakgrund" section by the brief producer. Calendar-specific
+  // sections are accepted too so the adapter remains useful if the
+  // producer later starts naming the section more explicitly.
+  const context = (brief.sections || [])
+    .filter((section) => /bakgrund|kalender|schema/i.test(section.heading || ""))
+    .flatMap((section) => (section.items || []).map((item) => ({
+      title: item.title || section.heading || "Kalender",
+      meta: item.sentence || "",
+      source: section.source || null,
+    })));
+
+  return {
+    acts,
+    context,
+    tomorrow: brief.tomorrow_line || null,
+  };
+}
+
 function missionStatus(brief) {
   const rows = brief?.service_status || [];
   if (!rows.length) {
@@ -143,6 +170,7 @@ export async function loadCommandCenter(ctx) {
       monitor: missionStatus(brief).filter((item) => ["warn", "unknown"].includes(item.level)).length,
       opportunity: MOCK.marketplace.items.filter((item) => item.level === "opportunity").length,
     },
+    calendar: calendarSummary(brief),
     focus,
     missionStatus: missionStatus(brief),
     depot: depotSummary(portfolioDoc),
