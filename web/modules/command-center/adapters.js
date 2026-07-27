@@ -86,7 +86,36 @@ function attentionItems(brief, todos) {
 }
 
 function calendarSummary(brief) {
-  if (!brief) return { acts: [], context: [], tomorrow: null };
+  if (!brief) return { acts: [], context: [], tomorrow: null, events: [], anchorDate: null };
+
+  const anchorDate = brief.forDate || brief.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+  const anchor = new Date(`${anchorDate}T12:00:00`);
+  const iso = (date) => date.toISOString().slice(0, 10);
+  const shift = (days) => {
+    const date = new Date(anchor);
+    date.setDate(date.getDate() + days);
+    return iso(date);
+  };
+
+  const MONTHS = {
+    januari: 0, februari: 1, mars: 2, april: 3, maj: 4, juni: 5,
+    juli: 6, augusti: 7, september: 8, oktober: 9, november: 10, december: 11,
+  };
+  function parseSwedishRange(text) {
+    const match = String(text || "").toLowerCase().match(
+      /(\d{1,2})\s+(januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december)\s*[–-]\s*(\d{1,2})\s+(januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december)/
+    );
+    if (!match) return null;
+    let startYear = anchor.getFullYear();
+    let endYear = startYear;
+    const startMonth = MONTHS[match[2]];
+    const endMonth = MONTHS[match[4]];
+    if (endMonth < startMonth) endYear += 1;
+    return {
+      start: iso(new Date(startYear, startMonth, Number(match[1]), 12)),
+      end: iso(new Date(endYear, endMonth, Number(match[3]), 12)),
+    };
+  }
 
   const acts = (brief.acts || []).map((act) => ({
     time: act.time || "Idag",
@@ -103,12 +132,39 @@ function calendarSummary(brief) {
       title: item.title || section.heading || "Kalender",
       meta: item.sentence || "",
       source: section.source || null,
+      start: item.start_date || item.start || null,
+      end: item.end_date || item.end || null,
     })));
+
+  const events = [
+    ...context.map((item) => {
+      const parsed = parseSwedishRange(item.meta);
+      return {
+        title: item.title,
+        meta: item.meta,
+        start: item.start || parsed?.start || anchorDate,
+        end: item.end || parsed?.end || item.start || parsed?.start || anchorDate,
+        kind: "span",
+      };
+    }),
+    ...acts.filter((act) => act.note).map((act) => ({
+      title: act.time,
+      meta: act.note,
+      start: anchorDate,
+      end: anchorDate,
+      kind: "today",
+    })),
+  ];
+  if (brief.tomorrow_line) {
+    events.push({ title: "Imorgon", meta: brief.tomorrow_line, start: shift(1), end: shift(1), kind: "future" });
+  }
 
   return {
     acts,
     context,
     tomorrow: brief.tomorrow_line || null,
+    events,
+    anchorDate,
   };
 }
 

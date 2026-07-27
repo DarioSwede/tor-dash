@@ -90,6 +90,174 @@ function renderBrief(data) {
   return hero;
 }
 
+function renderTimeline(calendar) {
+  const shell = node("div", "cc-timeline-shell");
+  const controls = node("div", "cc-timeline-controls");
+  const zoomGroup = node("div", "cc-timeline-zoom");
+  const todayBtn = node("button", "cc-timeline-btn", "Idag");
+  todayBtn.type = "button";
+  [
+    ["7 dagar", 120],
+    ["14 dagar", 72],
+    ["Månad", 38],
+  ].forEach(([label, scale], index) => {
+    const button = node("button", `cc-timeline-btn${index === 1 ? " active" : ""}`, label);
+    button.type = "button";
+    button.dataset.scale = String(scale);
+    zoomGroup.appendChild(button);
+  });
+  controls.append(zoomGroup, todayBtn);
+  shell.appendChild(controls);
+
+  if (!calendar.anchorDate || !calendar.events.length) {
+    shell.appendChild(node("p", "cc-empty", "Tidslinjen fylls när briefen innehåller kalenderhändelser."));
+    return shell;
+  }
+
+  const DAY_MS = 86400000;
+  const atNoon = (value) => new Date(`${value}T12:00:00`);
+  const anchor = atNoon(calendar.anchorDate);
+  const eventDates = calendar.events.flatMap((event) => [atNoon(event.start), atNoon(event.end)]);
+  const earliest = new Date(Math.min(anchor.getTime() - 60 * DAY_MS, ...eventDates.map((d) => d.getTime() - 7 * DAY_MS)));
+  const latest = new Date(Math.max(anchor.getTime() + 60 * DAY_MS, ...eventDates.map((d) => d.getTime() + 7 * DAY_MS)));
+  const start = new Date(earliest.getFullYear(), earliest.getMonth(), earliest.getDate(), 12);
+  const end = new Date(latest.getFullYear(), latest.getMonth(), latest.getDate(), 12);
+  const totalDays = Math.round((end - start) / DAY_MS) + 1;
+  const indexFor = (value) => Math.round((atNoon(value) - start) / DAY_MS);
+
+  // Greedy lane assignment prevents overlapping event bands from covering
+  // one another while keeping the board compact.
+  const laneEnds = [];
+  const positioned = calendar.events
+    .map((event) => ({ ...event, startIndex: indexFor(event.start), endIndex: indexFor(event.end) }))
+    .sort((a, b) => a.startIndex - b.startIndex || b.endIndex - a.endIndex)
+    .map((event) => {
+      let lane = laneEnds.findIndex((laneEnd) => laneEnd < event.startIndex);
+      if (lane === -1) lane = laneEnds.length;
+      laneEnds[lane] = event.endIndex;
+      return { ...event, lane };
+    });
+
+  const viewport = node("div", "cc-timeline-viewport");
+  viewport.tabIndex = 0;
+  viewport.setAttribute("aria-label", "Dragbar kalendertidslinje. Dra åt vänster för historik och åt höger för kommande händelser.");
+  const board = node("div", "cc-timeline-board");
+  const axis = node("div", "cc-timeline-axis");
+  const tracks = node("div", "cc-timeline-tracks");
+  tracks.style.height = `${Math.max(1, laneEnds.length) * 42 + 16}px`;
+
+  for (let i = 0; i < totalDays; i += 1) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    const day = node("div", "cc-timeline-day");
+    if (date.toDateString() === anchor.toDateString()) day.classList.add("is-today");
+    day.append(
+      node("span", null, new Intl.DateTimeFormat("sv-SE", { weekday: "short" }).format(date)),
+      node("strong", null, String(date.getDate()))
+    );
+    axis.appendChild(day);
+  }
+
+  const todayLine = node("div", "cc-timeline-today-line");
+  todayLine.appendChild(node("span", null, "Idag"));
+  board.append(axis, tracks, todayLine);
+
+  positioned.forEach((event) => {
+    const bar = node("div", `cc-timeline-event cc-timeline-event-${event.kind || "span"}`);
+    bar.dataset.startIndex = String(event.startIndex);
+    bar.dataset.endIndex = String(event.endIndex);
+    bar.style.top = `${event.lane * 42 + 10}px`;
+    bar.title = event.meta ? `${event.title} — ${event.meta}` : event.title;
+    const label = node("div", "cc-timeline-event-label");
+    label.append(node("strong", null, event.title), node("span", null, event.meta || ""));
+    bar.appendChild(label);
+    tracks.appendChild(bar);
+  });
+  viewport.appendChild(board);
+  shell.appendChild(viewport);
+
+  let dayWidth = 72;
+  function updateEventLabels() {
+    tracks.querySelectorAll(".cc-timeline-event").forEach((bar) => {
+      const label = bar.querySelector(".cc-timeline-event-label");
+      const visibleInset = Math.max(10, viewport.scrollLeft - bar.offsetLeft + 10);
+      const maxInset = Math.max(10, bar.offsetWidth - label.offsetWidth - 10);
+      label.style.transform = `translateX(${Math.min(visibleInset, maxInset)}px)`;
+    });
+  }
+
+  function applyScale(nextWidth, keepCenter = true) {
+    const oldWidth = dayWidth;
+    const centerDay = keepCenter
+      ? (viewport.scrollLeft + viewport.clientWidth / 2) / oldWidth
+      : indexFor(calendar.anchorDate) + .5;
+    dayWidth = nextWidth;
+    board.style.setProperty("--cc-day-width", `${dayWidth}px`);
+    board.style.width = `${totalDays * dayWidth}px`;
+    todayLine.style.left = `${(indexFor(calendar.anchorDate) + .5) * dayWidth}px`;
+    tracks.querySelectorAll(".cc-timeline-event").forEach((bar) => {
+      const startIndex = Number(bar.dataset.startIndex);
+      const endIndex = Number(bar.dataset.endIndex);
+      bar.style.left = `${startIndex * dayWidth + 4}px`;
+      bar.style.width = `${Math.max(dayWidth - 8, (endIndex - startIndex + 1) * dayWidth - 8)}px`;
+    });
+    viewport.scrollLeft = centerDay * dayWidth - viewport.clientWidth / 2;
+    updateEventLabels();
+  }
+
+  function centerToday() {
+    applyScale(dayWidth, false);
+  }
+
+  zoomGroup.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-scale]");
+    if (!button) return;
+    zoomGroup.querySelectorAll("button").forEach((item) => item.classList.toggle("active", item === button));
+    applyScale(Number(button.dataset.scale));
+  });
+  todayBtn.addEventListener("click", centerToday);
+
+  let dragging = false;
+  let dragStartX = 0;
+  let dragStartScroll = 0;
+  viewport.addEventListener("pointerdown", (event) => {
+    dragging = true;
+    dragStartX = event.clientX;
+    dragStartScroll = viewport.scrollLeft;
+    viewport.classList.add("dragging");
+    viewport.setPointerCapture(event.pointerId);
+  });
+  viewport.addEventListener("pointermove", (event) => {
+    if (dragging) viewport.scrollLeft = dragStartScroll - (event.clientX - dragStartX);
+  });
+  viewport.addEventListener("pointerup", () => {
+    dragging = false;
+    viewport.classList.remove("dragging");
+  });
+  viewport.addEventListener("pointercancel", () => {
+    dragging = false;
+    viewport.classList.remove("dragging");
+  });
+  viewport.addEventListener("wheel", (event) => {
+    if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+      event.preventDefault();
+      viewport.scrollLeft += event.deltaY;
+    }
+  }, { passive: false });
+  viewport.addEventListener("scroll", updateEventLabels);
+  viewport.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      viewport.scrollLeft += event.key === "ArrowLeft" ? -dayWidth : dayWidth;
+    }
+  });
+
+  requestAnimationFrame(() => {
+    applyScale(dayWidth, false);
+  });
+  return shell;
+}
+
 function render(data) {
   const page = node("main", "command-center");
   page.appendChild(renderBrief(data.brief));
@@ -98,32 +266,7 @@ function render(data) {
     className: "cc-calendar",
     action: deepLink("Öppna hela briefen", "#morning-brief"),
   });
-  const calendarGrid = node("div", "cc-calendar-grid");
-  if (data.calendar.acts.length) {
-    data.calendar.acts.forEach((act) => {
-      const slot = node("div", "cc-calendar-slot");
-      slot.append(node("strong", null, act.time), node("span", null, act.note));
-      calendarGrid.appendChild(slot);
-    });
-  } else {
-    calendarGrid.appendChild(node("p", "cc-empty", "Inga tider i dagens brief."));
-  }
-  calendar.appendChild(calendarGrid);
-
-  if (data.calendar.context.length || data.calendar.tomorrow) {
-    const context = node("div", "cc-calendar-context");
-    data.calendar.context.forEach((item) => {
-      const row = node("div", "cc-calendar-context-row");
-      row.append(node("strong", null, item.title), node("span", null, item.meta));
-      context.appendChild(row);
-    });
-    if (data.calendar.tomorrow) {
-      const tomorrow = node("div", "cc-calendar-context-row cc-calendar-tomorrow");
-      tomorrow.append(node("strong", null, "Imorgon"), node("span", null, data.calendar.tomorrow));
-      context.appendChild(tomorrow);
-    }
-    calendar.appendChild(context);
-  }
+  calendar.appendChild(renderTimeline(data.calendar));
   page.appendChild(calendar);
 
   const focus = card("Dagens fokus", "focus", { className: "cc-focus" });

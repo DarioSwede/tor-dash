@@ -10,7 +10,7 @@
 }
 
 .command-center {
-  width: min(920px, calc(100% - 64px));
+  width: min(1150px, calc(100% - 64px));
   margin: 0 auto;
   padding: clamp(92px, 11vw, 150px) 0 110px;
 }
@@ -37,7 +37,7 @@
 }
 
 .cc-hero h1 {
-  max-width: 760px;
+  max-width: 950px;
   margin: 0;
   font: 600 clamp(38px, 5.5vw, 64px)/1.05 Georgia, "Times New Roman", serif;
   letter-spacing: -.032em;
@@ -147,59 +147,144 @@
 .cc-grid .cc-card:nth-child(even) { padding-left: 8px; }
 .cc-list, .cc-service-grid { display: grid; gap: 22px; }
 
-.cc-calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.cc-timeline-shell { display: grid; gap: 18px; }
+.cc-timeline-controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
 }
 
-.cc-calendar-slot {
-  display: grid;
-  gap: 8px;
-  min-height: 64px;
-  padding: 0 28px;
-  border-left: 1px solid var(--cc-line);
+.cc-timeline-zoom {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--cc-line);
+  border-radius: 999px;
 }
 
-.cc-calendar-slot:first-child {
-  padding-left: 0;
-  border-left: 0;
-}
-
-.cc-calendar-slot:last-child { padding-right: 0; }
-.cc-calendar-slot strong {
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: .02em;
-}
-
-.cc-calendar-slot span {
+.cc-timeline-btn {
+  appearance: none;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
   color: var(--cc-muted);
-  font-size: 14px;
-  line-height: 1.45;
+  background: transparent;
+  font: 600 11px/1 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
 }
 
-.cc-calendar-context {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px 48px;
-  margin-top: 42px;
-  padding-top: 32px;
+.cc-timeline-btn:hover { color: var(--cc-ink); }
+.cc-timeline-btn.active {
+  color: var(--cc-paper);
+  background: var(--cc-ink);
+}
+
+.cc-timeline-viewport {
+  overflow-x: auto;
+  overflow-y: hidden;
   border-top: 1px solid var(--cc-line);
+  border-bottom: 1px solid var(--cc-line);
+  cursor: grab;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #bbb7ad transparent;
+  touch-action: pan-y;
+  user-select: none;
 }
 
-.cc-calendar-context-row {
+.cc-timeline-viewport.dragging { cursor: grabbing; }
+.cc-timeline-viewport:focus-visible { outline: 2px solid var(--cc-accent); outline-offset: 3px; }
+.cc-timeline-board {
+  --cc-day-width: 72px;
+  position: relative;
+  min-height: 180px;
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(var(--cc-day-width) - 1px),
+    rgba(41, 40, 35, .1) calc(var(--cc-day-width) - 1px),
+    rgba(41, 40, 35, .1) var(--cc-day-width)
+  );
+}
+
+.cc-timeline-axis {
   display: grid;
-  gap: 6px;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--cc-day-width);
+  height: 58px;
+  border-bottom: 1px solid var(--cc-line);
 }
 
-.cc-calendar-context-row strong { font-size: 15px; line-height: 1.35; }
-.cc-calendar-context-row span {
+.cc-timeline-day {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 3px;
   color: var(--cc-muted);
-  font-size: 13px;
-  line-height: 1.5;
+  text-transform: capitalize;
 }
 
-.cc-calendar-tomorrow strong { color: var(--cc-accent); }
+.cc-timeline-day span { font-size: 9px; letter-spacing: .035em; }
+.cc-timeline-day strong { font-size: 13px; font-weight: 600; }
+.cc-timeline-day.is-today { color: var(--cc-accent); }
+.cc-timeline-tracks { position: relative; }
+.cc-timeline-today-line {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--cc-accent);
+  pointer-events: none;
+}
+
+.cc-timeline-today-line span {
+  position: absolute;
+  top: -23px;
+  left: 7px;
+  color: var(--cc-accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.cc-timeline-event {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  overflow: hidden;
+  padding: 0 10px;
+  border-radius: 4px;
+  color: #f9f7f1;
+  background: #405f77;
+  white-space: nowrap;
+}
+
+.cc-timeline-event-label {
+  display: flex;
+  width: max-content;
+  max-width: calc(100vw - 120px);
+  gap: 8px;
+  align-items: center;
+}
+
+.cc-timeline-event strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.cc-timeline-event span {
+  overflow: hidden;
+  color: rgba(255, 255, 255, .72);
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+
+.cc-timeline-event-today { background: #8c6a4a; }
+.cc-timeline-event-future { background: #6f4778; }
 
 .cc-list-row {
   display: grid;
@@ -282,7 +367,7 @@
 
 @media (max-width: 760px) {
   .command-center {
-    width: min(100% - 36px, 920px);
+    width: min(100% - 36px, 1150px);
     padding: 76px 0 64px;
   }
 
@@ -299,16 +384,9 @@
   }
 
   .cc-grid { grid-template-columns: 1fr; column-gap: 0; }
-  .cc-calendar-grid { grid-template-columns: 1fr; }
-  .cc-calendar-slot,
-  .cc-calendar-slot:first-child,
-  .cc-calendar-slot:last-child {
-    min-height: 0;
-    padding: 16px 0;
-    border-top: 1px solid var(--cc-line);
-    border-left: 0;
-  }
-  .cc-calendar-context { grid-template-columns: 1fr; gap: 24px; margin-top: 30px; }
+  .cc-timeline-controls { align-items: flex-start; }
+  .cc-timeline-zoom { max-width: 245px; overflow-x: auto; }
+  .cc-timeline-btn { padding: 7px 10px; white-space: nowrap; }
   .cc-grid .cc-card:nth-child(odd),
   .cc-grid .cc-card:nth-child(even) { padding-right: 0; padding-left: 0; }
   .cc-card { padding: 46px 0; }
