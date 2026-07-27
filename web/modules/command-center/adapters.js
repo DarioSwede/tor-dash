@@ -28,6 +28,20 @@ const MOCK = {
   },
 };
 
+function localDateIso(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function currentDateLabel(date = new Date()) {
+  const label = new Intl.DateTimeFormat("sv-SE", {
+    weekday: "long", day: "numeric", month: "long",
+  }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 async function latestBrief(ctx) {
   const { data, error } = await ctx.supabase
     .from("briefing_snapshots")
@@ -88,11 +102,14 @@ function attentionItems(brief, todos) {
 function calendarSummary(brief) {
   if (!brief) return { acts: [], context: [], tomorrow: null, events: [], anchorDate: null };
 
-  const anchorDate = brief.forDate || brief.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
-  const anchor = new Date(`${anchorDate}T12:00:00`);
+  // "Today" belongs to the device clock, not to the newest snapshot. A
+  // delayed brief must never move the red today-line backwards in time.
+  const anchorDate = localDateIso();
+  const briefDate = brief.forDate || brief.createdAt?.slice(0, 10) || anchorDate;
+  const briefAnchor = new Date(`${briefDate}T12:00:00`);
   const iso = (date) => date.toISOString().slice(0, 10);
   const shift = (days) => {
-    const date = new Date(anchor);
+    const date = new Date(briefAnchor);
     date.setDate(date.getDate() + days);
     return iso(date);
   };
@@ -106,7 +123,7 @@ function calendarSummary(brief) {
       /(\d{1,2})\s+(januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december)\s*[–-]\s*(\d{1,2})\s+(januari|februari|mars|april|maj|juni|juli|augusti|september|oktober|november|december)/
     );
     if (!match) return null;
-    let startYear = anchor.getFullYear();
+    let startYear = briefAnchor.getFullYear();
     let endYear = startYear;
     const startMonth = MONTHS[match[2]];
     const endMonth = MONTHS[match[4]];
@@ -142,16 +159,16 @@ function calendarSummary(brief) {
       return {
         title: item.title,
         meta: item.meta,
-        start: item.start || parsed?.start || anchorDate,
-        end: item.end || parsed?.end || item.start || parsed?.start || anchorDate,
+        start: item.start || parsed?.start || briefDate,
+        end: item.end || parsed?.end || item.start || parsed?.start || briefDate,
         kind: "span",
       };
     }),
     ...acts.filter((act) => act.note).map((act) => ({
       title: act.time,
       meta: act.note,
-      start: anchorDate,
-      end: anchorDate,
+      start: briefDate,
+      end: briefDate,
       kind: "today",
     })),
   ];
@@ -165,6 +182,8 @@ function calendarSummary(brief) {
     tomorrow: brief.tomorrow_line || null,
     events,
     anchorDate,
+    briefDate,
+    isStale: briefDate !== anchorDate,
   };
 }
 
@@ -216,10 +235,17 @@ export async function loadCommandCenter(ctx) {
   const portfolioDoc = portfolioResult.status === "fulfilled" ? portfolioResult.value : null;
   const expeditionData = expeditionResult.status === "fulfilled" ? expeditionResult.value : null;
   const focus = attentionItems(brief, todos);
+  const todayLabel = currentDateLabel();
+  const briefDate = brief?.forDate || brief?.createdAt?.slice(0, 10) || null;
+  const staleSuffix = briefDate && briefDate !== localDateIso()
+    ? ` · Brief från ${new Intl.DateTimeFormat("sv-SE", {
+      day: "numeric", month: "long",
+    }).format(new Date(`${briefDate}T12:00:00`))}`
+    : "";
 
   return {
     brief: {
-      eyebrow: brief ? `${brief.day_name || ""} · ${brief.date_label || brief.forDate || ""}` : "COMMAND BRIEF",
+      eyebrow: `${todayLabel}${staleSuffix}`,
       headline: brief?.headline || "God morgon, Tor. Lägesbilden är redo.",
       updatedAt: brief?.createdAt || null,
       execute: focus.filter((item) => item.level === "execute").length,
