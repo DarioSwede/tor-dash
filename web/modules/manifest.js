@@ -10,6 +10,11 @@ export const MODULES_BASE_URL = import.meta.url;
 
 export const MODULES = [
   {
+    id: "command-center",
+    path: "./command-center/module.js",
+    css: "./command-center/module.css",
+  },
+  {
     id: "morning-brief",
     path: "./morning-brief/module.js",
     css: "./morning-brief/module.css",
