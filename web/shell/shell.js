@@ -16,7 +16,6 @@ import { loadGateButton, wireGateButtonSetting } from "./gate-button.js";
 import { renderPasskeyList } from "./passkeys.js";
 import { loadDashboardBackground, wireDashboardBackgroundSetting } from "./dashboard-background.js";
 import { lookupIp } from "./ip-lookup.js";
-import { getLastSeenBrief } from "./last-seen.js";
 import { wireBriefScheduleSetting } from "./brief-schedule.js";
 import { mountLogDrawer } from "./log-drawer.js";
 
@@ -96,7 +95,7 @@ function boot() {
       try {
         await refreshDeviceList();
         await refreshPasskeyList();
-        const preferredInitialId = await computePreferredInitialId();
+        const preferredInitialId = "command-center";
         const ctx = {
           supabase,
           session,
@@ -128,7 +127,6 @@ function boot() {
       setThemeColor("#0A0A0C"); // --gate-bg, tokens.css
       contentEl.innerHTML = "";
       settingsPanel.classList.remove("open");
-      todoDrawer?.close();
       logDrawer?.close();
     },
   });
@@ -184,25 +182,6 @@ function boot() {
     intervalSelectEl: document.getElementById("brief-schedule-interval-select"),
     msgEl: document.getElementById("brief-schedule-msg"),
   });
-}
-
-// Sign-in should land on the Morning Brief when there's something there
-// worth seeing, and otherwise leave the URL hash (last tab visited)
-// alone -- not force Brief every time regardless, and not leave sign-in
-// stranded on whatever tab a stale hash from a prior visit points at.
-// "Something worth seeing" is simply: a newer briefing_snapshots row
-// than the last one this device actually rendered (see
-// modules/morning-brief/module.js's setLastSeenBrief call).
-async function computePreferredInitialId() {
-  const { data } = await supabase
-    .from("briefing_snapshots")
-    .select("created_at")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!data) return null;
-  const lastSeen = getLastSeenBrief();
-  return (!lastSeen || new Date(data.created_at) > new Date(lastSeen)) ? "morning-brief" : null;
 }
 
 async function refreshDeviceList() {

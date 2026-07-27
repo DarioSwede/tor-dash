@@ -33,6 +33,18 @@ tor-dashboard/
   wiring those up later doesn't require a schema migration first — just a
   new push script and a new section in the frontend.
 
+## Command Center
+
+The signed-in landing page is `web/modules/command-center/`. It is a
+responsive operational overview that reuses the latest brief, open todos,
+portfolio and Sarek pack list without replacing their full modules.
+
+`adapters.js` is the data boundary. The view only consumes its normalized
+output, so Marketplace and Veteran can use clearly labelled mock data today
+and later switch to private APIs without changing the layout. All adapters
+fail soft: an unavailable source renders an honest empty/unknown state
+instead of preventing the rest of the dashboard from loading.
+
 ## Workflow
 
 - **Restore point before any large/risky change.** Before a big visual
