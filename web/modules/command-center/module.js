@@ -110,7 +110,7 @@ function renderTimeline(calendar) {
   shell.appendChild(controls);
 
   if (!calendar.anchorDate || !calendar.events.length) {
-    shell.appendChild(node("p", "cc-empty", "Tidslinjen fylls när briefen innehåller kalenderhändelser."));
+    shell.appendChild(node("p", "cc-empty", "Tidslinjen fylls när en ansluten kalender innehåller händelser."));
     return shell;
   }
 
@@ -164,6 +164,7 @@ function renderTimeline(calendar) {
 
   positioned.forEach((event) => {
     const bar = node("div", `cc-timeline-event cc-timeline-event-${event.kind || "span"}`);
+    if (/^#[0-9a-f]{6}$/i.test(event.color || "")) bar.style.setProperty("--cc-event-color", event.color);
     bar.dataset.startIndex = String(event.startIndex);
     bar.dataset.endIndex = String(event.endIndex);
     bar.style.top = `${event.lane * 42 + 10}px`;

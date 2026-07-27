@@ -45,6 +45,15 @@ and later switch to private APIs without changing the layout. All adapters
 fail soft: an unavailable source renders an honest empty/unknown state
 instead of preventing the rest of the dashboard from loading.
 
+For calendars already visible in Apple Calendar, `mac-bridge/` is the
+source. Its small EventKit app receives read-only Calendar access and encrypts
+the complete rolling event window once for every registered dashboard device
+before uploading it through the token-scoped `calendar-sync` function. It runs
+every 15 minutes with a user LaunchAgent. Supabase stores only ECDH/AES-GCM
+envelopes in `calendar_snapshots`; titles, locations, calendar names and dates
+are never stored in plaintext. The browser can decrypt its envelope only after
+YubiKey/passkey sign-in, using its non-extractable local private key.
+
 ## Workflow
 
 - **Restore point before any large/risky change.** Before a big visual
