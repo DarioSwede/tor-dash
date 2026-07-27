@@ -285,6 +285,7 @@
 
 .cc-timeline-event-today { background: #8c6a4a; }
 .cc-timeline-event-future { background: #6f4778; }
+.cc-timeline-event-calendar { background: var(--cc-event-color, #4c7555); }
 
 .cc-list-row {
   display: grid;

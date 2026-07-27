@@ -85,6 +85,32 @@ async function expedition(ctx) {
   return { packed, total: items.length, updatedAt: data.updated_at };
 }
 
+async function calendarFeeds(ctx) {
+  const { data, error } = await ctx.supabase
+    .from("calendar_snapshots")
+    .select("payload_encrypted, created_at")
+    .maybeSingle();
+  if (error || !data?.payload_encrypted) return [];
+  const payload = await ctx.decryptPayload(data.payload_encrypted);
+  if (!Array.isArray(payload?.events)) return [];
+  return payload.events.map((event) => {
+      const time = event.all_day ? null : new Intl.DateTimeFormat("sv-SE", {
+        hour: "2-digit", minute: "2-digit", timeZone: "Europe/Stockholm",
+      }).format(new Date(event.start_at));
+      return {
+        uid: `mac:${event.external_id}`,
+        title: event.title,
+        meta: [time, event.location, event.calendar_name].filter(Boolean).join(" · "),
+        start: event.start_date,
+        end: event.end_date,
+        kind: event.all_day || event.end_date !== event.start_date ? "span" : "calendar",
+        calendar: event.calendar_name,
+        color: event.color,
+        source: "mac",
+      };
+    }).filter((event) => event?.title && event?.start && event?.end);
+}
+
 function attentionItems(brief, todos) {
   const fromBrief = (brief?.needs_attention || []).slice(0, 3).map((item) => ({
     title: item.title,
@@ -99,13 +125,13 @@ function attentionItems(brief, todos) {
   return [...fromBrief, ...fromTodos];
 }
 
-function calendarSummary(brief) {
-  if (!brief) return { acts: [], context: [], tomorrow: null, events: [], anchorDate: null };
+function calendarSummary(brief, feedEvents = []) {
+  if (!brief && !feedEvents.length) return { acts: [], context: [], tomorrow: null, events: [], anchorDate: localDateIso() };
 
   // "Today" belongs to the device clock, not to the newest snapshot. A
   // delayed brief must never move the red today-line backwards in time.
   const anchorDate = localDateIso();
-  const briefDate = brief.forDate || brief.createdAt?.slice(0, 10) || anchorDate;
+  const briefDate = brief?.forDate || brief?.createdAt?.slice(0, 10) || anchorDate;
   const briefAnchor = new Date(`${briefDate}T12:00:00`);
   const iso = (date) => date.toISOString().slice(0, 10);
   const shift = (days) => {
@@ -134,7 +160,7 @@ function calendarSummary(brief) {
     };
   }
 
-  const acts = (brief.acts || []).map((act) => ({
+  const acts = (brief?.acts || []).map((act) => ({
     time: act.time || "Idag",
     note: act.note || "",
   }));
@@ -143,7 +169,7 @@ function calendarSummary(brief) {
   // plain "Bakgrund" section by the brief producer. Calendar-specific
   // sections are accepted too so the adapter remains useful if the
   // producer later starts naming the section more explicitly.
-  const context = (brief.sections || [])
+  const context = (brief?.sections || [])
     .filter((section) => /bakgrund|kalender|schema/i.test(section.heading || ""))
     .flatMap((section) => (section.items || []).map((item) => ({
       title: item.title || section.heading || "Kalender",
@@ -172,15 +198,23 @@ function calendarSummary(brief) {
       kind: "today",
     })),
   ];
-  if (brief.tomorrow_line) {
+  if (brief?.tomorrow_line) {
     events.push({ title: "Imorgon", meta: brief.tomorrow_line, start: shift(1), end: shift(1), kind: "future" });
   }
+
+  const seen = new Set();
+  const mergedEvents = [...feedEvents, ...events].filter((event) => {
+    const key = event.uid || `${String(event.title).toLowerCase()}|${event.start}|${event.end}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   return {
     acts,
     context,
-    tomorrow: brief.tomorrow_line || null,
-    events,
+    tomorrow: brief?.tomorrow_line || null,
+    events: mergedEvents,
     anchorDate,
     briefDate,
     isStale: briefDate !== anchorDate,
@@ -227,13 +261,14 @@ function expeditionSummary(data) {
 }
 
 export async function loadCommandCenter(ctx) {
-  const [briefResult, todoResult, portfolioResult, expeditionResult] = await Promise.allSettled([
-    latestBrief(ctx), openTodos(ctx), portfolio(ctx), expedition(ctx),
+  const [briefResult, todoResult, portfolioResult, expeditionResult, calendarResult] = await Promise.allSettled([
+    latestBrief(ctx), openTodos(ctx), portfolio(ctx), expedition(ctx), calendarFeeds(ctx),
   ]);
   const brief = briefResult.status === "fulfilled" ? briefResult.value : null;
   const todos = todoResult.status === "fulfilled" ? todoResult.value : [];
   const portfolioDoc = portfolioResult.status === "fulfilled" ? portfolioResult.value : null;
   const expeditionData = expeditionResult.status === "fulfilled" ? expeditionResult.value : null;
+  const feedEvents = calendarResult.status === "fulfilled" ? calendarResult.value : [];
   const focus = attentionItems(brief, todos);
   const todayLabel = currentDateLabel();
   const briefDate = brief?.forDate || brief?.createdAt?.slice(0, 10) || null;
@@ -252,7 +287,7 @@ export async function loadCommandCenter(ctx) {
       monitor: missionStatus(brief).filter((item) => ["warn", "unknown"].includes(item.level)).length,
       opportunity: MOCK.marketplace.items.filter((item) => item.level === "opportunity").length,
     },
-    calendar: calendarSummary(brief),
+    calendar: calendarSummary(brief, feedEvents),
     focus,
     missionStatus: missionStatus(brief),
     depot: depotSummary(portfolioDoc),
