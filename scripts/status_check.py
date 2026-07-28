@@ -110,7 +110,6 @@ _TELIA_RULES = [
         r"p(å|a)g(å|a)ende\s+st(ö|o)rning",
         r"vi\s+har\s+problem",
         r"planerat\s+underh(å|a)ll",
-        r"driftst(ö|o)rning",
     ]),
 ]
 
