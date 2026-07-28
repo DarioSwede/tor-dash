@@ -279,6 +279,46 @@ function missionStatus(brief, history = []) {
   };
 }
 
+function buildHeadline({ brief, briefDate, calendar, todos, mission }) {
+  const today = localDateIso();
+
+  // A saved headline is only trusted on the date it was created for.
+  if (brief?.headline && briefDate === today) return brief.headline;
+
+  const down = mission.services.filter((item) => item.level === "down").length;
+  const warnings = mission.services.filter((item) => item.level === "warn").length;
+  const unknown = mission.services.filter((item) => item.level === "unknown").length;
+  const todayEvents = calendar.events.filter((event) => event.start <= today && event.end >= today);
+  const isVacation = todayEvents.some((event) => /semester|ledighet|vacation/i.test(`${event.title} ${event.meta || ""}`));
+
+  if (down) {
+    return `${down} ${down === 1 ? "kritisk tjänst har" : "kritiska tjänster har"} störningar. Prioritera felsökning före övrigt arbete.`;
+  }
+
+  const parts = [];
+  if (isVacation) {
+    parts.push("Semesterläge.");
+  } else if (todayEvents.length) {
+    parts.push(`${todayEvents.length} ${todayEvents.length === 1 ? "kalenderhändelse" : "kalenderhändelser"} idag.`);
+  } else {
+    parts.push("Lugnt kalenderläge idag.");
+  }
+
+  if (todos.length) {
+    parts.push(`${todos.length} ${todos.length === 1 ? "uppgift väntar" : "uppgifter väntar"}.`);
+  }
+
+  if (warnings) {
+    parts.push(`${warnings} ${warnings === 1 ? "tjänst behöver" : "tjänster behöver"} bevakas.`);
+  } else if (unknown === mission.services.length) {
+    parts.push("Tjänstestatus väntar på verifiering.");
+  } else if (!unknown) {
+    parts.push("Alla kritiska tjänster fungerar.");
+  }
+
+  return parts.slice(0, 2).join(" ");
+}
+
 function depotSummary(doc) {
   if (!doc) return { source: "unavailable", items: [] };
   const alertCount = Object.values(doc.alerts).filter(Boolean).length;
@@ -314,6 +354,7 @@ export async function loadCommandCenter(ctx) {
   const statusRows = statusResult.status === "fulfilled" ? statusResult.value : [];
   const focus = attentionItems(brief, todos);
   const mission = missionStatus(brief, statusRows);
+  const calendar = calendarSummary(brief, feedEvents);
   const todayLabel = currentDateLabel();
   const briefDate = brief?.forDate || brief?.createdAt?.slice(0, 10) || null;
   const staleSuffix = briefDate && briefDate !== localDateIso()
@@ -321,17 +362,18 @@ export async function loadCommandCenter(ctx) {
       day: "numeric", month: "long",
     }).format(new Date(`${briefDate}T12:00:00`))}`
     : "";
+  const headline = buildHeadline({ brief, briefDate, calendar, todos, mission });
 
   return {
     brief: {
       eyebrow: `${todayLabel}${staleSuffix}`,
-      headline: brief?.headline || "God morgon, Tor. Lägesbilden är redo.",
+      headline,
       updatedAt: brief?.createdAt || null,
       execute: focus.filter((item) => item.level === "execute").length,
       monitor: mission.services.filter((item) => ["warn", "down"].includes(item.level)).length,
       opportunity: MOCK.marketplace.items.filter((item) => item.level === "opportunity").length,
     },
-    calendar: calendarSummary(brief, feedEvents),
+    calendar,
     focus,
     missionStatus: mission,
     depot: depotSummary(portfolioDoc),
