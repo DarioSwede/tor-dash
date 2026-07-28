@@ -111,6 +111,17 @@ async function calendarFeeds(ctx) {
     }).filter((event) => event?.title && event?.start && event?.end);
 }
 
+async function statusHistory(ctx) {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await ctx.supabase
+    .from("service_status_checks")
+    .select("service_key, name, category, priority, level, verified, text, method, response_ms, checked_at, details")
+    .gte("checked_at", since)
+    .order("checked_at", { ascending: false })
+    .limit(500);
+  return error ? [] : (data || []);
+}
+
 function attentionItems(brief, todos) {
   const fromBrief = (brief?.needs_attention || []).slice(0, 3).map((item) => ({
     title: item.title,
@@ -221,20 +232,51 @@ function calendarSummary(brief, feedEvents = []) {
   };
 }
 
-function missionStatus(brief) {
+function missionStatus(brief, history = []) {
   const rows = brief?.service_status || [];
-  if (!rows.length) {
-    return [
-      { name: "Gmail", level: "unknown", text: "Inväntar nästa brief" },
-      { name: "Kalender", level: "unknown", text: "Inväntar nästa brief" },
-      { name: "Driftstatus", level: "unknown", text: "Öppna Brief för livekontroll" },
-    ];
-  }
-  return rows.slice(0, 6).map((row) => ({
-    name: row.name,
-    level: row.level || "unknown",
-    text: row.text || "Status saknas",
-  }));
+  const groups = new Map();
+  history.forEach((row) => {
+    const key = row.service_key || String(row.name || "").toLowerCase();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  });
+
+  const carried = new Map(rows.map((row) => [row.service_key || String(row.name || "").toLowerCase().split(" ")[0], row]));
+  const definitions = [
+    { key: "gmail", name: "Gmail", category: "Kommunikation", priority: 5 },
+    { key: "loopia", name: "Loopia mail", category: "Kommunikation", priority: 5 },
+    { key: "telia", name: "Telia", category: "Anslutning", priority: 4 },
+  ];
+  const services = definitions.map((definition) => {
+    const checks = groups.get(definition.key) || [];
+    const latest = checks[0] || carried.get(definition.key) || {};
+    const lastSuccess = checks.find((item) => item.verified && item.level === "ok")?.checked_at || null;
+    return {
+      ...definition,
+      level: ["ok", "warn", "down", "unknown"].includes(latest.level) ? latest.level : "unknown",
+      verified: latest.verified ?? (latest.level && latest.level !== "unknown"),
+      text: latest.text || "Ingen verifierad kontroll ännu",
+      method: latest.method || "Väntar på nästa statuskörning",
+      responseMs: latest.response_ms ?? null,
+      checkedAt: latest.checked_at || brief?.createdAt || null,
+      lastSuccess,
+      link: latest.link || latest.details?.link || null,
+      history: checks.slice().reverse().map((item) => ({
+        level: item.level,
+        verified: item.verified,
+        checkedAt: item.checked_at,
+      })),
+    };
+  });
+
+  const weights = services.reduce((sum, item) => sum + item.priority, 0);
+  const points = { ok: 100, warn: 60, down: 0, unknown: 50 };
+  const score = Math.round(services.reduce((sum, item) => sum + points[item.level] * item.priority, 0) / weights);
+  return {
+    score,
+    verifiedCount: services.filter((item) => item.verified).length,
+    services,
+  };
 }
 
 function depotSummary(doc) {
@@ -261,15 +303,17 @@ function expeditionSummary(data) {
 }
 
 export async function loadCommandCenter(ctx) {
-  const [briefResult, todoResult, portfolioResult, expeditionResult, calendarResult] = await Promise.allSettled([
-    latestBrief(ctx), openTodos(ctx), portfolio(ctx), expedition(ctx), calendarFeeds(ctx),
+  const [briefResult, todoResult, portfolioResult, expeditionResult, calendarResult, statusResult] = await Promise.allSettled([
+    latestBrief(ctx), openTodos(ctx), portfolio(ctx), expedition(ctx), calendarFeeds(ctx), statusHistory(ctx),
   ]);
   const brief = briefResult.status === "fulfilled" ? briefResult.value : null;
   const todos = todoResult.status === "fulfilled" ? todoResult.value : [];
   const portfolioDoc = portfolioResult.status === "fulfilled" ? portfolioResult.value : null;
   const expeditionData = expeditionResult.status === "fulfilled" ? expeditionResult.value : null;
   const feedEvents = calendarResult.status === "fulfilled" ? calendarResult.value : [];
+  const statusRows = statusResult.status === "fulfilled" ? statusResult.value : [];
   const focus = attentionItems(brief, todos);
+  const mission = missionStatus(brief, statusRows);
   const todayLabel = currentDateLabel();
   const briefDate = brief?.forDate || brief?.createdAt?.slice(0, 10) || null;
   const staleSuffix = briefDate && briefDate !== localDateIso()
@@ -284,12 +328,12 @@ export async function loadCommandCenter(ctx) {
       headline: brief?.headline || "God morgon, Tor. Lägesbilden är redo.",
       updatedAt: brief?.createdAt || null,
       execute: focus.filter((item) => item.level === "execute").length,
-      monitor: missionStatus(brief).filter((item) => ["warn", "unknown"].includes(item.level)).length,
+      monitor: mission.services.filter((item) => ["warn", "down"].includes(item.level)).length,
       opportunity: MOCK.marketplace.items.filter((item) => item.level === "opportunity").length,
     },
     calendar: calendarSummary(brief, feedEvents),
     focus,
-    missionStatus: missionStatus(brief),
+    missionStatus: mission,
     depot: depotSummary(portfolioDoc),
     marketplace: MOCK.marketplace,
     expedition: expeditionSummary(expeditionData),
