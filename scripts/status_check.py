@@ -71,9 +71,12 @@ IMPORTANT -- read before trusting this
 """
 
 import argparse
+from datetime import datetime, timezone
 import json
+import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -363,14 +366,108 @@ def check_loopia(timeout=20):
 
 CHECKS = {"telia": check_telia, "gmail": check_gmail, "loopia": check_loopia}
 
+SERVICE_META = {
+    "gmail": {"category": "Kommunikation", "priority": 5, "method": "Google Workspace statusflöde"},
+    "loopia": {"category": "Kommunikation", "priority": 5, "method": "IMAPS → HTTPS → DNS"},
+    "telia": {"category": "Anslutning", "priority": 4, "method": "Telias driftinformationssida"},
+}
+
+
+def _friendly_unknown(key, result):
+    """Replace transport/library errors with useful Swedish operator text."""
+    if result.get("level") != "unknown":
+        return result
+    reason = {
+        "gmail": "Googles statusflöde kunde inte verifieras från kontrollmiljön",
+        "loopia": "Loopias mailtjänst kunde inte verifieras från kontrollmiljön",
+        "telia": "Telias driftinformation kunde inte verifieras från kontrollmiljön",
+    }[key]
+    result["text"] = reason
+    return result
+
+
+def run_check(key, attempts=3):
+    """Retry unknown results with bounded exponential backoff."""
+    started = time.monotonic()
+    result = None
+    used = 0
+    for used in range(1, attempts + 1):
+        result = CHECKS[key]()
+        if result.get("level") != "unknown" or used == attempts:
+            break
+        time.sleep(0.5 * (2 ** (used - 1)))
+
+    result = _friendly_unknown(key, result or {})
+    meta = SERVICE_META[key]
+    result.update({
+        "service_key": key,
+        "category": meta["category"],
+        "priority": meta["priority"],
+        "method": meta["method"],
+        "verified": result.get("level") != "unknown",
+        "response_ms": round((time.monotonic() - started) * 1000),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "attempts": used,
+    })
+    return result
+
+
+def _supabase_request(url, key, path, body):
+    req = urllib.request.Request(
+        f"{url.rstrip('/')}{path}",
+        data=json.dumps(body).encode("utf-8"),
+        method="POST",
+        headers={
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=20):
+        return None
+
+
+def record_results(results):
+    """Persist history when the scheduled environment already has credentials."""
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not url or not key:
+        return False
+    rows = [{
+        "service_key": item["service_key"],
+        "name": item["name"],
+        "category": item["category"],
+        "priority": item["priority"],
+        "level": item["level"],
+        "verified": item["verified"],
+        "text": item["text"],
+        "method": item["method"],
+        "response_ms": item["response_ms"],
+        "checked_at": item["checked_at"],
+        "details": {"attempts": item["attempts"], "link": item.get("link")},
+    } for item in results]
+    _supabase_request(url, key, "/rest/v1/service_status_checks", rows)
+    return True
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", choices=sorted(CHECKS), help="Run just one source instead of all of them")
+    ap.add_argument("--attempts", type=int, default=3, choices=range(1, 5),
+                    help="Maximum attempts for an unverifiable check (default: 3)")
+    ap.add_argument("--no-record", action="store_true",
+                    help="Do not store history even when Supabase credentials are present")
     args = ap.parse_args()
 
     names = [args.only] if args.only else sorted(CHECKS)
-    print(json.dumps([CHECKS[n]() for n in names], ensure_ascii=False, indent=2))
+    results = [run_check(name, args.attempts) for name in names]
+    if not args.no_record:
+        try:
+            record_results(results)
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError) as exc:
+            print(f"Varning: statushistoriken kunde inte sparas ({exc.__class__.__name__})", file=sys.stderr)
+    print(json.dumps(results, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
