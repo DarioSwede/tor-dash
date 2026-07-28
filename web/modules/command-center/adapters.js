@@ -42,6 +42,31 @@ function currentDateLabel(date = new Date()) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+function isDateInRange(date, start, end) {
+  return Boolean(start && end && date >= start && date <= end);
+}
+
+function buildDailyHeadline(calendar, focus = []) {
+  const today = calendar.anchorDate || localDateIso();
+  const activeVacation = calendar.events.find((event) =>
+    /semester|ledig|vacation/i.test(`${event.title || ""} ${event.meta || ""}`)
+    && isDateInRange(today, event.start, event.end)
+  );
+  if (activeVacation) return "Semestern är igång — njut av ledigheten.";
+
+  const tomorrow = new Date(`${today}T12:00:00`);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowIso = localDateIso(tomorrow);
+  const vacationTomorrow = calendar.events.some((event) =>
+    /semester|ledig|vacation/i.test(`${event.title || ""} ${event.meta || ""}`)
+    && event.start === tomorrowIso
+  );
+  if (vacationTomorrow) return "Semestern börjar imorgon — varva ner.";
+
+  if (focus.length) return `${focus.length} ${focus.length === 1 ? "sak" : "saker"} behöver din uppmärksamhet idag.`;
+  return "Dagens lägesbild är uppdaterad.";
+}
+
 async function latestBrief(ctx) {
   const { data, error } = await ctx.supabase
     .from("briefing_snapshots")
@@ -269,12 +294,15 @@ function missionStatus(brief, history = []) {
     };
   });
 
-  const weights = services.reduce((sum, item) => sum + item.priority, 0);
+  const verifiedServices = services.filter((item) => item.verified);
+  const weights = verifiedServices.reduce((sum, item) => sum + item.priority, 0);
   const points = { ok: 100, warn: 60, down: 0, unknown: 50 };
-  const score = Math.round(services.reduce((sum, item) => sum + points[item.level] * item.priority, 0) / weights);
+  const score = weights
+    ? Math.round(verifiedServices.reduce((sum, item) => sum + points[item.level] * item.priority, 0) / weights)
+    : null;
   return {
     score,
-    verifiedCount: services.filter((item) => item.verified).length,
+    verifiedCount: verifiedServices.length,
     services,
   };
 }
@@ -312,12 +340,15 @@ export async function loadCommandCenter(ctx) {
   const expeditionData = expeditionResult.status === "fulfilled" ? expeditionResult.value : null;
   const feedEvents = calendarResult.status === "fulfilled" ? calendarResult.value : [];
   const statusRows = statusResult.status === "fulfilled" ? statusResult.value : [];
-  const focus = attentionItems(brief, todos);
-  const mission = missionStatus(brief, statusRows);
   const todayLabel = currentDateLabel();
   const briefDate = brief?.forDate || brief?.createdAt?.slice(0, 10) || null;
+  const isFresh = briefDate === localDateIso();
+  const currentBrief = isFresh ? brief : null;
+  const focus = attentionItems(currentBrief, todos);
+  const calendar = calendarSummary(currentBrief, feedEvents);
+  const mission = missionStatus(currentBrief, statusRows);
   const staleSuffix = briefDate && briefDate !== localDateIso()
-    ? ` · Brief från ${new Intl.DateTimeFormat("sv-SE", {
+    ? ` · Livekalender · Brief ${new Intl.DateTimeFormat("sv-SE", {
       day: "numeric", month: "long",
     }).format(new Date(`${briefDate}T12:00:00`))}`
     : "";
@@ -325,13 +356,13 @@ export async function loadCommandCenter(ctx) {
   return {
     brief: {
       eyebrow: `${todayLabel}${staleSuffix}`,
-      headline: brief?.headline || "God morgon, Tor. Lägesbilden är redo.",
+      headline: isFresh && brief?.headline ? brief.headline : buildDailyHeadline(calendar, focus),
       updatedAt: brief?.createdAt || null,
       execute: focus.filter((item) => item.level === "execute").length,
       monitor: mission.services.filter((item) => ["warn", "down"].includes(item.level)).length,
       opportunity: MOCK.marketplace.items.filter((item) => item.level === "opportunity").length,
     },
-    calendar: calendarSummary(brief, feedEvents),
+    calendar,
     focus,
     missionStatus: mission,
     depot: depotSummary(portfolioDoc),
