@@ -357,6 +357,7 @@
   font: 600 34px/1 Georgia, "Times New Roman", serif;
   letter-spacing: -.04em;
 }
+.cc-health-score-pending { color: var(--cc-muted); }
 .cc-health-score small { color: var(--cc-muted); font: 500 12px/1 ui-sans-serif, system-ui, sans-serif; }
 .cc-health-copy { display: grid; gap: 4px; }
 .cc-health-copy strong { font-size: 14px; }
@@ -441,9 +442,14 @@
     padding: 76px 0 64px;
   }
 
-  .cc-hero-top { grid-template-columns: 1fr; gap: 30px; }
-  .cc-clock { justify-items: start; }
-  .cc-triage { grid-template-columns: 1fr; margin-top: 60px; }
+  .cc-hero-top {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
+  }
+  .cc-hero h1 { font-size: clamp(32px, 10vw, 44px); }
+  .cc-clock { justify-items: end; }
+  .cc-clock strong { font-size: 20px; }
+  .cc-triage { grid-template-columns: 1fr; margin-top: 44px; }
   .cc-triage-lane,
   .cc-triage-lane:first-child,
   .cc-triage-lane:last-child {
@@ -454,14 +460,21 @@
   }
 
   .cc-grid { grid-template-columns: 1fr; column-gap: 0; }
-  .cc-timeline-controls { align-items: flex-start; }
-  .cc-timeline-zoom { max-width: 245px; overflow-x: auto; }
+  .cc-timeline-controls { align-items: center; }
+  .cc-timeline-zoom { max-width: none; overflow: visible; }
   .cc-timeline-btn { padding: 7px 10px; white-space: nowrap; }
   .cc-grid .cc-card:nth-child(odd),
   .cc-grid .cc-card:nth-child(even) { padding-right: 0; padding-left: 0; }
   .cc-card { padding: 46px 0; }
   .cc-focus { padding-top: 50px; }
   .cc-card-head { margin-bottom: 28px; }
+  .cc-service-v2 summary {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+  }
+  .cc-state { margin-right: 6px; }
+  .cc-service-details { padding-left: 0; }
+  .cc-service-details dl { grid-template-columns: 96px minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
