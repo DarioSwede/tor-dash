@@ -54,7 +54,8 @@ export default {
         if (it.consumable) cons += t;
         if (!it.owned) missing++;
       }
-      return { start, base: start - cons, cons, missing };
+      const weighed = items.filter((it) => it.weighed).length;
+      return { start, base: start - cons, cons, missing, weighed };
     }
     function catsum() {
       const a = {};
@@ -92,7 +93,10 @@ export default {
       const { data } = await supabase.from("sarek_packlist").select("id, data").limit(1).maybeSingle();
       if (data) {
         rowId = data.id;
-        items = (data.data && data.data.items) || [];
+        items = ((data.data && data.data.items) || []).map((item) => ({
+          ...item,
+          weighed: !!item.weighed,
+        }));
         categories = (data.data && data.data.categories && data.data.categories.length) ? data.data.categories : DEFAULT_CATEGORIES.slice();
         settings = { ...settings, ...((data.data && data.data.settings) || {}) };
       }
@@ -120,7 +124,7 @@ export default {
       scheduleSave();
     }
     function addItem() {
-      items.push({ id: uid(), name: "Ny pryl", category: "ovrigt", weight: 0, qty: 1, owned: false, consumable: false, worn: false, note: "" });
+      items.push({ id: uid(), name: "Ny pryl", category: "ovrigt", weight: 0, qty: 1, weighed: false, owned: false, consumable: false, worn: false, note: "" });
       scheduleSave();
       renderTab();
     }
@@ -198,7 +202,20 @@ export default {
       const catTd = document.createElement("td");
       catTd.appendChild(select(categories.map((k) => [k.id, k.name]), it.category, (v) => { updItem(it.id, "category", v); renderTab(); }));
       const weightTd = document.createElement("td");
-      weightTd.appendChild(input("number", it.weight, (v) => updItem(it.id, "weight", v), { className: "sk-num" }));
+      weightTd.appendChild(input("number", it.weight, (v) => {
+        updItem(it.id, "weight", v);
+        updItem(it.id, "weighed", false);
+        renderTab();
+      }, { className: "sk-num" }));
+      const weighedTd = document.createElement("td");
+      weighedTd.className = "sk-check";
+      const weighedInput = input("checkbox", it.weighed, (v) => {
+        updItem(it.id, "weighed", v);
+        renderTab();
+      });
+      weighedInput.setAttribute("aria-label", `${it.name} är vägd`);
+      weighedInput.title = "Markerar att vikten är kontrollerad";
+      weighedTd.appendChild(weighedInput);
       const qtyTd = document.createElement("td");
       qtyTd.appendChild(input("number", it.qty, (v) => updItem(it.id, "qty", v), { className: "sk-num" }));
       const totTd = document.createElement("td"); const b = document.createElement("b"); b.textContent = g(tot(it)); totTd.appendChild(b);
@@ -209,7 +226,8 @@ export default {
       const delBtn = document.createElement("button"); delBtn.className = "sk-ghost"; delBtn.textContent = "🗑️";
       delBtn.addEventListener("click", () => delItem(it.id));
       delTd.appendChild(delBtn);
-      tr.append(iconTd, nameTd, catTd, weightTd, qtyTd, totTd, ownedTd, consTd, wornTd, delTd);
+      if (it.weighed) tr.classList.add("sk-is-weighed");
+      tr.append(iconTd, nameTd, catTd, weightTd, weighedTd, qtyTd, totTd, ownedTd, consTd, wornTd, delTd);
       return tr;
     }
 
@@ -311,7 +329,7 @@ export default {
       const thead = document.createElement("thead");
       thead.innerHTML = ""; // structural only, no user data
       const headRow = document.createElement("tr");
-      ["", "Artikel", "Kategori", "Vikt", "Antal", "Total", "Har", "Förbrukas", "Bär på mig", ""].forEach((h) => {
+      ["", "Artikel", "Kategori", "Vikt", "Vägd", "Antal", "Total", "Har", "Förbrukas", "Bär på mig", ""].forEach((h) => {
         const th = document.createElement("th"); th.textContent = h; headRow.appendChild(th);
       });
       thead.appendChild(headRow);
@@ -407,13 +425,13 @@ export default {
       const table = document.createElement("table");
       const thead = document.createElement("thead");
       const headRow = document.createElement("tr");
-      ["✓", "Artikel", "Kategori", "Vikt", "Antal", "Total", "På mig", "Notering"].forEach((h) => { const th = document.createElement("th"); th.textContent = h; headRow.appendChild(th); });
+      ["✓", "Artikel", "Kategori", "Vikt", "Vägd", "Antal", "Total", "På mig", "Notering"].forEach((h) => { const th = document.createElement("th"); th.textContent = h; headRow.appendChild(th); });
       thead.appendChild(headRow);
       table.appendChild(thead);
       const tbody = document.createElement("tbody");
       for (const it of list) {
         const tr = document.createElement("tr");
-        ["□", it.name, catById(it.category).name, g(it.weight), String(it.qty), g(tot(it)), it.worn ? "✓" : "", it.note || ""].forEach((v) => {
+        ["□", it.name, catById(it.category).name, g(it.weight), it.weighed ? "✓" : "", String(it.qty), g(tot(it)), it.worn ? "✓" : "", it.note || ""].forEach((v) => {
           const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -486,7 +504,7 @@ export default {
       titleWrap.appendChild(el("h1", null, tab === "shop" ? "Inköp" : tab === "print" ? "A4 utskrift" : tab === "settings" ? "Inställningar" : "All utrustning"));
       header.appendChild(titleWrap);
       const stats = el("div", "sk-stats-top");
-      [["Startvikt", kg(t.start)], ["Grundvikt", kg(t.base)], ["Inköp", String(t.missing)]].forEach(([label, val]) => {
+      [["Startvikt", kg(t.start)], ["Grundvikt", kg(t.base)], ["Vägda", `${t.weighed}/${items.length}`], ["Inköp", String(t.missing)]].forEach(([label, val]) => {
         const stat = el("div", "sk-stat"); stat.appendChild(el("span", null, label)); stat.appendChild(el("b", null, val));
         stats.appendChild(stat);
       });
