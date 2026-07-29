@@ -173,6 +173,8 @@ function renderTimeline(calendar) {
   const controls = node("div", "cc-timeline-controls");
   const zoomGroup = node("div", "cc-timeline-zoom");
   const todayBtn = node("button", "cc-timeline-btn", "Idag");
+  const detail = node("div", "cc-timeline-detail");
+  detail.hidden = true;
   todayBtn.type = "button";
   [
     ["7 dagar", 120],
@@ -186,6 +188,10 @@ function renderTimeline(calendar) {
   });
   controls.append(zoomGroup, todayBtn);
   shell.appendChild(controls);
+
+  if (calendar.sourceState === "locked") {
+    shell.appendChild(node("p", "cc-calendar-notice", "Mac-kalendern är krypterad för en annan webbadress. Öppna livesidan eller registrera den här adressen som en egen enhet."));
+  }
 
   if (!calendar.anchorDate || !calendar.events.length) {
     shell.appendChild(node("p", "cc-empty", "Tidslinjen fylls när en ansluten kalender innehåller händelser."));
@@ -229,8 +235,12 @@ function renderTimeline(calendar) {
     date.setDate(start.getDate() + i);
     const day = node("div", "cc-timeline-day");
     if (date.toDateString() === anchor.toDateString()) day.classList.add("is-today");
+    if ([0, 6].includes(date.getDay())) day.classList.add("is-weekend");
+    const month = date.getDate() === 1
+      ? new Intl.DateTimeFormat("sv-SE", { month: "short" }).format(date)
+      : "";
     day.append(
-      node("span", null, new Intl.DateTimeFormat("sv-SE", { weekday: "short" }).format(date)),
+      node("span", null, month || new Intl.DateTimeFormat("sv-SE", { weekday: "short" }).format(date)),
       node("strong", null, String(date.getDate()))
     );
     axis.appendChild(day);
@@ -247,13 +257,37 @@ function renderTimeline(calendar) {
     bar.dataset.endIndex = String(event.endIndex);
     bar.style.top = `${event.lane * 42 + 10}px`;
     bar.title = event.meta ? `${event.title} — ${event.meta}` : event.title;
+    bar.tabIndex = 0;
+    bar.setAttribute("role", "button");
+    bar.setAttribute("aria-label", bar.title);
     const label = node("div", "cc-timeline-event-label");
     label.append(node("strong", null, event.title), node("span", null, event.meta || ""));
     bar.appendChild(label);
     tracks.appendChild(bar);
   });
   viewport.appendChild(board);
-  shell.appendChild(viewport);
+  shell.append(viewport, detail);
+
+  function showEventDetail(bar) {
+    tracks.querySelectorAll(".cc-timeline-event").forEach((item) => item.classList.toggle("is-selected", item === bar));
+    const eventTitle = bar.querySelector("strong")?.textContent || "";
+    const eventMeta = bar.querySelector("span")?.textContent || "";
+    detail.innerHTML = "";
+    detail.append(node("strong", null, eventTitle), node("span", null, eventMeta || "Ingen ytterligare information"));
+    detail.hidden = false;
+  }
+
+  tracks.addEventListener("click", (event) => {
+    const bar = event.target.closest(".cc-timeline-event");
+    if (bar) showEventDetail(bar);
+  });
+  tracks.addEventListener("keydown", (event) => {
+    if (!["Enter", " "].includes(event.key)) return;
+    const bar = event.target.closest(".cc-timeline-event");
+    if (!bar) return;
+    event.preventDefault();
+    showEventDetail(bar);
+  });
 
   let dayWidth = 72;
   function updateEventLabels() {

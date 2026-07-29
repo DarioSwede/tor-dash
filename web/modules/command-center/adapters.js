@@ -90,10 +90,12 @@ async function calendarFeeds(ctx) {
     .from("calendar_snapshots")
     .select("payload_encrypted, created_at")
     .maybeSingle();
-  if (error || !data?.payload_encrypted) return [];
+  if (error || !data?.payload_encrypted) return { events: [], state: "unavailable" };
   const payload = await ctx.decryptPayload(data.payload_encrypted);
-  if (!Array.isArray(payload?.events)) return [];
-  return payload.events.map((event) => {
+  if (!Array.isArray(payload?.events)) {
+    return { events: [], state: "locked", syncedAt: data.created_at };
+  }
+  const events = payload.events.map((event) => {
       const time = event.all_day ? null : new Intl.DateTimeFormat("sv-SE", {
         hour: "2-digit", minute: "2-digit", timeZone: "Europe/Stockholm",
       }).format(new Date(event.start_at));
@@ -109,6 +111,7 @@ async function calendarFeeds(ctx) {
         source: "mac",
       };
     }).filter((event) => event?.title && event?.start && event?.end);
+  return { events, state: "ready", syncedAt: data.created_at };
 }
 
 async function statusHistory(ctx) {
@@ -213,8 +216,19 @@ function calendarSummary(brief, feedEvents = []) {
     events.push({ title: "Imorgon", meta: brief.tomorrow_line, start: shift(1), end: shift(1), kind: "future" });
   }
 
+  const normalizedTitle = (title) => String(title || "")
+    .toLocaleLowerCase("sv-SE")
+    .replace(/[^\\p{L}\\p{N}]+/gu, " ")
+    .trim();
+  const overlaps = (left, right) => left.start <= right.end && right.start <= left.end;
+  const feedTitles = feedEvents.map((event) => ({ title: normalizedTitle(event.title), event }));
+  const briefOnlyEvents = events.filter((event) => {
+    const title = normalizedTitle(event.title);
+    return !feedTitles.some((candidate) => candidate.title === title && overlaps(candidate.event, event));
+  });
+
   const seen = new Set();
-  const mergedEvents = [...feedEvents, ...events].filter((event) => {
+  const mergedEvents = [...feedEvents, ...briefOnlyEvents].filter((event) => {
     const key = event.uid || `${String(event.title).toLowerCase()}|${event.start}|${event.end}`;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -350,11 +364,17 @@ export async function loadCommandCenter(ctx) {
   const todos = todoResult.status === "fulfilled" ? todoResult.value : [];
   const portfolioDoc = portfolioResult.status === "fulfilled" ? portfolioResult.value : null;
   const expeditionData = expeditionResult.status === "fulfilled" ? expeditionResult.value : null;
-  const feedEvents = calendarResult.status === "fulfilled" ? calendarResult.value : [];
+  const calendarFeed = calendarResult.status === "fulfilled"
+    ? calendarResult.value
+    : { events: [], state: "unavailable" };
   const statusRows = statusResult.status === "fulfilled" ? statusResult.value : [];
   const focus = attentionItems(brief, todos);
   const mission = missionStatus(brief, statusRows);
-  const calendar = calendarSummary(brief, feedEvents);
+  const calendar = {
+    ...calendarSummary(brief, calendarFeed.events),
+    sourceState: calendarFeed.state,
+    syncedAt: calendarFeed.syncedAt || null,
+  };
   const todayLabel = currentDateLabel();
   const briefDate = brief?.forDate || brief?.createdAt?.slice(0, 10) || null;
   const staleSuffix = briefDate && briefDate !== localDateIso()

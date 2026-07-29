@@ -54,6 +54,16 @@ envelopes in `calendar_snapshots`; titles, locations, calendar names and dates
 are never stored in plaintext. The browser can decrypt its envelope only after
 YubiKey/passkey sign-in, using its non-extractable local private key.
 
+### Automatic local preview
+
+Run `scripts/install-local-preview.sh` once to install the macOS LaunchAgent.
+It serves `web/` at `http://127.0.0.1:4173/`, starts automatically at login,
+and restarts if the process stops. The installer copies the current preview
+into `~/Library/Application Support/TorDash/preview` because macOS background
+services cannot reliably read project files from Documents. Run the installer
+again after local code changes, or `scripts/uninstall-local-preview.sh` to
+remove it.
+
 ## Workflow
 
 - **Restore point before any large/risky change.** Before a big visual
