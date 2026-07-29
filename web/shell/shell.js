@@ -18,6 +18,7 @@ import { loadDashboardBackground, wireDashboardBackgroundSetting } from "./dashb
 import { lookupIp } from "./ip-lookup.js";
 import { wireBriefScheduleSetting } from "./brief-schedule.js";
 import { mountLogDrawer } from "./log-drawer.js";
+import { wireAdminPanel } from "./admin.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -85,6 +86,7 @@ if (!configOk) {
 }
 
 function boot() {
+  const adminPanel = wireAdminPanel(supabase);
   wireGate(supabase, {
     gateEl, appEl, gateMsg,
     sessionTimerEl: document.getElementById("session-timer"),
@@ -93,6 +95,7 @@ function boot() {
       renderNetworkStatus(document.getElementById("network-status"));
       loadDashboardBackground(supabase);
       try {
+        await adminPanel.forSession(session);
         await refreshDeviceList();
         await refreshPasskeyList();
         const preferredInitialId = "command-center";
@@ -128,6 +131,7 @@ function boot() {
       contentEl.innerHTML = "";
       settingsPanel.classList.remove("open");
       logDrawer?.close();
+      adminPanel.clear();
     },
   });
 

@@ -23,7 +23,7 @@
      were still in effect). Neither file is referenced with a build-time
      hash since there's no build step -- bump this number by hand
      whenever shell.css changes and this stops being purely cosmetic. -->
-<link rel="stylesheet" href="shell/shell.css?v=6">
+<link rel="stylesheet" href="shell/shell.css?v=7">
 </head>
 <body>
 
@@ -117,6 +117,27 @@
         <p>Lets this device read encrypted briefs. Separate from sign-in — set this up once per device.</p>
         <button id="register-device-key-btn" class="btn">Set up encryption on this device</button>
         <div id="device-list" class="device-list"></div>
+      </div>
+    </details>
+
+    <details class="settings-category" id="admin-settings" hidden>
+      <summary>Administration</summary>
+      <div class="settings-category-body">
+        <h3 class="panel-subhead">Packlista-användare</h3>
+        <p>Bjud in användare och hantera enkla behörigheter för Packlista.</p>
+        <form class="admin-invite-form" id="admin-invite-form">
+          <label class="field-label" for="admin-invite-email">E-postadress</label>
+          <div class="admin-invite-row">
+            <input type="email" id="admin-invite-email" class="text-input" required placeholder="namn@example.com">
+            <button type="submit" class="btn">Skicka inbjudan</button>
+          </div>
+        </form>
+        <div id="admin-msg" class="panel-msg" aria-live="polite"></div>
+        <div class="admin-users-head">
+          <h3 class="panel-subhead">Registrerade användare</h3>
+          <button type="button" class="remove-btn" id="admin-refresh-users">Uppdatera</button>
+        </div>
+        <div id="admin-users-list" class="admin-users-list"></div>
       </div>
     </details>
 

@@ -546,6 +546,19 @@ h2.section-heading{
   position:absolute; top:18px; right:18px; background:none; border:none; cursor:pointer;
   font-size:20px; color:var(--ink-grey); line-height:1;
 }
+.admin-invite-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; }
+.admin-invite-row .btn{ white-space:nowrap; }
+.admin-users-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:18px; }
+.admin-users-head .panel-subhead{ margin:0; }
+.admin-users-list{ display:grid; margin-top:8px; }
+.admin-user-row{
+  display:grid; grid-template-columns:minmax(0,1fr) 116px; gap:12px; align-items:center;
+  padding:12px 0; border-top:1px solid var(--hairline);
+}
+.admin-user-row strong,.admin-user-row span{ display:block; overflow-wrap:anywhere; }
+.admin-user-row strong{ font-size:13px; color:var(--ink); }
+.admin-user-row span{ margin-top:4px; color:var(--ink-soft); font-size:11px; line-height:1.4; }
+.security-panel .admin-role-select{ padding:7px 8px; font-size:12px; }
 
 /* ---- Sign-out confirmation (see auth.js) -- a small centered dialog
    rather than the browser's native confirm(), so it matches the rest of
@@ -652,6 +665,7 @@ h2.section-heading{
 
 @media (max-width:640px){
   .security-panel{width:100%;}
+  .admin-invite-row,.admin-user-row{ grid-template-columns:1fr; }
   .log-drawer{width:100%;}
   .bottom-bar{ gap:18px; padding:12px 20px; }
 }
