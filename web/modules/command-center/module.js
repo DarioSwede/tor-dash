@@ -57,84 +57,6 @@ function deepLink(label, hash) {
   return link;
 }
 
-function timeLabel(value) {
-  if (!value) return "saknas";
-  return new Intl.DateTimeFormat("sv-SE", {
-    hour: "2-digit", minute: "2-digit", timeZone: "Europe/Stockholm",
-  }).format(new Date(value));
-}
-
-function renderMissionStatus(data) {
-  const root = node("div", "cc-mission");
-  const summary = node("div", "cc-health-summary");
-  const score = node("strong", "cc-health-score", String(data.score));
-  score.appendChild(node("small", null, "/100"));
-  const copy = node("div", "cc-health-copy");
-  copy.append(
-    node("strong", null, data.score >= 85 ? "Systemen mår bra" : data.score >= 60 ? "Begränsad lägesbild" : "Åtgärd kan krävas"),
-    node("span", null, `${data.verifiedCount}/${data.services.length} tjänster verifierade`)
-  );
-  summary.append(score, copy);
-  root.appendChild(summary);
-
-  const categories = new Map();
-  data.services.forEach((service) => {
-    if (!categories.has(service.category)) categories.set(service.category, []);
-    categories.get(service.category).push(service);
-  });
-
-  categories.forEach((services, category) => {
-    root.appendChild(node("h3", "cc-service-category", category));
-    services.sort((a, b) => b.priority - a.priority).forEach((service) => {
-      const details = node("details", "cc-service-v2");
-      const summaryRow = node("summary");
-      const identity = node("div", "cc-service-identity");
-      identity.append(statusDot(service.level), node("strong", null, service.name));
-      const state = node("span", `cc-state cc-state-${service.level}`,
-        service.level === "unknown" ? "Ej verifierad" : service.level === "ok" ? "Fungerar" : service.level === "warn" ? "Störning" : "Avbrott");
-      summaryRow.append(identity, state);
-      details.appendChild(summaryRow);
-
-      const body = node("div", "cc-service-details");
-      body.appendChild(node("p", null, service.text));
-      const facts = node("dl");
-      [
-        ["Svarstid", service.responseMs == null ? "saknas" : `${service.responseMs} ms`],
-        ["Senaste kontroll", timeLabel(service.checkedAt)],
-        ["Senast lyckad", timeLabel(service.lastSuccess)],
-        ["Kontrollmetod", service.method],
-        ["Prioritet", `${service.priority}/5`],
-      ].forEach(([term, value]) => {
-        facts.append(node("dt", null, term), node("dd", null, value));
-      });
-      body.appendChild(facts);
-
-      const history = node("div", "cc-status-history");
-      history.setAttribute("aria-label", `24 timmars historik för ${service.name}`);
-      if (!service.history.length) {
-        history.appendChild(node("span", "cc-history-empty", "Historik byggs upp efter nästa kontroll"));
-      } else {
-        service.history.forEach((point) => {
-          const mark = node("span", `cc-history-point cc-history-${point.level}`);
-          mark.title = `${timeLabel(point.checkedAt)} · ${point.verified ? point.level : "ej verifierad"}`;
-          history.appendChild(mark);
-        });
-      }
-      body.appendChild(history);
-      if (service.link) {
-        const link = node("a", "cc-link", "Öppna statuskälla");
-        link.href = service.link;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        body.appendChild(link);
-      }
-      details.appendChild(body);
-      root.appendChild(details);
-    });
-  });
-  return root;
-}
-
 function renderBrief(data) {
   const hero = node("section", "cc-hero");
   const top = node("div", "cc-hero-top");
@@ -173,6 +95,8 @@ function renderTimeline(calendar) {
   const controls = node("div", "cc-timeline-controls");
   const zoomGroup = node("div", "cc-timeline-zoom");
   const todayBtn = node("button", "cc-timeline-btn", "Idag");
+  const detail = node("div", "cc-timeline-detail");
+  detail.hidden = true;
   todayBtn.type = "button";
   [
     ["7 dagar", 120],
@@ -186,6 +110,14 @@ function renderTimeline(calendar) {
   });
   controls.append(zoomGroup, todayBtn);
   shell.appendChild(controls);
+
+  if (calendar.sourceState === "locked") {
+    shell.appendChild(node(
+      "p",
+      "cc-calendar-notice",
+      "Mac-kalendern är krypterad för en annan webbadress. Öppna livesidan eller registrera den här adressen som en egen enhet."
+    ));
+  }
 
   if (!calendar.anchorDate || !calendar.events.length) {
     shell.appendChild(node("p", "cc-empty", "Tidslinjen fylls när en ansluten kalender innehåller händelser."));
@@ -229,8 +161,12 @@ function renderTimeline(calendar) {
     date.setDate(start.getDate() + i);
     const day = node("div", "cc-timeline-day");
     if (date.toDateString() === anchor.toDateString()) day.classList.add("is-today");
+    if ([0, 6].includes(date.getDay())) day.classList.add("is-weekend");
+    const month = date.getDate() === 1
+      ? new Intl.DateTimeFormat("sv-SE", { month: "short" }).format(date)
+      : "";
     day.append(
-      node("span", null, new Intl.DateTimeFormat("sv-SE", { weekday: "short" }).format(date)),
+      node("span", null, month || new Intl.DateTimeFormat("sv-SE", { weekday: "short" }).format(date)),
       node("strong", null, String(date.getDate()))
     );
     axis.appendChild(day);
@@ -247,13 +183,42 @@ function renderTimeline(calendar) {
     bar.dataset.endIndex = String(event.endIndex);
     bar.style.top = `${event.lane * 42 + 10}px`;
     bar.title = event.meta ? `${event.title} — ${event.meta}` : event.title;
+    bar.tabIndex = 0;
+    bar.setAttribute("role", "button");
+    bar.setAttribute("aria-label", bar.title);
     const label = node("div", "cc-timeline-event-label");
     label.append(node("strong", null, event.title), node("span", null, event.meta || ""));
     bar.appendChild(label);
     tracks.appendChild(bar);
   });
   viewport.appendChild(board);
-  shell.appendChild(viewport);
+  shell.append(viewport, detail);
+
+  function showEventDetail(bar) {
+    tracks.querySelectorAll(".cc-timeline-event").forEach((item) => {
+      item.classList.toggle("is-selected", item === bar);
+    });
+    const eventTitle = bar.querySelector("strong")?.textContent || "";
+    const eventMeta = bar.querySelector("span")?.textContent || "";
+    detail.innerHTML = "";
+    detail.append(
+      node("strong", null, eventTitle),
+      node("span", null, eventMeta || "Ingen ytterligare information")
+    );
+    detail.hidden = false;
+  }
+
+  tracks.addEventListener("click", (event) => {
+    const bar = event.target.closest(".cc-timeline-event");
+    if (bar) showEventDetail(bar);
+  });
+  tracks.addEventListener("keydown", (event) => {
+    if (!["Enter", " "].includes(event.key)) return;
+    const bar = event.target.closest(".cc-timeline-event");
+    if (!bar) return;
+    event.preventDefault();
+    showEventDetail(bar);
+  });
 
   let dayWidth = 72;
   function updateEventLabels() {
@@ -355,7 +320,13 @@ function render(data) {
   const grid = node("div", "cc-grid");
 
   const mission = card("Mission Status", "mission", { action: deepLink("Öppna Brief", "#morning-brief") });
-  mission.appendChild(renderMissionStatus(data.missionStatus));
+  const missionList = node("div", "cc-service-grid");
+  data.missionStatus.forEach((service) => {
+    const row = node("div", "cc-service");
+    row.append(statusDot(service.level), node("strong", null, service.name), node("span", null, service.text));
+    missionList.appendChild(row);
+  });
+  mission.appendChild(missionList);
 
   const depot = card("Depot 103", "depot", { action: deepLink("Öppna depot", "#portfolio") });
   depot.appendChild(itemList(data.depot.items));
