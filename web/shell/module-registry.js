@@ -23,6 +23,8 @@ let contentEl = null;
 let navEl = null;
 let ctx = null;
 let activationToken = 0; // guards against overlapping activate() calls (see below)
+let hashListenerWired = false;
+const LAST_MODULE_KEY = "tor-dash:last-module";
 
 async function loadModule(entry) {
   // Resolved relative to manifest.js's own location, not relative to this
@@ -98,6 +100,11 @@ async function activate(id) {
   }
 
   activeId = mod.id;
+  try {
+    localStorage.setItem(LAST_MODULE_KEY, activeId);
+  } catch {
+    // Navigation still works when browser storage is unavailable.
+  }
   contentEl.className = `module-${mod.id}`;
   contentEl.innerHTML = "";
   buildNav();
@@ -158,15 +165,28 @@ export async function initModules(navElement, contentElement, sharedCtx, preferr
   // that happens to get activated first.
   await Promise.all(Array.from(registry.entries()).map(([id, mod]) => refreshBadge(id, mod)));
 
-  window.addEventListener("hashchange", () => {
-    const id = location.hash.replace(/^#/, "");
-    activate(registry.has(id) ? id : registry.keys().next().value);
-  });
+  if (!hashListenerWired) {
+    hashListenerWired = true;
+    window.addEventListener("hashchange", () => {
+      const id = location.hash.replace(/^#/, "");
+      activate(registry.has(id) ? id : registry.keys().next().value);
+    });
+  }
 
   const hashId = location.hash.replace(/^#/, "");
-  const initial = (preferredInitialId && registry.has(preferredInitialId))
-    ? preferredInitialId
-    : (registry.has(hashId) ? hashId : registry.keys().next().value);
+  let storedId = "";
+  try {
+    storedId = localStorage.getItem(LAST_MODULE_KEY) || "";
+  } catch {
+    // Fall through to URL/default navigation.
+  }
+  const initial = registry.has(hashId)
+    ? hashId
+    : (registry.has(storedId)
+      ? storedId
+      : ((preferredInitialId && registry.has(preferredInitialId))
+        ? preferredInitialId
+        : registry.keys().next().value));
   // Sync the address bar without location.hash's side effect of firing
   // hashchange (which would race a second, redundant activate() against
   // the one below) -- replaceState is silent.
