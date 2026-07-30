@@ -447,7 +447,10 @@ function render(data) {
     text: service.text,
     link: service.link,
   }));
-  const status = mountStatusCard(node, carriedStatus);
+  const status = mountStatusCard(node, carriedStatus, {
+    expandable: true,
+    details: data.missionStatus.services,
+  });
   status.card.classList.add("cc-command-status");
   statusCancel = status.cancel;
   const statusHost = document.getElementById("top-bar-service-status");

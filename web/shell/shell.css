@@ -99,12 +99,12 @@
    grid replaces the old three-zone auto/1fr/auto one. */
 .top-bar{
   position:sticky; top:0; z-index:15;
-  display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:16px;
+  display:grid; grid-template-columns:minmax(210px,1fr) auto minmax(210px,1fr); align-items:center; gap:16px;
   padding:12px 20px;
   background:var(--bg); border-bottom:1px solid var(--hairline);
 }
 .top-bar-group{ grid-column:1; grid-row:1; display:flex; align-items:center; gap:8px; }
-.top-bar-service-status{ grid-column:2; grid-row:1; min-width:0; }
+.top-bar-service-status{ grid-column:2; grid-row:1; min-width:0; justify-self:center; }
 .top-bar-status{ grid-column:3; grid-row:1; justify-content:flex-end; }
 body.top-bar-swapped .top-bar-group{ grid-column:3; }
 body.top-bar-swapped .top-bar-status{ grid-column:1; justify-content:flex-start; }

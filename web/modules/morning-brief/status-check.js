@@ -125,10 +125,18 @@ async function fetchStatuspage(baseUrl, signal) {
 export function mountStatusCard(el, extraEntries, options = {}) {
   const sources = options.sources || STATUSPAGE_SOURCES;
   const includeServerChecked = options.includeServerChecked !== false;
+  const detailsByName = new Map((options.details || []).map((detail) => [detail.name, detail]));
   const card = el("div", "mb-card mb-status-card");
 
   const head = el("div", "mb-card-head");
-  head.appendChild(el("h2", "mb-card-heading", "Driftstatus"));
+  const heading = options.expandable
+    ? el("button", "mb-card-heading status-master-toggle", "Driftstatus")
+    : el("h2", "mb-card-heading", "Driftstatus");
+  if (options.expandable) {
+    heading.type = "button";
+    heading.setAttribute("aria-expanded", "false");
+  }
+  head.appendChild(heading);
   // Deliberately built detached and only appended once something is
   // actually wrong -- the `hidden` property is not enough here, because
   // .mb-count-badge sets `display:inline-flex`, which beats the UA
@@ -141,6 +149,15 @@ export function mountStatusCard(el, extraEntries, options = {}) {
   card.appendChild(strip);
   const notes = el("div", "status-notes");
   card.appendChild(notes);
+  const expanded = el("div", "status-expanded");
+  expanded.hidden = true;
+  if (options.expandable) {
+    card.appendChild(expanded);
+    heading.addEventListener("click", () => {
+      expanded.hidden = !expanded.hidden;
+      heading.setAttribute("aria-expanded", String(!expanded.hidden));
+    });
+  }
 
   // Every service's latest known state, keyed by name. Kept as one map
   // rather than per-chip state because the explanations underneath have to
@@ -185,10 +202,69 @@ export function mountStatusCard(el, extraEntries, options = {}) {
       note.appendChild(document.createTextNode(` ${s.text}`));
       notes.appendChild(note);
     }
+
+    if (options.expandable) {
+      expanded.textContent = "";
+      const groups = new Map();
+      for (const [name, serviceState] of state) {
+        const detail = detailsByName.get(name);
+        const category = detail?.category || "Plattformar";
+        if (!groups.has(category)) groups.set(category, []);
+        groups.get(category).push({ name, serviceState, detail });
+      }
+      for (const [category, services] of groups) {
+        expanded.appendChild(el("h3", "status-expanded-category", category));
+        for (const { name, serviceState, detail } of services) {
+          const row = el("details", "status-expanded-service");
+          const summary = el("summary");
+          const identity = el("span", "status-expanded-identity");
+          identity.append(el("span", `status-dot status-dot-${serviceState.level}`), el("strong", null, name));
+          const stateLabel = serviceState.level === "ok" ? "Fungerar"
+            : serviceState.level === "warn" ? "Störning"
+              : serviceState.level === "down" ? "Avbrott"
+                : serviceState.level === "loading" ? "Kontrolleras" : "Ej verifierad";
+          summary.append(identity, el("span", `status-expanded-state status-expanded-state-${serviceState.level}`, stateLabel));
+          row.appendChild(summary);
+          const body = el("div", "status-expanded-body");
+          body.appendChild(el("p", null, serviceState.text));
+          const facts = [
+            ["Svarstid", detail?.responseMs == null ? null : `${detail.responseMs} ms`],
+            ["Senaste kontroll", detail?.checkedAt ? new Date(detail.checkedAt).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : null],
+            ["Senast lyckad", detail?.lastSuccess ? new Date(detail.lastSuccess).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : null],
+            ["Kontrollmetod", detail?.method || (serviceState.level === "loading" ? "Direkt statuskontroll pågår" : "Offentlig statussida")],
+            ["Prioritet", detail?.priority ? `${detail.priority}/5` : null],
+          ].filter(([, value]) => value != null);
+          if (facts.length) {
+            const list = el("dl");
+            facts.forEach(([term, value]) => list.append(el("dt", null, term), el("dd", null, value)));
+            body.appendChild(list);
+          }
+          if (detail?.history?.length) {
+            const history = el("div", "status-expanded-history");
+            detail.history.forEach((point) => {
+              const mark = el("span", `status-history-point status-history-${point.level}`);
+              mark.title = point.checkedAt ? new Date(point.checkedAt).toLocaleString("sv-SE") : point.level;
+              history.appendChild(mark);
+            });
+            body.appendChild(history);
+          }
+          const link = detail?.link || serviceState.link;
+          if (link) {
+            const anchor = el("a", "status-expanded-link", "Öppna statuskälla");
+            anchor.href = link;
+            anchor.target = "_blank";
+            anchor.rel = "noopener noreferrer";
+            body.appendChild(anchor);
+          }
+          row.appendChild(body);
+          expanded.appendChild(row);
+        }
+      }
+    }
   }
 
   function set(name, node, level, text) {
-    state.set(name, { level, text });
+    state.set(name, { level, text, link: node.href || null });
     // Full replacement, which also clears the initial -loading class.
     node.className = `status-chip status-chip-${level}`;
     node.dataset.statusDetail = `${name}: ${text}`;
