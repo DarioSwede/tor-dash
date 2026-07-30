@@ -450,6 +450,7 @@ function render(data) {
   const status = mountStatusCard(node, carriedStatus, {
     expandable: true,
     details: data.missionStatus.services,
+    onExpandedChange: (open) => document.body.classList.toggle("status-panel-open", open),
   });
   status.card.classList.add("cc-command-status");
   statusCancel = status.cancel;
@@ -518,6 +519,7 @@ export default {
     clockTimer = null;
     statusCancel?.();
     statusCancel = null;
+    document.body.classList.remove("status-panel-open");
     document.getElementById("top-bar-service-status")?.replaceChildren();
   },
   async mount(container, ctx) {

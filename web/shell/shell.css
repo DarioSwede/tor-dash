@@ -108,6 +108,10 @@
 .top-bar-status{ grid-column:3; grid-row:1; justify-content:flex-end; }
 body.top-bar-swapped .top-bar-group{ grid-column:3; }
 body.top-bar-swapped .top-bar-status{ grid-column:1; justify-content:flex-start; }
+body.status-panel-open .top-bar{
+  position:relative;
+  padding-bottom:calc(12px + min(78vh,820px));
+}
 .icon-btn{
   display:inline-flex; align-items:center; justify-content:center;
   width:34px; height:34px; padding:0;

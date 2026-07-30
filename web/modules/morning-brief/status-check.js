@@ -156,6 +156,7 @@ export function mountStatusCard(el, extraEntries, options = {}) {
     heading.addEventListener("click", () => {
       expanded.hidden = !expanded.hidden;
       heading.setAttribute("aria-expanded", String(!expanded.hidden));
+      options.onExpandedChange?.(!expanded.hidden);
     });
   }
 

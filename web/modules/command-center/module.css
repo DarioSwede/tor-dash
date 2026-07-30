@@ -181,7 +181,8 @@
   top: calc(100% + 1px);
   left: 50%;
   width: 100vw;
-  max-height: min(78vh, 820px);
+  height: min(78vh, 820px);
+  max-height: none;
   overflow-y: auto;
   padding: 24px 28px 30px;
   border: 0;
