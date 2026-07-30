@@ -40,6 +40,7 @@ const STATUSPAGE_SOURCES = [
   { name: "BankID", url: "https://status.bankid.com" },
   { name: "Claude", url: "https://status.claude.com" },
   { name: "OpenAI", url: "https://status.openai.com" },
+  { name: "ChatGPT", url: "https://status.openai.com" },
 ];
 
 // Services checked server-side (scripts/status_check.py) and delivered via
@@ -121,7 +122,9 @@ async function fetchStatuspage(baseUrl, signal) {
  * `extraEntries` are pre-checked services carried in the snapshot
  * (payload.service_status), for sources the browser can't reach itself.
  */
-export function mountStatusCard(el, extraEntries) {
+export function mountStatusCard(el, extraEntries, options = {}) {
+  const sources = options.sources || STATUSPAGE_SOURCES;
+  const includeServerChecked = options.includeServerChecked !== false;
   const card = el("div", "mb-card mb-status-card");
 
   const head = el("div", "mb-card-head");
@@ -201,7 +204,7 @@ export function mountStatusCard(el, extraEntries) {
   // useful information.
   const timeout = setTimeout(() => controller.abort(), 8000);
 
-  const inFlight = STATUSPAGE_SOURCES.map((src) => {
+  const inFlight = sources.map((src) => {
     const node = chip(src.name, src.url);
     node.classList.add("status-chip-loading");
     state.set(src.name, { level: "loading", text: TEXT_BY_LEVEL.unknown });
@@ -223,11 +226,11 @@ export function mountStatusCard(el, extraEntries) {
     (extraEntries || []).filter((e) => e && e.name).map((e) => [e.name, e])
   );
   const shown = [
-    ...SERVER_CHECKED.map((s) => ({ ...s, entry: carried.get(s.name) })),
+    ...(includeServerChecked ? SERVER_CHECKED.map((s) => ({ ...s, entry: carried.get(s.name) })) : []),
     // Anything the payload adds beyond the known list still renders, so a
     // new source can be introduced server-side without a frontend change.
     ...[...carried.values()]
-      .filter((e) => !SERVER_CHECKED.some((s) => s.name === e.name))
+      .filter((e) => !includeServerChecked || !SERVER_CHECKED.some((s) => s.name === e.name))
       .map((e) => ({ name: e.name, link: e.link, entry: e })),
   ];
 

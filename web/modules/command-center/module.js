@@ -1,6 +1,8 @@
 import { loadCommandCenter } from "./adapters.js";
+import { mountStatusCard } from "../morning-brief/status-check.js";
 
 let clockTimer = null;
+let statusCancel = null;
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -440,6 +442,10 @@ function render(data) {
   const page = node("main", "command-center");
   page.appendChild(renderBrief(data.brief));
   page.appendChild(renderWeather(data.weather));
+  const status = mountStatusCard(node, [], { includeServerChecked: false });
+  status.card.classList.add("cc-command-status");
+  statusCancel = status.cancel;
+  page.appendChild(status.card);
 
   const calendar = card("Kalender", "calendar", {
     className: "cc-calendar",
@@ -495,6 +501,8 @@ export default {
   unmount() {
     clearInterval(clockTimer);
     clockTimer = null;
+    statusCancel?.();
+    statusCancel = null;
   },
   async mount(container, ctx) {
     const loading = node("div", "cc-loading", "Bygger lägesbild…");
