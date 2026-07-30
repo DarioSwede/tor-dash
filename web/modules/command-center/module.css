@@ -183,7 +183,7 @@
   width: 100vw;
   max-height: min(78vh, 820px);
   overflow-y: auto;
-  padding: 26px max(28px, calc((100vw - 1440px) / 2));
+  padding: 24px 28px 30px;
   border: 0;
   border-top: 1px solid var(--cc-line);
   border-bottom: 1px solid var(--cc-line);
@@ -204,7 +204,7 @@
 }
 .status-expanded-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
+  grid-template-columns: repeat(var(--status-columns,3), minmax(0,1fr));
   gap: 12px;
 }
 .status-expanded-service {
@@ -256,8 +256,13 @@
 .status-history-down { background: #cf554a; }
 .status-history-unknown { background: #aaa69c; }
 .status-expanded-link { color: var(--cc-muted); font-size: 12px; text-underline-offset: 4px; }
+@media (max-width: 1600px) {
+  .status-expanded-grid[data-count="4"],
+  .status-expanded-grid[data-count="5"],
+  .status-expanded-grid[data-count="6"] { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
 @media (max-width: 1050px) {
-  .status-expanded-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .status-expanded-grid[data-count]:not([data-count="1"]) { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 .cc-command-status .mb-card-head {
   display: flex;

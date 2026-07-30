@@ -216,6 +216,8 @@ export function mountStatusCard(el, extraEntries, options = {}) {
         const group = el("section", "status-expanded-group");
         group.appendChild(el("h3", "status-expanded-category", category));
         const serviceGrid = el("div", "status-expanded-grid");
+        serviceGrid.dataset.count = String(services.length);
+        serviceGrid.style.setProperty("--status-columns", String(Math.min(services.length, 6)));
         for (const { name, serviceState, detail } of services) {
           const row = el("details", "status-expanded-service");
           row.open = true;
