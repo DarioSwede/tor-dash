@@ -143,14 +143,40 @@ function renderBrief(data) {
     node("p", "cc-kicker", data.eyebrow || "COMMAND BRIEF"),
     node("h1", null, data.headline)
   );
-  const clock = node("div", "cc-clock");
+  const cities = [
+    ["Stockholm", "Europe/Stockholm"],
+    ["Hongkong", "Asia/Hong_Kong"],
+    ["New York", "America/New_York"],
+    ["Los Angeles", "America/Los_Angeles"],
+    ["Moskva", "Europe/Moscow"],
+  ];
+  let selectedCity = cities[0];
+  const clock = node("details", "cc-clock");
+  const clockFace = node("summary", "cc-clock-face");
   const time = node("strong");
-  const place = node("span", null, "STOCKHOLM");
-  clock.append(time, place);
-  const tick = () => { time.textContent = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" }).format(new Date()); };
+  const place = node("span", null, selectedCity[0]);
+  clockFace.append(time, place);
+  const cityMenu = node("div", "cc-clock-cities");
+  cities.forEach((city) => {
+    const button = node("button", null, city[0]);
+    button.type = "button";
+    button.addEventListener("click", () => {
+      selectedCity = city;
+      place.textContent = city[0];
+      clock.open = false;
+      tick();
+    });
+    cityMenu.appendChild(button);
+  });
+  clock.append(clockFace, cityMenu);
+  const tick = () => {
+    time.textContent = new Intl.DateTimeFormat("sv-SE", {
+      hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: selectedCity[1],
+    }).format(new Date());
+  };
   tick();
   clearInterval(clockTimer);
-  clockTimer = setInterval(tick, 30000);
+  clockTimer = setInterval(tick, 1000);
   top.append(identity, clock);
   hero.appendChild(top);
 
@@ -166,6 +192,45 @@ function renderBrief(data) {
   });
   hero.appendChild(triage);
   return hero;
+}
+
+function weatherText(code) {
+  if (code === 0) return ["☀", "Klart"];
+  if ([1, 2].includes(code)) return ["◒", "Växlande molnighet"];
+  if (code === 3) return ["☁", "Mulet"];
+  if ([45, 48].includes(code)) return ["≋", "Dimma"];
+  if ([51, 53, 55, 56, 57].includes(code)) return ["☂", "Duggregn"];
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return ["☂", "Regn"];
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return ["❄", "Snö"];
+  if ([95, 96, 99].includes(code)) return ["ϟ", "Åska"];
+  return ["○", "Väderläge"];
+}
+
+function renderWeather(weather) {
+  const section = node("section", "cc-weather");
+  section.appendChild(node("p", "cc-weather-label", "Väder Stockholm"));
+  if (!weather || !Number.isFinite(weather.temperature)) {
+    section.appendChild(node("p", "cc-weather-unavailable", "Vädret kunde inte hämtas just nu."));
+    return section;
+  }
+  const [symbol, condition] = weatherText(weather.code);
+  const body = node("div", "cc-weather-body");
+  body.appendChild(node("span", "cc-weather-symbol", symbol));
+  const copy = node("div", "cc-weather-copy");
+  const current = Math.round(weather.temperature);
+  const high = Math.round(weather.high);
+  copy.append(
+    node("strong", null, `${condition}, ${current}° nu — upp mot ${high}°`),
+    node("span", null, `Lägst ${Math.round(weather.low)}° · Risk för nederbörd ${Math.round(weather.rainRisk || 0)}%`)
+  );
+  body.appendChild(copy);
+  const source = node("a", "cc-weather-source", weather.source);
+  source.href = "https://open-meteo.com/";
+  source.target = "_blank";
+  source.rel = "noopener noreferrer";
+  body.appendChild(source);
+  section.appendChild(body);
+  return section;
 }
 
 function renderTimeline(calendar) {
@@ -374,6 +439,7 @@ function renderTimeline(calendar) {
 function render(data) {
   const page = node("main", "command-center");
   page.appendChild(renderBrief(data.brief));
+  page.appendChild(renderWeather(data.weather));
 
   const calendar = card("Kalender", "calendar", {
     className: "cc-calendar",

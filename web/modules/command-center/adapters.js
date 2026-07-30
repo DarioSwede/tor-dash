@@ -42,6 +42,31 @@ function currentDateLabel(date = new Date()) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+async function stockholmWeather() {
+  const url = new URL("https://api.open-meteo.com/v1/forecast");
+  url.search = new URLSearchParams({
+    latitude: "59.3293",
+    longitude: "18.0686",
+    current: "temperature_2m,weather_code,cloud_cover,precipitation",
+    daily: "temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code",
+    timezone: "Europe/Stockholm",
+    forecast_days: "1",
+  });
+  const response = await fetch(url, { signal: AbortSignal.timeout(7000) });
+  if (!response.ok) throw new Error(`Weather HTTP ${response.status}`);
+  const data = await response.json();
+  return {
+    source: "Open-Meteo",
+    temperature: data.current?.temperature_2m,
+    code: data.current?.weather_code ?? data.daily?.weather_code?.[0],
+    cloudCover: data.current?.cloud_cover,
+    precipitation: data.current?.precipitation,
+    high: data.daily?.temperature_2m_max?.[0],
+    low: data.daily?.temperature_2m_min?.[0],
+    rainRisk: data.daily?.precipitation_probability_max?.[0],
+  };
+}
+
 async function latestBrief(ctx) {
   const { data, error } = await ctx.supabase
     .from("briefing_snapshots")
@@ -357,8 +382,8 @@ function expeditionSummary(data) {
 }
 
 export async function loadCommandCenter(ctx) {
-  const [briefResult, todoResult, portfolioResult, expeditionResult, calendarResult, statusResult] = await Promise.allSettled([
-    latestBrief(ctx), openTodos(ctx), portfolio(ctx), expedition(ctx), calendarFeeds(ctx), statusHistory(ctx),
+  const [briefResult, todoResult, portfolioResult, expeditionResult, calendarResult, statusResult, weatherResult] = await Promise.allSettled([
+    latestBrief(ctx), openTodos(ctx), portfolio(ctx), expedition(ctx), calendarFeeds(ctx), statusHistory(ctx), stockholmWeather(),
   ]);
   const brief = briefResult.status === "fulfilled" ? briefResult.value : null;
   const todos = todoResult.status === "fulfilled" ? todoResult.value : [];
@@ -368,6 +393,7 @@ export async function loadCommandCenter(ctx) {
     ? calendarResult.value
     : { events: [], state: "unavailable" };
   const statusRows = statusResult.status === "fulfilled" ? statusResult.value : [];
+  const weather = weatherResult.status === "fulfilled" ? weatherResult.value : null;
   const focus = attentionItems(brief, todos);
   const mission = missionStatus(brief, statusRows);
   const calendar = {
@@ -393,6 +419,7 @@ export async function loadCommandCenter(ctx) {
       monitor: mission.services.filter((item) => ["warn", "down"].includes(item.level)).length,
       opportunity: MOCK.marketplace.items.filter((item) => item.level === "opportunity").length,
     },
+    weather,
     calendar,
     focus,
     missionStatus: mission,
