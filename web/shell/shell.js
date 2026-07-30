@@ -14,7 +14,12 @@ import { renderNetworkStatus, fetchShowOnGate, wireNetworkSettingToggle } from "
 import { loadGateTitle, wireGateTitleSetting } from "./gate-title.js";
 import { loadGateButton, wireGateButtonSetting } from "./gate-button.js";
 import { renderPasskeyList } from "./passkeys.js";
-import { loadDashboardBackground, wireDashboardBackgroundSetting } from "./dashboard-background.js";
+import {
+  loadDashboardBackground,
+  loadTopBarLayout,
+  wireDashboardBackgroundSetting,
+  wireTopBarLayoutSetting,
+} from "./dashboard-background.js";
 import { lookupIp } from "./ip-lookup.js";
 import { wireBriefScheduleSetting } from "./brief-schedule.js";
 import { mountLogDrawer } from "./log-drawer.js";
@@ -94,6 +99,7 @@ function boot() {
       setThemeColor("#FCFCFB"); // --bg, tokens.css
       renderNetworkStatus(document.getElementById("network-status"));
       loadDashboardBackground(supabase);
+      loadTopBarLayout(supabase, document.getElementById("top-bar-layout-toggle"));
       try {
         await adminPanel.forSession(session);
         await refreshDeviceList();
@@ -158,6 +164,11 @@ function boot() {
   wireNetworkSettingToggle(supabase, {
     checkboxEl: document.getElementById("show-network-gate-toggle"),
     msgEl: document.getElementById("network-settings-msg"),
+  });
+
+  wireTopBarLayoutSetting(supabase, {
+    toggleEl: document.getElementById("top-bar-layout-toggle"),
+    msgEl: document.getElementById("top-bar-layout-msg"),
   });
 
   wireGateTitleSetting(supabase, {

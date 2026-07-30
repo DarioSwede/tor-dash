@@ -46,10 +46,6 @@
   <!-- signed in -->
   <div id="app">
     <div class="top-bar">
-      <div class="top-bar-status">
-        <div class="session-timer" id="session-timer"></div>
-        <div class="network-status" id="network-status"></div>
-      </div>
       <div class="top-bar-group">
         <button class="icon-btn" id="nav-toggle-btn" aria-label="Menu" aria-expanded="false" title="Menu">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -66,6 +62,11 @@
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0L19 4m-3.5 3.5L19 11"/></svg>
           <span class="edge-tab-label">Logga ut</span>
         </button>
+      </div>
+      <div class="top-bar-service-status" id="top-bar-service-status" aria-label="Driftstatus"></div>
+      <div class="top-bar-status">
+        <div class="session-timer" id="session-timer"></div>
+        <div class="network-status" id="network-status"></div>
       </div>
     </div>
     <div class="side-nav-backdrop" id="side-nav-backdrop"></div>
@@ -225,6 +226,12 @@
           <input type="checkbox" id="show-network-gate-toggle">
           Also show on the sign-in page
         </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="top-bar-layout-toggle">
+          Växla sida för utloggning och IP-information
+        </label>
+        <p class="field-hint">Av: utloggning till vänster och IP till höger. På: sidorna byter plats.</p>
+        <div id="top-bar-layout-msg" class="panel-msg"></div>
         <div id="network-settings-msg" class="panel-msg"></div>
       </div>
     </details>

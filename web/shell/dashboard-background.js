@@ -139,8 +139,10 @@ async function saveLayoutSwapped(supabase, swapped) {
     .upsert({ key: LAYOUT_KEY, value: { swapped }, updated_at: new Date().toISOString() }, { onConflict: "key" });
 }
 
-export async function loadTopBarLayout(supabase) {
-  document.body.classList.toggle("top-bar-swapped", await fetchLayoutSwapped(supabase));
+export async function loadTopBarLayout(supabase, toggleEl) {
+  const swapped = await fetchLayoutSwapped(supabase);
+  document.body.classList.toggle("top-bar-swapped", swapped);
+  if (toggleEl) toggleEl.checked = swapped;
 }
 
 export function wireTopBarLayoutSetting(supabase, { toggleEl, msgEl }) {

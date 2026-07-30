@@ -99,11 +99,15 @@
    grid replaces the old three-zone auto/1fr/auto one. */
 .top-bar{
   position:sticky; top:0; z-index:15;
-  display:grid; grid-template-columns:1fr auto; align-items:center; gap:12px;
+  display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:16px;
   padding:12px 20px;
   background:var(--bg); border-bottom:1px solid var(--hairline);
 }
-.top-bar-group{ display:flex; align-items:center; gap:8px; }
+.top-bar-group{ grid-column:1; grid-row:1; display:flex; align-items:center; gap:8px; }
+.top-bar-service-status{ grid-column:2; grid-row:1; min-width:0; }
+.top-bar-status{ grid-column:3; grid-row:1; justify-content:flex-end; }
+body.top-bar-swapped .top-bar-group{ grid-column:3; }
+body.top-bar-swapped .top-bar-status{ grid-column:1; justify-content:flex-start; }
 .icon-btn{
   display:inline-flex; align-items:center; justify-content:center;
   width:34px; height:34px; padding:0;
@@ -278,7 +282,7 @@
      (so mobile keeps them exactly where they've always been -- see
      auth.js/shell.js, nothing about their wiring changes) but escape its
      layout entirely here, becoming their own small left-edge tab stack. */
-  #open-settings-btn, #signout-btn{
+  #open-settings-btn{
     display:inline-block; position:fixed; left:0; z-index:16;
     /* Same backwards-from-usual radius as .edge-tab-stack.left .edge-tab
        above, for the same reason: rotate(180deg) flips which physical
@@ -289,13 +293,13 @@
     box-shadow:0 1px 2px rgba(16,24,40,.06), 0 6px 16px rgba(16,24,40,.12);
     transition:box-shadow .15s ease, filter .15s ease;
   }
-  #open-settings-btn:hover, #signout-btn:hover{
+  #open-settings-btn:hover{
     filter:brightness(1.12); box-shadow:0 2px 6px rgba(16,24,40,.1), 0 10px 22px rgba(16,24,40,.16);
     transform:rotate(180deg) translateX(-3px); /* real screen-space +3px (away from the left edge) -- rotate(180deg) flips a local translateX's sign */
   }
-  #open-settings-btn:focus-visible, #signout-btn:focus-visible{ outline:2px solid #fff; outline-offset:-4px; }
-  #open-settings-btn svg, #signout-btn svg{ display:none; } /* icon only makes sense un-rotated in the top bar */
-  #open-settings-btn .edge-tab-label, #signout-btn .edge-tab-label{ display:inline; }
+  #open-settings-btn:focus-visible{ outline:2px solid #fff; outline-offset:-4px; }
+  #open-settings-btn svg{ display:none; } /* icon only makes sense un-rotated in the edge tab */
+  #open-settings-btn .edge-tab-label{ display:inline; }
   /* Settings opens a drawer (drawer-blue, same as Log); sign-out
      triggers a confirm prompt, not a panel, so it stays neutral. `top`
      (a layout property, resolved before `transform`) positions each box
@@ -305,7 +309,8 @@
      first version had settings and sign-out swapped top-to-bottom for
      exactly that reason). */
   #open-settings-btn{ top:calc(50% - 100px); background:#2F6FE4; }
-  #signout-btn{ top:calc(50% + 8px); background:var(--ink); }
+  #signout-btn{ width:auto; padding:0 12px; gap:7px; color:var(--ink); background:rgba(255,255,255,.55); }
+  #signout-btn .edge-tab-label{ display:inline; }
 }
 
 .btn{

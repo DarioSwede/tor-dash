@@ -450,7 +450,16 @@ function render(data) {
   const status = mountStatusCard(node, carriedStatus);
   status.card.classList.add("cc-command-status");
   statusCancel = status.cancel;
-  page.appendChild(status.card);
+  const statusHost = document.getElementById("top-bar-service-status");
+  statusHost?.replaceChildren(status.card);
+  status.card.addEventListener("click", (event) => {
+    const chip = event.target.closest(".status-chip");
+    if (!chip) return;
+    event.preventDefault();
+    const shouldOpen = !chip.classList.contains("is-expanded");
+    status.card.querySelectorAll(".status-chip.is-expanded").forEach((item) => item.classList.remove("is-expanded"));
+    chip.classList.toggle("is-expanded", shouldOpen);
+  });
   page.appendChild(renderWeather(data.weather));
 
   const calendar = card("Kalender", "calendar", {
@@ -506,6 +515,7 @@ export default {
     clockTimer = null;
     statusCancel?.();
     statusCancel = null;
+    document.getElementById("top-bar-service-status")?.replaceChildren();
   },
   async mount(container, ctx) {
     const loading = node("div", "cc-loading", "Bygger lägesbild…");

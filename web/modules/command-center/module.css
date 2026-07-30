@@ -137,6 +137,28 @@
   background: rgba(255,255,255,.66);
   box-shadow: 0 8px 28px rgba(41,40,35,.055);
 }
+.top-bar-service-status .cc-command-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.top-bar-service-status .cc-command-status .mb-card-head { flex: 0 0 auto; margin: 0; }
+.top-bar-service-status .cc-command-status .status-strip {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 9px 13px;
+  overflow: visible;
+  padding: 5px 0;
+  scrollbar-width: none;
+}
+.top-bar-service-status .cc-command-status .status-strip::-webkit-scrollbar { display: none; }
+.top-bar-service-status .cc-command-status .status-notes { display: none; }
 .cc-command-status .mb-card-head {
   display: flex;
   align-items: center;
@@ -202,7 +224,8 @@
   transition: opacity .14s ease, transform .14s ease;
 }
 .cc-command-status .status-chip:hover::after,
-.cc-command-status .status-chip:focus-visible::after {
+.cc-command-status .status-chip:focus-visible::after,
+.cc-command-status .status-chip.is-expanded::after {
   opacity: 1;
   transform: translateY(0);
 }
@@ -650,6 +673,8 @@
   .cc-clock-cities { right: auto; left: 0; }
   .cc-weather-body { grid-template-columns: 36px 1fr; }
   .cc-weather-source { grid-column: 2; }
+  .top-bar-service-status .cc-command-status .mb-card-heading { display: none; }
+  .top-bar-service-status .cc-command-status .status-strip { overflow-x: auto; overflow-y: hidden; }
   .cc-triage { grid-template-columns: 1fr; margin-top: 60px; }
   .cc-triage-lane,
   .cc-triage-lane:first-child,
