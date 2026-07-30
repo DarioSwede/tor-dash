@@ -384,11 +384,13 @@ body.has-custom-bg .item-sentence,
 body.has-custom-bg .act-note,
 body.has-custom-bg .day-date,
 body.has-custom-bg .quiet-line{ color:#4A473F; }
-body.has-custom-bg .top-bar{ background:rgba(10,9,8,.55); border-bottom-color:rgba(228,227,220,.2); }
+body.has-custom-bg .top-bar{ background:rgba(232,230,224,.94); border-bottom-color:#D2CFC7; }
 body.has-custom-bg .side-nav{background:rgba(252,252,251,.92);}
 body.has-custom-bg .session-timer,
 body.has-custom-bg .network-status,
-body.has-custom-bg .topbar-clock{ color:#EDECE6; }
+body.has-custom-bg .topbar-clock{ color:#5F5C55; }
+body.has-custom-bg .session-timer,
+body.has-custom-bg .network-status{ color:#68655E; }
 body.has-custom-bg .session-timer.session-timer-warn{ color:#ffb454; }
 
 @media (max-width:640px){

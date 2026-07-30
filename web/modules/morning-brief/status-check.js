@@ -191,6 +191,7 @@ export function mountStatusCard(el, extraEntries, options = {}) {
     state.set(name, { level, text });
     // Full replacement, which also clears the initial -loading class.
     node.className = `status-chip status-chip-${level}`;
+    node.dataset.statusDetail = `${name}: ${text}`;
     // The tooltip is where an "unknown" chip explains itself -- it has no
     // written note by design (it isn't a fault), but silently grey with no
     // way to find out why would just be mysterious.

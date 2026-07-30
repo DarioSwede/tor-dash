@@ -441,11 +441,17 @@ function renderTimeline(calendar) {
 function render(data) {
   const page = node("main", "command-center");
   page.appendChild(renderBrief(data.brief));
-  page.appendChild(renderWeather(data.weather));
-  const status = mountStatusCard(node, [], { includeServerChecked: false });
+  const carriedStatus = data.missionStatus.services.map((service) => ({
+    name: service.name,
+    level: service.level,
+    text: service.text,
+    link: service.link,
+  }));
+  const status = mountStatusCard(node, carriedStatus);
   status.card.classList.add("cc-command-status");
   statusCancel = status.cancel;
   page.appendChild(status.card);
+  page.appendChild(renderWeather(data.weather));
 
   const calendar = card("Kalender", "calendar", {
     className: "cc-calendar",
@@ -459,9 +465,6 @@ function render(data) {
   page.appendChild(focus);
 
   const grid = node("div", "cc-grid");
-
-  const mission = card("Mission Status", "mission", { action: deepLink("Öppna Brief", "#morning-brief") });
-  mission.appendChild(renderMissionStatus(data.missionStatus));
 
   const depot = card("Depot 103", "depot", { action: deepLink("Öppna depot", "#portfolio") });
   depot.appendChild(itemList(data.depot.items));
@@ -480,7 +483,7 @@ function render(data) {
   const aiInbox = card("AI Inbox", "ai");
   aiInbox.appendChild(itemList(data.aiInbox.items, "AI har inga öppna rekommendationer."));
 
-  [mission, depot, marketplace, expedition, veteran, aiInbox].forEach((section) => grid.appendChild(section));
+  [depot, marketplace, expedition, veteran, aiInbox].forEach((section) => grid.appendChild(section));
   page.appendChild(grid);
 
   const shortcuts = card("Snabblänkar", "links", { className: "cc-shortcuts" });
