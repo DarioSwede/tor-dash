@@ -56,7 +56,7 @@ jobs:
           sed -i "s#href=\"shell/shell.css\"#href=\"shell/shell.css?v=${VERSION}\"#" web/index.html
           sed -i "s#src=\"shell/shell.js\"#src=\"shell/shell.js?v=${VERSION}\"#" web/index.html
           sed -i "s#src=\"config.js\"#src=\"config.js?v=${VERSION}\"#" web/index.html
-          sed -i -E "s#(from \"\.\.?/[A-Za-z0-9_./-]+\.js)\"#\1?v=${VERSION}\"#g" web/shell/*.js web/modules/manifest.js
+          sed -i -E "s#(from \"\.\.?/[A-Za-z0-9_./-]+\.js)\"#\1?v=${VERSION}\"#g" web/shell/*.js web/modules/manifest.js web/modules/*/*.js
           sed -i -E "s#(path|css): \"(\./[A-Za-z0-9_./-]+\.(js|css))\"#\1: \"\2?v=${VERSION}\"#g" web/modules/manifest.js
 
       - name: Upload web/ as Pages artifact

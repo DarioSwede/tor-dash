@@ -149,6 +149,7 @@
   background: transparent;
   box-shadow: none;
 }
+body.status-panel-open .top-bar-service-status .cc-command-status { flex-wrap: wrap; }
 .top-bar-service-status .cc-command-status .mb-card-head { flex: 0 0 auto; margin: 0; }
 .top-bar-service-status .status-master-toggle {
   padding: 5px 17px 5px 0;
@@ -177,7 +178,8 @@
 .top-bar-service-status .cc-command-status .status-notes { display: none; }
 .top-bar-service-status .status-expanded {
   position: relative;
-  left: 50%;
+  left: calc(50% - 50vw);
+  flex: 0 0 100vw;
   width: 100vw;
   max-height: min(78vh, 820px);
   overflow-y: auto;
@@ -190,7 +192,7 @@
   color: var(--cc-ink);
   background: #f7f6f2;
   box-shadow: 0 20px 55px rgba(41,40,35,.18);
-  transform: translateX(-50%);
+  transform: none;
 }
 .top-bar-service-status .status-expanded[hidden] { display: none; }
 .status-expanded-group + .status-expanded-group { margin-top: 12px; }
