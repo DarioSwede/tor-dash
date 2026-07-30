@@ -110,6 +110,17 @@ body.top-bar-swapped .top-bar-group{ grid-column:3; }
 body.top-bar-swapped .top-bar-status{ grid-column:1; justify-content:flex-start; }
 body.status-panel-open .top-bar{
   position:relative;
+  align-items:start;
+}
+body.status-panel-open .top-bar-status{
+  position:absolute;
+  z-index:22;
+  top:12px;
+  right:20px;
+}
+body.status-panel-open.top-bar-swapped .top-bar-status{
+  right:auto;
+  left:20px;
 }
 .icon-btn{
   display:inline-flex; align-items:center; justify-content:center;
