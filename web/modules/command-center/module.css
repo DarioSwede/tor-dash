@@ -247,7 +247,7 @@ body.status-panel-open .top-bar-service-status .cc-command-status .status-strip 
 .status-expanded-state-warn { color: #9a6a14; }
 .status-expanded-state-down { color: #a73e36; }
 .status-expanded-state-unknown,.status-expanded-state-loading { color: var(--cc-muted); }
-.status-expanded-overview { display: grid; grid-template-columns: auto minmax(90px,1fr); align-items: center; gap: 8px; min-width: 0; }
+.status-expanded-overview { display: grid; grid-template-columns: auto minmax(90px,1fr); align-items: center; gap: 3px; min-width: 0; }
 .status-expanded-body { padding: 2px 0 11px 14px; }
 .status-expanded-body p { margin: 0 0 8px; color: var(--cc-muted); font-size: 11px; line-height: 1.4; }
 .status-expanded-body dl {

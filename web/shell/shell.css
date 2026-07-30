@@ -117,6 +117,10 @@ body.status-panel-open .top-bar-status{
   z-index:22;
   top:12px;
   right:20px;
+  width:auto;
+  flex-wrap:nowrap;
+  justify-content:flex-end;
+  text-align:right;
 }
 body.status-panel-open.top-bar-swapped .top-bar-status{
   right:auto;
@@ -153,7 +157,7 @@ body.status-panel-open.top-bar-swapped .top-bar-status{
 .network-status{
   min-width:0;
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); text-align:center;
-  word-break:break-word;
+  word-break:normal;
 }
 .network-status:empty{ display:none; }
 
@@ -162,7 +166,7 @@ body.status-panel-open.top-bar-swapped .top-bar-status{
    dark gate (see #gate .gate-network-status below, on
    --gate-text-soft). */
 .net-pill{
-  display:inline-flex; flex-wrap:wrap; align-items:center; justify-content:center;
+  display:inline-flex; flex-wrap:nowrap; align-items:center; justify-content:flex-end;
   gap:4px 14px; padding:4px 0; opacity:.82;
 }
 .net-item{ display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
