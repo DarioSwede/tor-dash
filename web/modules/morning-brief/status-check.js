@@ -89,15 +89,17 @@ const TEXT_BY_LEVEL = {
 const isProblem = (level) => level === "warn" || level === "down";
 
 async function fetchStatuspage(baseUrl, signal) {
-  const resp = await fetch(`${baseUrl}/api/v2/summary.json`, {
+  const request = (path) => fetch(`${baseUrl}${path}`, {
     signal,
-    // No credentials, no custom headers -- keeps this a CORS "simple
-    // request" so it never triggers a preflight these status pages might
-    // not answer.
     credentials: "omit",
+  }).then((resp) => {
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return resp.json();
   });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  const data = await resp.json();
+  const [data, incidentData] = await Promise.all([
+    request("/api/v2/summary.json"),
+    request("/api/v2/incidents.json").catch(() => ({ incidents: [] })),
+  ]);
 
   const indicator = data?.status?.indicator;
   const level = LEVEL_BY_INDICATOR[indicator] || "unknown";
@@ -111,7 +113,23 @@ async function fetchStatuspage(baseUrl, signal) {
   const incident = Array.isArray(data?.incidents) ? data.incidents[0] : null;
   const text = incident?.name || TEXT_BY_LEVEL[level] || TEXT_BY_LEVEL.unknown;
 
-  return { level, text };
+  const days = 45;
+  const today = new Date();
+  const history = Array.from({ length: days }, (_, index) => ({
+    level: "ok",
+    checkedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - (days - index - 1)).toISOString(),
+  }));
+  for (const pastIncident of incidentData?.incidents || []) {
+    const timestamp = pastIncident.started_at || pastIncident.created_at;
+    if (!timestamp) continue;
+    const age = Math.floor((today - new Date(timestamp)) / 86400000);
+    if (age < 0 || age >= days) continue;
+    const point = history[days - age - 1];
+    point.level = ["major", "critical"].includes(pastIncident.impact) ? "down" : "warn";
+    point.text = pastIncident.name;
+  }
+
+  return { level, text, history };
 }
 
 /**
@@ -218,10 +236,9 @@ export function mountStatusCard(el, extraEntries, options = {}) {
         group.appendChild(el("h3", "status-expanded-category", category));
         const serviceGrid = el("div", "status-expanded-grid");
         serviceGrid.dataset.count = String(services.length);
-        serviceGrid.style.setProperty("--status-columns", String(Math.min(services.length, 6)));
+        serviceGrid.style.setProperty("--status-columns", String(Math.min(services.length, 3)));
         for (const { name, serviceState, detail } of services) {
           const row = el("details", "status-expanded-service");
-          row.open = true;
           const summary = el("summary");
           const identity = el("span", "status-expanded-identity");
           identity.append(el("span", `status-dot status-dot-${serviceState.level}`), el("strong", null, name));
@@ -229,7 +246,25 @@ export function mountStatusCard(el, extraEntries, options = {}) {
             : serviceState.level === "warn" ? "Störning"
               : serviceState.level === "down" ? "Avbrott"
                 : serviceState.level === "loading" ? "Kontrolleras" : "Ej verifierad";
-          summary.append(identity, el("span", `status-expanded-state status-expanded-state-${serviceState.level}`, stateLabel));
+          const historyPoints = detail?.history?.length ? detail.history : serviceState.history;
+          const knownPoints = (historyPoints || []).filter((point) => point.level !== "unknown");
+          const healthyPoints = knownPoints.filter((point) => point.level === "ok").length;
+          const availability = knownPoints.length
+            ? `${Math.round((healthyPoints / knownPoints.length) * 1000) / 10}% utan störning`
+            : stateLabel;
+          const overview = el("span", "status-expanded-overview");
+          overview.appendChild(el("span", `status-expanded-state status-expanded-state-${serviceState.level}`, availability));
+          if (historyPoints?.length) {
+            const history = el("span", "status-expanded-history");
+            historyPoints.forEach((point) => {
+              const mark = el("span", `status-history-point status-history-${point.level}`);
+              const date = point.checkedAt ? new Date(point.checkedAt).toLocaleString("sv-SE") : "";
+              mark.title = `${date}${point.text ? ` – ${point.text}` : ""}` || point.level;
+              history.appendChild(mark);
+            });
+            overview.appendChild(history);
+          }
+          summary.append(identity, overview);
           row.appendChild(summary);
           const body = el("div", "status-expanded-body");
           body.appendChild(el("p", null, serviceState.text));
@@ -244,15 +279,6 @@ export function mountStatusCard(el, extraEntries, options = {}) {
             const list = el("dl");
             facts.forEach(([term, value]) => list.append(el("dt", null, term), el("dd", null, value)));
             body.appendChild(list);
-          }
-          if (detail?.history?.length) {
-            const history = el("div", "status-expanded-history");
-            detail.history.forEach((point) => {
-              const mark = el("span", `status-history-point status-history-${point.level}`);
-              mark.title = point.checkedAt ? new Date(point.checkedAt).toLocaleString("sv-SE") : point.level;
-              history.appendChild(mark);
-            });
-            body.appendChild(history);
           }
           const link = detail?.link || serviceState.link;
           if (link) {
@@ -271,8 +297,8 @@ export function mountStatusCard(el, extraEntries, options = {}) {
     }
   }
 
-  function set(name, node, level, text) {
-    state.set(name, { level, text, link: node.href || null, checkedAt: new Date().toISOString() });
+  function set(name, node, level, text, history = null) {
+    state.set(name, { level, text, history, link: node.href || null, checkedAt: new Date().toISOString() });
     // Full replacement, which also clears the initial -loading class.
     node.className = `status-chip status-chip-${level}`;
     node.dataset.statusDetail = `${name}: ${text}`;
@@ -295,7 +321,7 @@ export function mountStatusCard(el, extraEntries, options = {}) {
     state.set(src.name, { level: "loading", text: TEXT_BY_LEVEL.unknown });
 
     return fetchStatuspage(src.url, controller.signal)
-      .then(({ level, text }) => set(src.name, node, level, text))
+      .then(({ level, text, history }) => set(src.name, node, level, text, history))
       .catch((err) => {
         // Offline, blocked, aborted, or a status page having its own bad
         // day -- all the same to this card: it simply doesn't know.
