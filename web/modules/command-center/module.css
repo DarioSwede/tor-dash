@@ -12,7 +12,7 @@
 .command-center {
   width: min(92%, 1440px);
   margin: 0 auto;
-  padding: clamp(92px, 11vw, 150px) 0 110px;
+  padding: clamp(34px, 4vw, 58px) 0 110px;
 }
 
 .cc-hero {
@@ -28,7 +28,7 @@
 }
 
 .cc-kicker {
-  margin: 0 0 22px;
+  margin: 0 0 14px;
   color: var(--cc-muted);
   font-size: 13px;
   font-weight: 500;
@@ -37,10 +37,10 @@
 }
 
 .cc-hero h1 {
-  max-width: 1200px;
+  max-width: 980px;
   margin: 0;
-  font: 600 clamp(38px, 5.5vw, 64px)/1.05 Georgia, "Times New Roman", serif;
-  letter-spacing: -.032em;
+  font: 600 clamp(26px, 2.45vw, 35px)/1.12 Georgia, "Times New Roman", serif;
+  letter-spacing: -.022em;
 }
 
 .cc-clock {
@@ -141,6 +141,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 14px;
   margin: 0;
   padding: 0;
@@ -251,7 +252,7 @@ body.status-panel-open .top-bar-service-status .cc-command-status { flex-wrap: w
 }
 .status-expanded-body dt { color: var(--cc-muted); }
 .status-expanded-body dd { margin: 0; overflow-wrap: anywhere; }
-.status-expanded-history { display: flex; gap: 1px; width: 100%; min-width: 80px; height: 13px; }
+.status-expanded-history { display: flex; gap: 1px; width: 100%; min-width: 100px; height: 17px; }
 .status-history-point { flex: 1 1 2px; min-width: 1px; max-width: none; border-radius: 1px; background: #aaa69c; }
 .status-history-ok { background: #3a9c70; }
 .status-history-warn { background: #d49a35; }
@@ -772,7 +773,7 @@ body.status-panel-open .top-bar-service-status .cc-command-status { flex-wrap: w
 @media (max-width: 760px) {
   .command-center {
     width: min(100% - 36px, 1150px);
-    padding: 76px 0 64px;
+    padding: 36px 0 64px;
   }
 
   .cc-hero-top { grid-template-columns: 1fr; gap: 30px; }
