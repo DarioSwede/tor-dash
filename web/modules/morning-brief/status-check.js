@@ -213,9 +213,12 @@ export function mountStatusCard(el, extraEntries, options = {}) {
         groups.get(category).push({ name, serviceState, detail });
       }
       for (const [category, services] of groups) {
-        expanded.appendChild(el("h3", "status-expanded-category", category));
+        const group = el("section", "status-expanded-group");
+        group.appendChild(el("h3", "status-expanded-category", category));
+        const serviceGrid = el("div", "status-expanded-grid");
         for (const { name, serviceState, detail } of services) {
           const row = el("details", "status-expanded-service");
+          row.open = true;
           const summary = el("summary");
           const identity = el("span", "status-expanded-identity");
           identity.append(el("span", `status-dot status-dot-${serviceState.level}`), el("strong", null, name));
@@ -229,7 +232,7 @@ export function mountStatusCard(el, extraEntries, options = {}) {
           body.appendChild(el("p", null, serviceState.text));
           const facts = [
             ["Svarstid", detail?.responseMs == null ? null : `${detail.responseMs} ms`],
-            ["Senaste kontroll", detail?.checkedAt ? new Date(detail.checkedAt).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : null],
+            ["Senaste kontroll", (detail?.checkedAt || serviceState.checkedAt) ? new Date(detail?.checkedAt || serviceState.checkedAt).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : null],
             ["Senast lyckad", detail?.lastSuccess ? new Date(detail.lastSuccess).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : null],
             ["Kontrollmetod", detail?.method || (serviceState.level === "loading" ? "Direkt statuskontroll pågår" : "Offentlig statussida")],
             ["Prioritet", detail?.priority ? `${detail.priority}/5` : null],
@@ -257,14 +260,16 @@ export function mountStatusCard(el, extraEntries, options = {}) {
             body.appendChild(anchor);
           }
           row.appendChild(body);
-          expanded.appendChild(row);
+          serviceGrid.appendChild(row);
         }
+        group.appendChild(serviceGrid);
+        expanded.appendChild(group);
       }
     }
   }
 
   function set(name, node, level, text) {
-    state.set(name, { level, text, link: node.href || null });
+    state.set(name, { level, text, link: node.href || null, checkedAt: new Date().toISOString() });
     // Full replacement, which also clears the initial -loading class.
     node.className = `status-chip status-chip-${level}`;
     node.dataset.statusDetail = `${name}: ${text}`;
