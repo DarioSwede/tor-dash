@@ -55,6 +55,7 @@ const STATUSPAGE_SOURCES = [
 // omission.
 const SERVER_CHECKED = [
   { name: "Telia", link: "https://www.telia.se/privat/support/driftinformation" },
+  { name: "OpenInfra", link: "https://openinfra.com/inga-driftstorningar/" },
   { name: "Gmail", link: "https://www.google.com/appsstatus/dashboard/" },
   { name: "Loopia mail", link: "https://webmail.loopia.se/" },
 ];

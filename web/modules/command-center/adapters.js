@@ -285,6 +285,7 @@ function missionStatus(brief, history = []) {
     { key: "gmail", name: "Gmail", category: "Kommunikation", priority: 5 },
     { key: "loopia", name: "Loopia mail", category: "Kommunikation", priority: 5 },
     { key: "telia", name: "Telia", category: "Anslutning", priority: 4 },
+    { key: "openinfra", name: "OpenInfra", category: "Anslutning", priority: 4 },
   ];
   const services = definitions.map((definition) => {
     const checks = groups.get(definition.key) || [];

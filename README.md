@@ -211,7 +211,7 @@ read client-side from its public, CORS-open `/api/v2/summary.json`. Adding
 another such service is one line in that list; nothing here changes.
 
 `service_status` is only for sources the browser *can't* read — currently
-Telia, Gmail and Loopia. Fill it from `scripts/status_check.py`:
+Telia, OpenInfra, Gmail and Loopia. Fill it from `scripts/status_check.py`:
 ```
 python3 scripts/status_check.py                     # -> JSON array, paste in as service_status
 python3 scripts/status_check.py --only gmail
@@ -223,6 +223,7 @@ server-side, and how much to trust it:
 |---|---|---|
 | Gmail | Google's Workspace dashboard, not Statuspage, and not CORS-open | Good — real documented JSON feed, not a scrape |
 | Telia | HTML only, no CORS, no API | Scrape; matches visible phrases, not markup |
+| OpenInfra | HTML only, no CORS, no API | Scrape; only an explicit official all-clear is reported as green |
 | Loopia mail | Needs a raw TCP socket, which no browser has | Best of the three *when the network allows it* — it talks to the actual mail server instead of reading about it |
 
 **Loopia mail** answers a deliberately narrow question — "is the mailbox for
