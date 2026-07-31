@@ -161,45 +161,33 @@ body.status-panel-open.top-bar-swapped .top-bar-status{
 }
 .network-status:empty{ display:none; }
 
-/* Plain IPv4/IPv6/VPN line, no frame — colors inherit via currentColor
-   so this reads correctly both here (light, on --ink-grey) and on the
-   dark gate (see #gate .gate-network-status below, on
-   --gate-text-soft). */
+/* IPv4 / IPv6 / VPN, stacked one per line rather than run inline — Dario
+   wants these "traded på varandra" (stacked) in the top-right corner
+   instead of spreading out sideways, which also happens to be what kept
+   colliding with the driftstatus strip on Command at in-between widths
+   (see .top-bar-service-status). Colors inherit via currentColor so this
+   reads correctly both here (light, on --ink-grey) and on the dark gate
+   (see #gate .gate-network-status below, on --gate-text-soft) — and on
+   the gate specifically, that container's own text-align:center (below)
+   still centers this column, so align-items:flex-end here only takes
+   effect where it's actually wanted (the top-bar's right corner). */
 .net-pill{
-  display:inline-flex; flex-wrap:nowrap; align-items:center; justify-content:flex-end;
-  gap:4px 14px; padding:4px 0; opacity:.82;
+  display:inline-flex; flex-direction:column; flex-wrap:nowrap; align-items:flex-end;
+  gap:2px 0; padding:4px 0; opacity:.82;
 }
+#gate .net-pill{ align-items:center; }
 .net-item{ display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
 .net-badge{ font-size:9px; font-weight:700; letter-spacing:.04em; opacity:.75; }
 .net-shield{ flex:0 0 auto; }
 .net-item.net-vpn{ color:#2f9e6e; }
 
-/* ---- side nav: hidden by default, slides in from the left ---- */
-.side-nav{
-  position:fixed; top:0; left:0; bottom:0; z-index:20;
-  width:260px; max-width:80vw;
-  background:var(--bg); border-right:1px solid var(--hairline);
-  padding:76px 20px 28px;
-  transform:translateX(-100%); transition:transform .2s ease;
-  overflow-y:auto;
-}
-.side-nav.open{ transform:none; }
-.side-nav-backdrop{
-  position:fixed; inset:0; z-index:19;
-  background:rgba(0,0,0,.25);
-  opacity:0; pointer-events:none; transition:opacity .2s ease;
-}
-.side-nav-backdrop.open{ opacity:1; pointer-events:auto; }
-
 .nav{ display:flex; flex-wrap:wrap; gap:8px; }
-.side-nav .nav{ flex-direction:column; flex-wrap:nowrap; }
 .nav button{
   position:relative;
   background:none;border:1px solid var(--hairline);border-radius:8px;padding:6px 14px;
   font-family:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer;
   transition:border-color .12s ease, color .12s ease, background .12s ease;
 }
-.side-nav .nav button{ text-align:left; padding:10px 14px; }
 /* Hover feedback was missing entirely -- every other clickable control
    in the top bar (.icon-btn, .btn) already gives some, so an inactive
    nav button was the one thing in the row that looked clickable only by
@@ -217,23 +205,29 @@ body.status-panel-open.top-bar-swapped .top-bar-status{
   position:absolute; top:4px; right:4px; width:7px; height:7px; border-radius:50%;
   background:var(--status-warn); border:1.5px solid var(--bg);
 }
-.side-nav .nav-badge{ top:50%; right:10px; transform:translateY(-50%); }
 .nav button.active .nav-badge{ border-color:var(--clay); }
 
-/* ---- Edge tabs (2026-07-25): on a wide-enough screen, navigation
-   (Brief/Sarek/Portfolio, built by module-registry.js's buildNav) plus
-   Log (a bespoke drawer, see shell/log-drawer.js) sit as a stack of
-   small vertical tabs pinned to the right edge of the viewport, instead
-   of inline buttons in the top bar -- shell.js's placeNavForViewport()
-   physically moves #module-nav from #side-nav into #nav-edge-tabs once
-   the viewport crosses this same breakpoint. Settings/sign-out get the
-   mirrored treatment on the left (pure CSS repositioning, no reparenting
-   needed -- see further down). Below that breakpoint everything reverts
-   to the old phone layout: nav lives in the hamburger drawer, settings/
-   sign-out are plain top-bar icons -- a phone screen doesn't have edge
-   real estate to spare for a permanent tab stack on *two* sides. (ToDo
-   was part of this same stack too until 2026-07-25, when it moved back
-   inside the Morning Brief module as a collapsible card instead.) */
+/* ---- Edge tabs (2026-07-25; mobile/desktop split removed 2026-07-31):
+   navigation (Brief/Sarek/Portfolio, built by module-registry.js's
+   buildNav) plus Log (a bespoke drawer, see shell/log-drawer.js) sit as a
+   stack of small vertical tabs pinned to the right edge of the viewport,
+   instead of inline buttons in the top bar -- on every screen size now,
+   not just wide ones. Settings/sign-out get the mirrored treatment on the
+   left, desktop-only (pure CSS repositioning, no reparenting needed --
+   see further down); on a phone they stay plain top-bar icons instead,
+   since unlike the nav tabs they were never hidden behind a drawer that
+   could go unreachable, and two permanent edge stacks plus a top bar is
+   tight on a narrow screen. (ToDo was part of this same right-edge stack
+   too until 2026-07-25, when it moved back inside the Morning Brief
+   module as a collapsible card instead.)
+
+   Nav used to live in a hamburger-triggered #side-nav drawer below 860px
+   instead of here -- removed 2026-07-31. That drawer's one open/close
+   trigger sat in .top-bar-group, a grid cell that grows tall/reflows
+   whenever #top-bar-service-status (its sibling cell) expands on a narrow
+   screen, which could push the only way to reach the nav out of reach.
+   Living here instead, position:fixed and outside that grid entirely,
+   nav can't be affected by anything else happening in the top bar. */
 .edge-tab-stack{
   position:fixed; top:50%; transform:translateY(-50%); z-index:16;
   display:flex; flex-direction:column; gap:8px;
@@ -295,7 +289,6 @@ body.status-panel-open.top-bar-swapped .top-bar-status{
 .edge-tab.edge-tab-drawer{ background:#2F6FE4; }
 
 @media (min-width:860px){
-  #nav-toggle-btn{ display:none; }
   /* Settings/sign-out stay physically inside .top-bar-group in the DOM
      (so mobile keeps them exactly where they've always been -- see
      auth.js/shell.js, nothing about their wiring changes) but escape its
@@ -408,7 +401,6 @@ body.has-custom-bg .act-note,
 body.has-custom-bg .day-date,
 body.has-custom-bg .quiet-line{ color:#4A473F; }
 body.has-custom-bg .top-bar{ background:rgba(232,230,224,.94); border-bottom-color:#D2CFC7; }
-body.has-custom-bg .side-nav{background:rgba(252,252,251,.92);}
 body.has-custom-bg .session-timer,
 body.has-custom-bg .network-status,
 body.has-custom-bg .topbar-clock{ color:#5F5C55; }

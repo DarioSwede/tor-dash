@@ -31,30 +31,27 @@ const gateMsg = document.getElementById("gate-msg");
 const navEl = document.getElementById("module-nav");
 const contentEl = document.getElementById("module-content");
 const settingsPanel = document.getElementById("settings-panel");
-const sideNav = document.getElementById("side-nav");
-const sideNavBackdrop = document.getElementById("side-nav-backdrop");
-const navToggleBtn = document.getElementById("nav-toggle-btn");
 const navEdgeTabs = document.getElementById("nav-edge-tabs");
 const themeColorMeta = document.getElementById("theme-color-meta");
 
 let logDrawer = null;
 
-// Wide screens get the nav buttons as a fixed right-edge tab stack
-// (alongside Log/ToDo, see shell.css's .edge-tab-stack) instead of a
-// second bar underneath the top one -- this physically reparents
-// #module-nav between the mobile drawer (#side-nav) and that desktop
-// stack (#nav-edge-tabs) on every breakpoint crossing, rather than
-// trying to fake "in the edge stack" with CSS on an element that's a
-// sibling of it, not a child. #module-nav itself is never rebuilt here,
-// just moved -- module-registry.js doesn't need to know where it
-// currently lives.
-const desktopNavQuery = window.matchMedia("(min-width: 860px)");
-function placeNavForViewport() {
-  const target = desktopNavQuery.matches ? navEdgeTabs : sideNav;
-  if (navEl.parentElement !== target) target.appendChild(navEl);
-}
-desktopNavQuery.addEventListener("change", placeNavForViewport);
-placeNavForViewport();
+// Nav buttons always live in the fixed right-edge tab stack (alongside
+// Log, see shell.css's .edge-tab-stack), on every screen size -- not just
+// wide ones. Used to be desktop-only, with phones instead getting
+// #module-nav tucked inside the hamburger-triggered #side-nav drawer. That
+// split is exactly what caused the 2026-07-31 collision Dario hit: the
+// hamburger trigger lives in .top-bar-group, a grid cell shell.css also
+// lets grow tall/reflow whenever the driftstatus strip
+// (#top-bar-service-status, a sibling cell in the same row) expands on a
+// narrow screen -- so opening driftstatus could push the one and only way
+// to reach the nav drawer out of easy reach. The edge-tab stack is
+// position:fixed and totally outside that grid, so it can never be
+// affected by anything else in the top bar -- same reasoning as why
+// settings/sign-out already get this treatment on desktop. #module-nav
+// itself is never rebuilt here, just parented once -- module-registry.js
+// doesn't need to know where it lives.
+navEdgeTabs.appendChild(navEl);
 
 // Keeps the browser chrome (status bar area) matching whichever screen
 // is actually showing -- see index.html's meta tag comment for why this
@@ -63,19 +60,6 @@ placeNavForViewport();
 function setThemeColor(hex) {
   themeColorMeta.setAttribute("content", hex);
 }
-
-function setSideNavOpen(open) {
-  sideNav.classList.toggle("open", open);
-  sideNavBackdrop.classList.toggle("open", open);
-  navToggleBtn.setAttribute("aria-expanded", String(open));
-}
-navToggleBtn.addEventListener("click", () => setSideNavOpen(!sideNav.classList.contains("open")));
-sideNavBackdrop.addEventListener("click", () => setSideNavOpen(false));
-// Closing on any nav button click (rather than wiring into
-// module-registry.js's buildNav) keeps the drawer's open/close state a
-// pure shell.js concern -- module-registry.js doesn't need to know the
-// nav it builds happens to live inside a collapsible drawer.
-navEl.addEventListener("click", (e) => { if (e.target.closest("button")) setSideNavOpen(false); });
 
 if (!configOk) {
   gateMsg.textContent =

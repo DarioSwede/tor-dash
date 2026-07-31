@@ -64,6 +64,60 @@ services cannot reliably read project files from Documents. Run the installer
 again after local code changes, or `scripts/uninstall-local-preview.sh` to
 remove it.
 
+## Top bar & navigation
+
+The `.top-bar` (hamburger-turned-nothing/settings/sign-out, the driftstatus
+strip, network status) is defined once in `web/index.html` and styled once
+in `web/shell/shell.css` — it is **one shared component rendered identically
+on every module**, not something each module can restyle. If a module's top
+bar ever looks different from another's, the module itself is doing
+something (a negative margin, an overlay) that visually collides with it —
+the shared component's CSS has no per-module branch to cause that on its
+own. Worth re-checking this file first before assuming the top bar itself
+needs a module-specific fix.
+
+**2026-07-31 changes** (Dario: "topmenyn ska stämma" — the top bar didn't
+read as consistent going into/out of Sarek):
+
+- **Sarek gear lost its separate dark "expedition" theme.**
+  `web/modules/sarek-gear/module.css` used to define its own `--sk-*` dark
+  palette (near-black background, pale green text/accents) "distinct from
+  the shell's default palette" by design — see git history before this date
+  for the original. That read as a mismatch, not a deliberate contrast, once
+  actually used next to the shared light top bar every other module sits
+  under. Every `--sk-*` custom property now just points at the shared
+  tokens.css variables (`--sk-green: var(--clay)`, etc.) instead of its own
+  hex values — the ~65 `.sk-*` rules themselves were left alone, only the
+  variable definitions and a handful of hardcoded dark hex colors changed.
+  Sarek now looks like the rest of the app; nothing about its layout,
+  structure or the packlist logic in `module.js` changed.
+- **Nav (Brief/Sarek/Portfolio/Command) always lives in the fixed
+  right-edge tab stack now** (`#nav-edge-tabs`, see shell.css's
+  `.edge-tab-stack`), on every screen width — not just >=860px. It used to
+  fall back to a hamburger-triggered off-canvas drawer (`#side-nav`) below
+  that breakpoint, which has been deleted (`shell.js`, `shell.css`,
+  `index.html` — search git history for `side-nav` if any of this needs
+  reviving). Reason: that drawer's only trigger button lived in
+  `.top-bar-group`, a CSS grid cell that grows/reflows whenever
+  `#top-bar-service-status` (driftstatus, a sibling cell in the same grid
+  row) expands on a narrow screen — so opening driftstatus on mobile could
+  push the one way to reach the nav drawer out of easy reach. The edge-tab
+  stack is `position:fixed`, entirely outside that grid, so it's immune —
+  same reasoning the settings/sign-out edge tabs already relied on, just
+  extended to the module nav and to every screen size instead of only
+  desktop. Net effect: nav looks the same on phone and desktop now (vertical
+  tabs pinned to the right edge); nothing about *what* the driftstatus strip
+  itself does changed.
+- **IPv4/IPv6/VPN now stack vertically** in the top bar's right corner
+  (`.net-pill` in shell.css: `flex-direction:column` instead of an inline
+  row) instead of spreading out sideways. Purely cosmetic — `network.js`,
+  which builds that markup, wasn't touched.
+- **Explicitly left alone:** the driftstatus widget itself
+  (`#top-bar-service-status`, populated by `command-center/module.js`,
+  cleared on unmount) is still Command-only by design — Dario confirmed
+  Sarek shouldn't get a copy of it, this doc note was the ask, not a
+  feature request.
+
 ## Workflow
 
 - **Restore point before any large/risky change.** Before a big visual
