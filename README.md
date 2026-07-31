@@ -67,14 +67,15 @@ remove it.
 ## Top bar & navigation
 
 The `.top-bar` (hamburger-turned-nothing/settings/sign-out, the driftstatus
-strip, network status) is defined once in `web/index.html` and styled once
-in `web/shell/shell.css` — it is **one shared component rendered identically
-on every module**, not something each module can restyle. If a module's top
-bar ever looks different from another's, the module itself is doing
-something (a negative margin, an overlay) that visually collides with it —
-the shared component's CSS has no per-module branch to cause that on its
-own. Worth re-checking this file first before assuming the top bar itself
-needs a module-specific fix.
+strip) and the `.app-footer` (IPv4/IPv6/VPN — see below) are each defined
+once in `web/index.html` and styled once in `web/shell/shell.css` — they
+are **shared components rendered identically on every module**, not
+something each module can restyle. If either one ever looks different
+going into a particular module, that module itself is doing something (a
+negative margin, an overlay) that visually collides with it — neither
+shared component's CSS has a per-module branch to cause that on its own.
+Worth re-checking this file first before assuming the top bar/footer
+itself needs a module-specific fix.
 
 **2026-07-31 changes** (Dario: "topmenyn ska stämma" — the top bar didn't
 read as consistent going into/out of Sarek):
@@ -108,10 +109,27 @@ read as consistent going into/out of Sarek):
   desktop. Net effect: nav looks the same on phone and desktop now (vertical
   tabs pinned to the right edge); nothing about *what* the driftstatus strip
   itself does changed.
-- **IPv4/IPv6/VPN now stack vertically** in the top bar's right corner
-  (`.net-pill` in shell.css: `flex-direction:column` instead of an inline
-  row) instead of spreading out sideways. Purely cosmetic — `network.js`,
-  which builds that markup, wasn't touched.
+- **IPv4/IPv6/VPN moved out of `.top-bar` entirely, into a new
+  `.app-footer`** (`position:fixed`, bottom of the viewport, own hairline
+  border — see `web/shell/shell.css`). It briefly lived as a third
+  top-bar column stacked vertically in the corner earlier the same day,
+  which was itself a fix for it colliding with the driftstatus strip —
+  but on Command (driftstatus's widest state) it kept colliding anyway,
+  so it got its own dedicated strip instead of fighting for top-bar space
+  at all. `#module-content` got matching `padding-bottom` so a module's
+  last bit of content never sits underneath the fixed footer.
+  `network.js`, which builds the actual IPv4/IPv6/VPN markup, wasn't
+  touched either time — only where that markup gets mounted, and how it
+  lays out internally, changed.
+- **Removed the "Växla sida för utloggning och IP-information" setting.**
+  That toggle (`dashboard-background.js`'s `loadTopBarLayout` /
+  `wireTopBarLayoutSetting`, `body.top-bar-swapped` in shell.css) swapped
+  which side of the top bar the icon group vs. the IP info sat on. With
+  IP info moved to its own footer, there was only ever one thing left in
+  the top bar to swap sides with nothing — kept it would've been a dead,
+  confusing checkbox. Its old value is still sitting harmlessly in
+  `dashboard_settings` under key `top_bar_layout`; not worth a migration
+  to clean up for a single-user app.
 - **Explicitly left alone:** the driftstatus widget itself
   (`#top-bar-service-status`, populated by `command-center/module.js`,
   cleared on unmount) is still Command-only by design — Dario confirmed

@@ -61,9 +61,6 @@
         </button>
       </div>
       <div class="top-bar-service-status" id="top-bar-service-status" aria-label="Driftstatus"></div>
-      <div class="top-bar-status">
-        <div class="network-status" id="network-status"></div>
-      </div>
     </div>
     <div class="nav" id="module-nav"></div>
     <!-- shell.js parents #module-nav in here on load, at every screen
@@ -85,6 +82,12 @@
     </div>
 
     <div id="module-content"></div>
+
+    <!-- IPv4/IPv6/VPN only -- moved out of .top-bar 2026-07-31, see
+         shell.css's .app-footer comment for why. -->
+    <footer class="app-footer">
+      <div class="network-status" id="network-status"></div>
+    </footer>
   </div>
 
   <!-- settings panel: sign-in method + this device's encryption key + appearance + network status -->
@@ -216,17 +219,11 @@
       <summary>Nätverk</summary>
       <div class="settings-category-body">
         <h3 class="panel-subhead">Network status</h3>
-        <p>Shows your public IPv4/IPv6 and a best-effort VPN guess (by ISP name) in small text at the top of the dashboard.</p>
+        <p>Shows your public IPv4/IPv6 and a best-effort VPN guess (by ISP name) in small text in the dashboard's footer.</p>
         <label class="toggle-row">
           <input type="checkbox" id="show-network-gate-toggle">
           Also show on the sign-in page
         </label>
-        <label class="toggle-row">
-          <input type="checkbox" id="top-bar-layout-toggle">
-          Växla sida för utloggning och IP-information
-        </label>
-        <p class="field-hint">Av: utloggning till vänster och IP till höger. På: sidorna byter plats.</p>
-        <div id="top-bar-layout-msg" class="panel-msg"></div>
         <div id="network-settings-msg" class="panel-msg"></div>
       </div>
     </details>

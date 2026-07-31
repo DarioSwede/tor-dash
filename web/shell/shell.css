@@ -76,55 +76,43 @@
 /* ================= app shell (signed in) ================= */
 #app{display:none;}
 
-/* ---- top bar: menu + settings (left), network status (center),
-   sign out (right) — sticky so it, and the icons on it, stay reachable
-   while scrolling a long module, without needing a second fixed bar at
-   the bottom. ---- */
-/* Grid, not flex, for the three top-bar zones -- a real device (iOS
-   Safari) rendered the middle zone's flex:1 1 auto as if it were only
-   ever as wide as its own (wrapped, centered) content, instead of
-   growing to fill the leftover row space the way it does in every
-   Chromium-based browser used to test this locally. That left the icon
-   buttons stranded wherever the middle zone's content happened to end,
-   nowhere near the bar's actual right edge. `auto 1fr auto` sidesteps
-   the ambiguity entirely: the outer two columns are always exactly their
-   own content's width, the middle column is a plain, unambiguous "eat
-   whatever's left" track, and grid guarantees the last column's own
-   edge is the container's own edge -- no flex-basis-vs-wrapped-content
-   judgment call left for any browser to get wrong. */
-/* Nav (Brief/Sarek/Portfolio/Log) and ToDo now live in a fixed right-edge
-   tab stack (see .edge-tab-stack below), and settings/sign-out move to a
+/* ---- top bar: menu + settings (left), driftstatus (center) -- sticky
+   so it, and the icons on it, stay reachable while scrolling a long
+   module, without needing a second fixed bar at the bottom. Network
+   status (IPv4/IPv6/VPN) used to live here too as a third right-hand
+   column, but kept visually colliding with the driftstatus strip next to
+   it (worst on Command, where that strip is widest) -- moved out to its
+   own thin footer instead, see .app-footer further down. ---- */
+/* Grid, not flex, for the two top-bar zones -- a real device (iOS
+   Safari) rendered a flex:1 1 auto middle zone as if it were only ever as
+   wide as its own (wrapped, centered) content, instead of growing to
+   fill the leftover row space the way it does in every Chromium-based
+   browser used to test this locally. `auto 1fr` sidesteps the ambiguity
+   entirely: the first column is always exactly its own content's width,
+   the second is a plain, unambiguous "eat whatever's left" track that
+   centers driftstatus within it (see .top-bar-service-status's own
+   justify-self) -- no flex-basis-vs-wrapped-content judgment call left
+   for any browser to get wrong. */
+/* Nav (Brief/Sarek/Portfolio/Log) now lives in a fixed right-edge tab
+   stack (see .edge-tab-stack below), and settings/sign-out move to a
    fixed left-edge stack on desktop -- the top bar itself is down to just
-   the hamburger (mobile only) and the status line, so a plain two-column
-   grid replaces the old three-zone auto/1fr/auto one. */
+   the hamburger (mobile only) and driftstatus. */
 .top-bar{
   position:sticky; top:0; z-index:15;
-  display:grid; grid-template-columns:minmax(210px,1fr) auto minmax(210px,1fr); align-items:center; gap:16px;
+  display:grid; grid-template-columns:auto 1fr; align-items:center; gap:16px;
   padding:12px 20px;
   background:var(--bg); border-bottom:1px solid var(--hairline);
 }
 .top-bar-group{ grid-column:1; grid-row:1; display:flex; align-items:center; gap:8px; }
 .top-bar-service-status{ grid-column:2; grid-row:1; min-width:0; justify-self:center; }
-.top-bar-status{ grid-column:3; grid-row:1; justify-content:flex-end; }
-body.top-bar-swapped .top-bar-group{ grid-column:3; }
-body.top-bar-swapped .top-bar-status{ grid-column:1; justify-content:flex-start; }
+/* Driftstatus, expanded, wraps its own content onto multiple lines
+   (see command-center/module.css's body.status-panel-open rules) and
+   grows taller than a single icon row -- switching to align-items:start
+   keeps the menu/settings/sign-out icons pinned to the top of that now-
+   tall row instead of drifting to its vertical center. */
 body.status-panel-open .top-bar{
   position:relative;
   align-items:start;
-}
-body.status-panel-open .top-bar-status{
-  position:absolute;
-  z-index:22;
-  top:12px;
-  right:20px;
-  width:auto;
-  flex-wrap:nowrap;
-  justify-content:flex-end;
-  text-align:right;
-}
-body.status-panel-open.top-bar-swapped .top-bar-status{
-  right:auto;
-  left:20px;
 }
 .icon-btn{
   display:inline-flex; align-items:center; justify-content:center;
@@ -135,19 +123,29 @@ body.status-panel-open.top-bar-swapped .top-bar-status{
 .icon-btn:hover{ border-color:var(--ink-soft); color:var(--ink); }
 .icon-btn .edge-tab-label{ display:none; }
 
-/* Countdown + IP/VPN status + clock, grouped into one grid child of
-   .top-bar instead of three separate ones -- three separate items each
-   fighting for space alongside the nav-slot and icon group is what broke
-   down on a narrow phone: nothing left room for the others to wrap into,
-   so they visually crammed together and overlapped instead. As a single
-   wrapper, this is the *only* thing occupying the middle (1fr) column;
-   it wraps its own three children internally, which never affects the
-   nav/icon columns on either side. */
-.top-bar-status{
-  min-width:0; width:100%;
-  display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
-  gap:4px 14px;
+/* ---- footer: IPv4/IPv6/VPN only (2026-07-31) -- used to be a third
+   column crammed into .top-bar alongside driftstatus, which on Command
+   (the widest driftstatus strip) kept visually colliding with it, worst
+   on narrower screens. A thin bar of its own, pinned to the bottom
+   instead of the top, has the full width to itself and nothing left to
+   collide with. Fixed + sticky-equivalent (position:fixed rather than
+   sticky, since it needs to stay put even when the page is shorter than
+   the viewport, not just while scrolling) -- #module-content gets
+   matching bottom padding below so the last bit of a module's content
+   never sits underneath it. */
+.app-footer{
+  position:fixed; left:0; right:0; bottom:0; z-index:15;
+  display:flex; align-items:center; justify-content:center;
+  min-height:30px; padding:6px 20px;
+  background:var(--bg); border-top:1px solid var(--hairline);
 }
+/* Nothing to show (both IP lookups failed) collapses the footer down to
+   nothing rather than leaving an empty hairline-bordered strip -- :has()
+   support is safe to rely on here (Safari 15.4+/Chrome 105+, both long
+   since current by this app's one-user, evergreen-browser reality). */
+.app-footer:has(> .network-status:empty){ display:none; }
+#module-content{ padding-bottom:42px; }
+
 .session-timer{
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); white-space:nowrap;
 }
@@ -161,21 +159,18 @@ body.status-panel-open.top-bar-swapped .top-bar-status{
 }
 .network-status:empty{ display:none; }
 
-/* IPv4 / IPv6 / VPN, stacked one per line rather than run inline — Dario
-   wants these "traded på varandra" (stacked) in the top-right corner
-   instead of spreading out sideways, which also happens to be what kept
-   colliding with the driftstatus strip on Command at in-between widths
-   (see .top-bar-service-status). Colors inherit via currentColor so this
-   reads correctly both here (light, on --ink-grey) and on the dark gate
-   (see #gate .gate-network-status below, on --gate-text-soft) — and on
-   the gate specifically, that container's own text-align:center (below)
-   still centers this column, so align-items:flex-end here only takes
-   effect where it's actually wanted (the top-bar's right corner). */
+/* IPv4 / IPv6 / VPN, run inline in one line -- back to a plain row
+   (2026-07-31) now that this lives in its own dedicated footer strip
+   with the full width to itself: stacking these vertically was a
+   workaround for the top-bar collision, not the goal in itself, and a
+   vertical stack would just make a "thin footer" tall instead. Colors
+   inherit via currentColor so this reads correctly both here (light, on
+   --ink-grey) and on the dark gate (see #gate .gate-network-status
+   below, on --gate-text-soft). */
 .net-pill{
-  display:inline-flex; flex-direction:column; flex-wrap:nowrap; align-items:flex-end;
-  gap:2px 0; padding:4px 0; opacity:.82;
+  display:inline-flex; flex-wrap:wrap; align-items:center; justify-content:center;
+  gap:4px 14px; padding:4px 0; opacity:.82;
 }
-#gate .net-pill{ align-items:center; }
 .net-item{ display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
 .net-badge{ font-size:9px; font-weight:700; letter-spacing:.04em; opacity:.75; }
 .net-shield{ flex:0 0 auto; }
@@ -401,6 +396,7 @@ body.has-custom-bg .act-note,
 body.has-custom-bg .day-date,
 body.has-custom-bg .quiet-line{ color:#4A473F; }
 body.has-custom-bg .top-bar{ background:rgba(232,230,224,.94); border-bottom-color:#D2CFC7; }
+body.has-custom-bg .app-footer{ background:rgba(232,230,224,.94); border-top-color:#D2CFC7; }
 body.has-custom-bg .session-timer,
 body.has-custom-bg .network-status,
 body.has-custom-bg .topbar-clock{ color:#5F5C55; }
