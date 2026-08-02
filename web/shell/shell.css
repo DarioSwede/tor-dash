@@ -88,6 +88,27 @@
 }
 #gate .gate-btn-primary:hover{ background:rgba(140,106,74,.2); border-color:var(--gate-accent); }
 #gate .gate-msg{ font-size:12.5px; margin-top:16px; color:var(--gate-text-soft); min-height:16px; }
+#gate .gate-recovery{
+  margin:28px auto 0; padding-top:22px; max-width:300px;
+  border-top:1px solid rgba(140,106,74,.35); text-align:left;
+}
+#gate .gate-recovery[hidden]{ display:none; }
+#gate .gate-recovery label{
+  display:block; margin-bottom:8px; color:var(--gate-text); font-size:12px;
+}
+#gate .gate-recovery input,
+#gate .gate-recovery button{
+  width:100%; border-radius:6px; font:inherit;
+}
+#gate .gate-recovery input{
+  padding:9px 10px; color:var(--gate-text); background:rgba(10,10,12,.78);
+  border:1px solid rgba(140,106,74,.55);
+}
+#gate .gate-recovery button{
+  margin-top:9px; padding:9px 10px; cursor:pointer; color:var(--gate-text);
+  background:rgba(140,106,74,.18); border:1px solid var(--gate-accent);
+}
+#gate .gate-recovery .gate-msg{ text-align:center; }
 /* Pinned to the very top of the gate, not just the top of the vertically
    centered .gate-content block below it. */
 #gate .gate-network-status{

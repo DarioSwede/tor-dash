@@ -57,6 +57,20 @@ let sessionTimerEl = null;
 let tickInterval = null;
 
 export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: timerEl, onAuthenticated, onSignedOut }) {
+  const pageUrl = new URL(window.location.href);
+  const recoveryMode = pageUrl.searchParams.get("recovery") === "1";
+  const authHash = new URLSearchParams(pageUrl.hash.replace(/^#/, ""));
+  const isAuthCallback = recoveryMode && (
+    authHash.has("access_token") ||
+    authHash.has("refresh_token") ||
+    pageUrl.searchParams.has("code")
+  );
+
+  // A magic-link session is established during client startup, before the
+  // normal user-activity listeners can run. Mark this deliberate recovery
+  // action so the idle guard does not reject the brand-new session as stale.
+  if (isAuthCallback) markActive();
+
   // One network lookup per gate view, shared by every log call below
   // (view, attempt, outcome) instead of each re-fetching it independently.
   const networkStatusPromise = fetchNetworkStatus();
@@ -109,6 +123,30 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
 
   document.getElementById("passkey-signin-btn").addEventListener("click", () => triggerPasskeySignIn("tap"));
   wireSwipeToSignIn(gateEl, () => triggerPasskeySignIn("swipe"));
+
+  const recoveryForm = document.getElementById("gate-recovery-form");
+  const recoveryEmail = document.getElementById("gate-recovery-email");
+  const recoveryMsg = document.getElementById("gate-recovery-msg");
+  if (recoveryForm) recoveryForm.hidden = !recoveryMode;
+  if (recoveryMode && recoveryForm && recoveryEmail && recoveryMsg) {
+    recoveryForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      recoveryMsg.textContent = "Skickar…";
+      const redirectUrl = new URL(window.location.href);
+      redirectUrl.search = "?recovery=1";
+      redirectUrl.hash = "";
+      const { error } = await supabase.auth.signInWithOtp({
+        email: recoveryEmail.value.trim(),
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: redirectUrl.toString(),
+        },
+      });
+      recoveryMsg.textContent = error
+        ? `Kunde inte skicka länken: ${error.message}`
+        : "Länken är skickad. Öppna den i samma webbläsare.";
+    });
+  }
 
   // "Vill du verkligen logga ut?" -- a real click on the sign-out edge
   // tab is easy to trigger by accident (it's a permanent fixture now,

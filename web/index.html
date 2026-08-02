@@ -23,7 +23,7 @@
      were still in effect). Neither file is referenced with a build-time
      hash since there's no build step -- bump this number by hand
      whenever shell.css changes and this stops being purely cosmetic. -->
-<link rel="stylesheet" href="shell/shell.css?v=8">
+<link rel="stylesheet" href="shell/shell.css?v=9">
 </head>
 <body>
 
@@ -40,6 +40,16 @@
       <p class="gate-eyebrow" id="gate-eyebrow"></p>
       <button id="passkey-signin-btn" class="gate-btn-primary">Sign in with security key</button>
       <div class="gate-msg" id="gate-msg"></div>
+      <!-- Temporary, deliberately hidden recovery route for the custom-domain
+           passkey migration. auth.js reveals it only on ?recovery=1 and
+           refuses to create new users. Remove after a new passkey has been
+           enrolled and verified on dashboard.utiskogen.se. -->
+      <form class="gate-recovery" id="gate-recovery-form" hidden>
+        <label for="gate-recovery-email">Reservinloggning via e-post</label>
+        <input id="gate-recovery-email" type="email" autocomplete="email" required placeholder="E-postadress">
+        <button type="submit">Skicka säker inloggningslänk</button>
+        <div class="gate-msg" id="gate-recovery-msg" aria-live="polite"></div>
+      </form>
     </div>
   </div>
 

@@ -169,6 +169,13 @@ domain through the recovery path, and enroll a new passkey. Only then remove
 the recovery path. The `log-access` Edge Function must also be redeployed so
 its additive CORS allowlist for both origins takes effect.
 
+The temporary recovery form is only shown at `?recovery=1`, uses
+`signInWithOtp({ shouldCreateUser: false })`, and redirects back to the same
+origin. Before using it, add both
+`https://darioswede.github.io/tor-dash/?recovery=1` and
+`https://dashboard.utiskogen.se/?recovery=1` to Supabase Auth's redirect URL
+allow list. Remove this form after the new-domain passkey has been verified.
+
 ## One-time setup
 
 1. **Create a Supabase project** at supabase.com (free tier is enough).
