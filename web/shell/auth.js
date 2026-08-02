@@ -32,6 +32,7 @@ const BACKGROUND_TIMEOUT_MS = 5 * 60 * 1000; // 5 min hidden re-triggers a lock
 // of just assuming "no" because the in-memory timer never got the chance
 // to expire.
 const LAST_ACTIVE_KEY = "tor-dash:last-active";
+const LAST_MODULE_KEY = "tor-dash:last-module";
 
 function markActive() {
   localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
@@ -69,7 +70,18 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
   // A magic-link session is established during client startup, before the
   // normal user-activity listeners can run. Mark this deliberate recovery
   // action so the idle guard does not reject the brand-new session as stale.
-  if (isAuthCallback) markActive();
+  if (isAuthCallback) {
+    markActive();
+    // Recovery is an exceptional entry path, so it should not resurrect a
+    // stale module remembered on this origin (the removed legacy packlist
+    // was the concrete failure). Normal sign-ins and ordinary reloads still
+    // preserve the user's active module through module-registry.js.
+    try {
+      localStorage.setItem(LAST_MODULE_KEY, "command-center");
+    } catch {
+      // The registry already falls back to Command when storage is blocked.
+    }
+  }
 
   // One network lookup per gate view, shared by every log call below
   // (view, attempt, outcome) instead of each re-fetching it independently.
