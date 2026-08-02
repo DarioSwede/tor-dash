@@ -142,11 +142,12 @@ async function run() {
   resetSignOutCalls();
   localStorage.removeItem(LAST_ACTIVE_KEY);
   document.getElementById("passkey-signin-btn").click();
+  const plasmaActiveWhilePending = gateEl.classList.contains("auth-pending");
   await new Promise((r) => setTimeout(r, 30));
   record(
     "Fresh passkey sign-in is not immediately signed back out",
-    getSignOutCalls() === 0 && appEl.style.display === "block" && gateEl.style.display === "none",
-    `signOutCalls=${getSignOutCalls()} appDisplay=${appEl.style.display} gateDisplay=${gateEl.style.display}`
+    plasmaActiveWhilePending && !gateEl.classList.contains("auth-pending") && getSignOutCalls() === 0 && appEl.style.display === "block" && gateEl.style.display === "none",
+    `plasmaPending=${plasmaActiveWhilePending} plasmaCleared=${!gateEl.classList.contains("auth-pending")} signOutCalls=${getSignOutCalls()} appDisplay=${appEl.style.display} gateDisplay=${gateEl.style.display}`
   );
 
   const allPass = cases.every((c) => c.pass);

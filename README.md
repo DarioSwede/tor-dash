@@ -150,6 +150,25 @@ read as consistent going into/out of Sarek):
   Small, easily-reversible tweaks (a color, a spacing value, a copy change)
   don't need one — use judgment.
 
+## Custom domain (`dashboard.utiskogen.se`)
+
+The Pages artifact contains `web/CNAME` with the intended hostname. Because
+this repository deploys through a custom GitHub Actions workflow, the actual
+domain must still be saved under **GitHub → Settings → Pages → Custom
+domain**. In Loopia's DNS editor, create `dashboard` as a `CNAME` with TTL
+`3600` and data `darioswede.github.io` (no scheme and no `/tor-dash`). Enable
+**Enforce HTTPS** in GitHub after the certificate is ready.
+
+Do not activate that redirect until the passkey migration is prepared.
+WebAuthn passkeys are bound to their relying-party domain; changing the
+Supabase Passkeys RP ID from `darioswede.github.io` to
+`dashboard.utiskogen.se` invalidates the currently enrolled passkeys. Create
+and test a temporary recovery sign-in path first, then change the RP ID and
+allowed origin in **Supabase → Authentication → Passkeys**, open the new
+domain through the recovery path, and enroll a new passkey. Only then remove
+the recovery path. The `log-access` Edge Function must also be redeployed so
+its additive CORS allowlist for both origins takes effect.
+
 ## One-time setup
 
 1. **Create a Supabase project** at supabase.com (free tier is enough).

@@ -64,6 +64,11 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
 
   const triggerPasskeySignIn = async (method) => {
     gateMsg.textContent = "Waiting for your security key…";
+    // The red plasma edge is an in-progress signal, not part of the
+    // resting sign-in screen. Keep it visible for exactly as long as the
+    // browser is waiting for WebAuthn, regardless of whether sign-in was
+    // started by tapping the button or swiping up.
+    gateEl.classList.add("auth-pending");
     logAccessEvent(supabase, "signin_attempt", { method, statusPromise: networkStatusPromise });
     // WebAuthn requires the document to actually have focus at call time.
     // Tapping the button naturally focuses it; a swipe on the plain
@@ -85,7 +90,14 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
     // the brand new session right back out again -- every sign-in looked
     // like it silently failed.
     markActive();
-    const { error } = await supabase.auth.signInWithPasskey();
+    let error;
+    try {
+      ({ error } = await supabase.auth.signInWithPasskey());
+    } finally {
+      // Also covers an unexpected rejected promise, not only Supabase's
+      // normal `{ error }` response shape.
+      gateEl.classList.remove("auth-pending");
+    }
     if (error) {
       gateMsg.textContent = `Couldn't sign in: ${error.message}`;
       logAccessEvent(supabase, "signin_failure", { method, detail: error.message, statusPromise: networkStatusPromise });
@@ -120,6 +132,10 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
   // getSession() call alongside this, which is what caused the dup-render
   // race in the previous version.
   supabase.auth.onAuthStateChange((_event, session) => {
+    // Supabase can publish the new session synchronously from inside
+    // signInWithPasskey(), before that promise has returned. Clear the
+    // pending treatment here too so it cannot survive either outcome.
+    gateEl.classList.remove("auth-pending");
     if (session) {
       // A restored session (page load/reopen) whose last known activity
       // is already older than the idle timeout is exactly the "still

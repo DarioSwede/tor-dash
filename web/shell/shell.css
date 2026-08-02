@@ -31,6 +31,31 @@
   content:""; position:absolute; inset:0; pointer-events:none;
   background:radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%);
 }
+/* Only appears while WebAuthn is actively waiting for the user's passkey.
+   Layered inset glows keep the effect at the viewport edge, where it reads
+   as an energized red plasma rim without obscuring the sign-in controls. */
+#gate.auth-pending::before{
+  content:""; position:absolute; inset:0; z-index:3; pointer-events:none;
+  box-shadow:
+    inset 0 0 4px 2px rgba(255,238,230,.95),
+    inset 0 0 14px 5px rgba(255,49,35,.92),
+    inset 0 0 34px 10px rgba(176,0,20,.72),
+    inset 0 0 68px 18px rgba(88,0,16,.38);
+  animation:gate-plasma-pulse 1.15s ease-in-out infinite alternate;
+}
+@keyframes gate-plasma-pulse{
+  from{
+    opacity:.72;
+    filter:saturate(.9) brightness(.88);
+  }
+  to{
+    opacity:1;
+    filter:saturate(1.35) brightness(1.18);
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  #gate.auth-pending::before{ animation:none; }
+}
 #gate .gate-content{
   position:relative; z-index:1;
   width:100%; max-width:360px; padding:0 24px; text-align:center;
