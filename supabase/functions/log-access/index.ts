@@ -26,12 +26,18 @@ const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW_SECONDS = 600; // 10 min
 const ALLOWED_EVENTS = new Set(["gate_view", "signin_attempt", "signin_success", "signin_failure"]);
 
-// Update this if the site ever moves off GitHub Pages / gets a custom domain.
-const ALLOWED_ORIGIN = "https://darioswede.github.io";
+const ALLOWED_ORIGINS = new Set([
+  "https://darioswede.github.io",
+  "https://dashboard.utiskogen.se",
+]);
 
-function corsHeaders() {
+function corsHeaders(req: Request) {
+  const requestOrigin = req.headers.get("origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.has(requestOrigin)
+    ? requestOrigin
+    : "https://darioswede.github.io";
   return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+    "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers": "content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
@@ -42,7 +48,7 @@ function clip(value: unknown, max: number): string | null {
 }
 
 Deno.serve(async (req) => {
-  const headers = corsHeaders();
+  const headers = corsHeaders(req);
 
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers });
