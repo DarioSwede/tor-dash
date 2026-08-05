@@ -1,6 +1,8 @@
 import { loadCommandCenter } from "./adapters.js";
+import { mountStatusCard } from "../morning-brief/status-check.js";
 
 let clockTimer = null;
+let statusCancel = null;
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -144,14 +146,40 @@ function renderBrief(data) {
     node("p", "cc-kicker", data.eyebrow || "COMMAND BRIEF"),
     node("h1", null, data.headline)
   );
-  const clock = node("div", "cc-clock");
+  const cities = [
+    ["Stockholm", "Europe/Stockholm"],
+    ["Hongkong", "Asia/Hong_Kong"],
+    ["New York", "America/New_York"],
+    ["Los Angeles", "America/Los_Angeles"],
+    ["Moskva", "Europe/Moscow"],
+  ];
+  let selectedCity = cities[0];
+  const clock = node("details", "cc-clock");
+  const clockFace = node("summary", "cc-clock-face");
   const time = node("strong");
-  const place = node("span", null, "STOCKHOLM");
-  clock.append(time, place);
-  const tick = () => { time.textContent = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" }).format(new Date()); };
+  const place = node("span", null, selectedCity[0]);
+  clockFace.append(time, place);
+  const cityMenu = node("div", "cc-clock-cities");
+  cities.forEach((city) => {
+    const button = node("button", null, city[0]);
+    button.type = "button";
+    button.addEventListener("click", () => {
+      selectedCity = city;
+      place.textContent = city[0];
+      clock.open = false;
+      tick();
+    });
+    cityMenu.appendChild(button);
+  });
+  clock.append(clockFace, cityMenu);
+  const tick = () => {
+    time.textContent = new Intl.DateTimeFormat("sv-SE", {
+      hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: selectedCity[1],
+    }).format(new Date());
+  };
   tick();
   clearInterval(clockTimer);
-  clockTimer = setInterval(tick, 30000);
+  clockTimer = setInterval(tick, 1000);
   top.append(identity, clock);
   hero.appendChild(top);
 
@@ -169,11 +197,52 @@ function renderBrief(data) {
   return hero;
 }
 
+function weatherText(code) {
+  if (code === 0) return ["☀", "Klart"];
+  if ([1, 2].includes(code)) return ["◒", "Växlande molnighet"];
+  if (code === 3) return ["☁", "Mulet"];
+  if ([45, 48].includes(code)) return ["≋", "Dimma"];
+  if ([51, 53, 55, 56, 57].includes(code)) return ["☂", "Duggregn"];
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return ["☂", "Regn"];
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return ["❄", "Snö"];
+  if ([95, 96, 99].includes(code)) return ["ϟ", "Åska"];
+  return ["○", "Väderläge"];
+}
+
+function renderWeather(weather) {
+  const section = node("section", "cc-weather");
+  section.appendChild(node("p", "cc-weather-label", "Väder Stockholm"));
+  if (!weather || !Number.isFinite(weather.temperature)) {
+    section.appendChild(node("p", "cc-weather-unavailable", "Vädret kunde inte hämtas just nu."));
+    return section;
+  }
+  const [symbol, condition] = weatherText(weather.code);
+  const body = node("div", "cc-weather-body");
+  body.appendChild(node("span", "cc-weather-symbol", symbol));
+  const copy = node("div", "cc-weather-copy");
+  const current = Math.round(weather.temperature);
+  const high = Math.round(weather.high);
+  copy.append(
+    node("strong", null, `${condition}, ${current}° nu — upp mot ${high}°`),
+    node("span", null, `Lägst ${Math.round(weather.low)}° · Risk för nederbörd ${Math.round(weather.rainRisk || 0)}%`)
+  );
+  body.appendChild(copy);
+  const source = node("a", "cc-weather-source", weather.source);
+  source.href = "https://open-meteo.com/";
+  source.target = "_blank";
+  source.rel = "noopener noreferrer";
+  body.appendChild(source);
+  section.appendChild(body);
+  return section;
+}
+
 function renderTimeline(calendar) {
   const shell = node("div", "cc-timeline-shell");
   const controls = node("div", "cc-timeline-controls");
   const zoomGroup = node("div", "cc-timeline-zoom");
   const todayBtn = node("button", "cc-timeline-btn", "Idag");
+  const detail = node("div", "cc-timeline-detail");
+  detail.hidden = true;
   todayBtn.type = "button";
   [
     ["7 dagar", 7],
@@ -187,6 +256,10 @@ function renderTimeline(calendar) {
   });
   controls.append(zoomGroup, todayBtn);
   shell.appendChild(controls);
+
+  if (calendar.sourceState === "locked") {
+    shell.appendChild(node("p", "cc-calendar-notice", "Mac-kalendern är krypterad för en annan webbadress. Öppna livesidan eller registrera den här adressen som en egen enhet."));
+  }
 
   if (!calendar.anchorDate || !calendar.events.length) {
     shell.appendChild(node("p", "cc-empty", "Tidslinjen fylls när en ansluten kalender innehåller händelser."));
@@ -230,8 +303,12 @@ function renderTimeline(calendar) {
     date.setDate(start.getDate() + i);
     const day = node("div", "cc-timeline-day");
     if (date.toDateString() === anchor.toDateString()) day.classList.add("is-today");
+    if ([0, 6].includes(date.getDay())) day.classList.add("is-weekend");
+    const month = date.getDate() === 1
+      ? new Intl.DateTimeFormat("sv-SE", { month: "short" }).format(date)
+      : "";
     day.append(
-      node("span", null, new Intl.DateTimeFormat("sv-SE", { weekday: "short" }).format(date)),
+      node("span", null, month || new Intl.DateTimeFormat("sv-SE", { weekday: "short" }).format(date)),
       node("strong", null, String(date.getDate()))
     );
     axis.appendChild(day);
@@ -248,13 +325,37 @@ function renderTimeline(calendar) {
     bar.dataset.endIndex = String(event.endIndex);
     bar.style.top = `${event.lane * 42 + 10}px`;
     bar.title = event.meta ? `${event.title} — ${event.meta}` : event.title;
+    bar.tabIndex = 0;
+    bar.setAttribute("role", "button");
+    bar.setAttribute("aria-label", bar.title);
     const label = node("div", "cc-timeline-event-label");
     label.append(node("strong", null, event.title), node("span", null, event.meta || ""));
     bar.appendChild(label);
     tracks.appendChild(bar);
   });
   viewport.appendChild(board);
-  shell.appendChild(viewport);
+  shell.append(viewport, detail);
+
+  function showEventDetail(bar) {
+    tracks.querySelectorAll(".cc-timeline-event").forEach((item) => item.classList.toggle("is-selected", item === bar));
+    const eventTitle = bar.querySelector("strong")?.textContent || "";
+    const eventMeta = bar.querySelector("span")?.textContent || "";
+    detail.innerHTML = "";
+    detail.append(node("strong", null, eventTitle), node("span", null, eventMeta || "Ingen ytterligare information"));
+    detail.hidden = false;
+  }
+
+  tracks.addEventListener("click", (event) => {
+    const bar = event.target.closest(".cc-timeline-event");
+    if (bar) showEventDetail(bar);
+  });
+  tracks.addEventListener("keydown", (event) => {
+    if (!["Enter", " "].includes(event.key)) return;
+    const bar = event.target.closest(".cc-timeline-event");
+    if (!bar) return;
+    event.preventDefault();
+    showEventDetail(bar);
+  });
 
   let visibleDays = 14;
   let dayWidth = 72;
@@ -347,6 +448,30 @@ function renderTimeline(calendar) {
 function render(data) {
   const page = node("main", "command-center");
   page.appendChild(renderBrief(data.brief));
+  const carriedStatus = data.missionStatus.services.map((service) => ({
+    name: service.name,
+    level: service.level,
+    text: service.text,
+    link: service.link,
+  }));
+  const status = mountStatusCard(node, carriedStatus, {
+    expandable: true,
+    details: data.missionStatus.services,
+    onExpandedChange: (open) => document.body.classList.toggle("status-panel-open", open),
+  });
+  status.card.classList.add("cc-command-status");
+  statusCancel = status.cancel;
+  const statusHost = document.getElementById("top-bar-service-status");
+  statusHost?.replaceChildren(status.card);
+  status.card.addEventListener("click", (event) => {
+    const chip = event.target.closest(".status-chip");
+    if (!chip) return;
+    event.preventDefault();
+    const shouldOpen = !chip.classList.contains("is-expanded");
+    status.card.querySelectorAll(".status-chip.is-expanded").forEach((item) => item.classList.remove("is-expanded"));
+    chip.classList.toggle("is-expanded", shouldOpen);
+  });
+  page.appendChild(renderWeather(data.weather));
 
   const calendar = card("Kalender", "calendar", {
     className: "cc-calendar",
@@ -360,9 +485,6 @@ function render(data) {
   page.appendChild(focus);
 
   const grid = node("div", "cc-grid");
-
-  const mission = card("Mission Status", "mission", { action: deepLink("Öppna Brief", "#morning-brief") });
-  mission.appendChild(renderMissionStatus(data.missionStatus));
 
   const depot = card("Depot 103", "depot", { action: deepLink("Öppna depot", "#portfolio") });
   depot.appendChild(itemList(data.depot.items));
@@ -381,7 +503,7 @@ function render(data) {
   const aiInbox = card("AI Inbox", "ai");
   aiInbox.appendChild(itemList(data.aiInbox.items, "AI har inga öppna rekommendationer."));
 
-  [mission, depot, marketplace, expedition, veteran, aiInbox].forEach((section) => grid.appendChild(section));
+  [depot, marketplace, expedition, veteran, aiInbox].forEach((section) => grid.appendChild(section));
   page.appendChild(grid);
 
   const shortcuts = card("Snabblänkar", "links", { className: "cc-shortcuts" });
@@ -402,6 +524,10 @@ export default {
   unmount() {
     clearInterval(clockTimer);
     clockTimer = null;
+    statusCancel?.();
+    statusCancel = null;
+    document.body.classList.remove("status-panel-open");
+    document.getElementById("top-bar-service-status")?.replaceChildren();
   },
   async mount(container, ctx) {
     const loading = node("div", "cc-loading", "Bygger lägesbild…");

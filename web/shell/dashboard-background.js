@@ -118,43 +118,6 @@ export async function uploadDashboardBackground(supabase, file) {
   return value;
 }
 
-// ---- top bar layout: which side the menu+settings group vs. sign out
-// sits on. One toggle (swapped or not) rather than per-icon placement --
-// gives a real choice without a drag-and-drop layout editor for two
-// icon groups.
-const LAYOUT_KEY = "top_bar_layout";
-
-async function fetchLayoutSwapped(supabase) {
-  const { data } = await supabase
-    .from("dashboard_settings")
-    .select("value")
-    .eq("key", LAYOUT_KEY)
-    .maybeSingle();
-  return Boolean(data?.value?.swapped);
-}
-
-async function saveLayoutSwapped(supabase, swapped) {
-  return supabase
-    .from("dashboard_settings")
-    .upsert({ key: LAYOUT_KEY, value: { swapped }, updated_at: new Date().toISOString() }, { onConflict: "key" });
-}
-
-export async function loadTopBarLayout(supabase) {
-  document.body.classList.toggle("top-bar-swapped", await fetchLayoutSwapped(supabase));
-}
-
-export function wireTopBarLayoutSetting(supabase, { toggleEl, msgEl }) {
-  fetchLayoutSwapped(supabase).then((swapped) => { toggleEl.checked = swapped; });
-
-  toggleEl.addEventListener("change", async () => {
-    const swapped = toggleEl.checked;
-    document.body.classList.toggle("top-bar-swapped", swapped);
-    msgEl.textContent = "Saving…";
-    const { error } = await saveLayoutSwapped(supabase, swapped);
-    msgEl.textContent = error ? `Couldn't save: ${error.message}` : "Saved.";
-  });
-}
-
 export function wireDashboardBackgroundSetting(supabase, { colorInputEl, resetBtnEl, visibleToggleEl, uploadInputEl, msgEl }) {
   let current = DEFAULT_VALUE;
   let saveTimer = null;

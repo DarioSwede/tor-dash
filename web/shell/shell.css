@@ -31,6 +31,31 @@
   content:""; position:absolute; inset:0; pointer-events:none;
   background:radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%);
 }
+/* Only appears while WebAuthn is actively waiting for the user's passkey.
+   Layered inset glows keep the effect at the viewport edge, where it reads
+   as an energized red plasma rim without obscuring the sign-in controls. */
+#gate.auth-pending::before{
+  content:""; position:absolute; inset:0; z-index:3; pointer-events:none;
+  box-shadow:
+    inset 0 0 4px 2px rgba(255,238,230,.95),
+    inset 0 0 14px 5px rgba(255,49,35,.92),
+    inset 0 0 34px 10px rgba(176,0,20,.72),
+    inset 0 0 68px 18px rgba(88,0,16,.38);
+  animation:gate-plasma-pulse 1.15s ease-in-out infinite alternate;
+}
+@keyframes gate-plasma-pulse{
+  from{
+    opacity:.72;
+    filter:saturate(.9) brightness(.88);
+  }
+  to{
+    opacity:1;
+    filter:saturate(1.35) brightness(1.18);
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  #gate.auth-pending::before{ animation:none; }
+}
 #gate .gate-content{
   position:relative; z-index:1;
   width:100%; max-width:360px; padding:0 24px; text-align:center;
@@ -63,6 +88,27 @@
 }
 #gate .gate-btn-primary:hover{ background:rgba(140,106,74,.2); border-color:var(--gate-accent); }
 #gate .gate-msg{ font-size:12.5px; margin-top:16px; color:var(--gate-text-soft); min-height:16px; }
+#gate .gate-recovery{
+  margin:28px auto 0; padding-top:22px; max-width:300px;
+  border-top:1px solid rgba(140,106,74,.35); text-align:left;
+}
+#gate .gate-recovery[hidden]{ display:none; }
+#gate .gate-recovery label{
+  display:block; margin-bottom:8px; color:var(--gate-text); font-size:12px;
+}
+#gate .gate-recovery input,
+#gate .gate-recovery button{
+  width:100%; border-radius:6px; font:inherit;
+}
+#gate .gate-recovery input{
+  padding:9px 10px; color:var(--gate-text); background:rgba(10,10,12,.78);
+  border:1px solid rgba(140,106,74,.55);
+}
+#gate .gate-recovery button{
+  margin-top:9px; padding:9px 10px; cursor:pointer; color:var(--gate-text);
+  background:rgba(140,106,74,.18); border:1px solid var(--gate-accent);
+}
+#gate .gate-recovery .gate-msg{ text-align:center; }
 /* Pinned to the very top of the gate, not just the top of the vertically
    centered .gate-content block below it. */
 #gate .gate-network-status{
@@ -76,34 +122,44 @@
 /* ================= app shell (signed in) ================= */
 #app{display:none;}
 
-/* ---- top bar: menu + settings (left), network status (center),
-   sign out (right) — sticky so it, and the icons on it, stay reachable
-   while scrolling a long module, without needing a second fixed bar at
-   the bottom. ---- */
-/* Grid, not flex, for the three top-bar zones -- a real device (iOS
-   Safari) rendered the middle zone's flex:1 1 auto as if it were only
-   ever as wide as its own (wrapped, centered) content, instead of
-   growing to fill the leftover row space the way it does in every
-   Chromium-based browser used to test this locally. That left the icon
-   buttons stranded wherever the middle zone's content happened to end,
-   nowhere near the bar's actual right edge. `auto 1fr auto` sidesteps
-   the ambiguity entirely: the outer two columns are always exactly their
-   own content's width, the middle column is a plain, unambiguous "eat
-   whatever's left" track, and grid guarantees the last column's own
-   edge is the container's own edge -- no flex-basis-vs-wrapped-content
-   judgment call left for any browser to get wrong. */
-/* Nav (Brief/Sarek/Portfolio/Log) and ToDo now live in a fixed right-edge
-   tab stack (see .edge-tab-stack below), and settings/sign-out move to a
+/* ---- top bar: menu + settings (left), driftstatus (center) -- sticky
+   so it, and the icons on it, stay reachable while scrolling a long
+   module, without needing a second fixed bar at the bottom. Network
+   status (IPv4/IPv6/VPN) used to live here too as a third right-hand
+   column, but kept visually colliding with the driftstatus strip next to
+   it (worst on Command, where that strip is widest) -- moved out to its
+   own thin footer instead, see .app-footer further down. ---- */
+/* Grid, not flex, for the two top-bar zones -- a real device (iOS
+   Safari) rendered a flex:1 1 auto middle zone as if it were only ever as
+   wide as its own (wrapped, centered) content, instead of growing to
+   fill the leftover row space the way it does in every Chromium-based
+   browser used to test this locally. `auto 1fr` sidesteps the ambiguity
+   entirely: the first column is always exactly its own content's width,
+   the second is a plain, unambiguous "eat whatever's left" track that
+   centers driftstatus within it (see .top-bar-service-status's own
+   justify-self) -- no flex-basis-vs-wrapped-content judgment call left
+   for any browser to get wrong. */
+/* Nav (Brief/Sarek/Portfolio/Log) now lives in a fixed right-edge tab
+   stack (see .edge-tab-stack below), and settings/sign-out move to a
    fixed left-edge stack on desktop -- the top bar itself is down to just
-   the hamburger (mobile only) and the status line, so a plain two-column
-   grid replaces the old three-zone auto/1fr/auto one. */
+   the hamburger (mobile only) and driftstatus. */
 .top-bar{
   position:sticky; top:0; z-index:15;
-  display:grid; grid-template-columns:1fr auto; align-items:center; gap:12px;
+  display:grid; grid-template-columns:auto 1fr; align-items:center; gap:16px;
   padding:12px 20px;
   background:var(--bg); border-bottom:1px solid var(--hairline);
 }
-.top-bar-group{ display:flex; align-items:center; gap:8px; }
+.top-bar-group{ grid-column:1; grid-row:1; display:flex; align-items:center; gap:8px; }
+.top-bar-service-status{ grid-column:2; grid-row:1; min-width:0; justify-self:center; }
+/* Driftstatus, expanded, wraps its own content onto multiple lines
+   (see command-center/module.css's body.status-panel-open rules) and
+   grows taller than a single icon row -- switching to align-items:start
+   keeps the menu/settings/sign-out icons pinned to the top of that now-
+   tall row instead of drifting to its vertical center. */
+body.status-panel-open .top-bar{
+  position:relative;
+  align-items:start;
+}
 .icon-btn{
   display:inline-flex; align-items:center; justify-content:center;
   width:34px; height:34px; padding:0;
@@ -113,19 +169,29 @@
 .icon-btn:hover{ border-color:var(--ink-soft); color:var(--ink); }
 .icon-btn .edge-tab-label{ display:none; }
 
-/* Countdown + IP/VPN status + clock, grouped into one grid child of
-   .top-bar instead of three separate ones -- three separate items each
-   fighting for space alongside the nav-slot and icon group is what broke
-   down on a narrow phone: nothing left room for the others to wrap into,
-   so they visually crammed together and overlapped instead. As a single
-   wrapper, this is the *only* thing occupying the middle (1fr) column;
-   it wraps its own three children internally, which never affects the
-   nav/icon columns on either side. */
-.top-bar-status{
-  min-width:0; width:100%;
-  display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
-  gap:4px 14px;
+/* ---- footer: IPv4/IPv6/VPN only (2026-07-31) -- used to be a third
+   column crammed into .top-bar alongside driftstatus, which on Command
+   (the widest driftstatus strip) kept visually colliding with it, worst
+   on narrower screens. A thin bar of its own, pinned to the bottom
+   instead of the top, has the full width to itself and nothing left to
+   collide with. Fixed + sticky-equivalent (position:fixed rather than
+   sticky, since it needs to stay put even when the page is shorter than
+   the viewport, not just while scrolling) -- #module-content gets
+   matching bottom padding below so the last bit of a module's content
+   never sits underneath it. */
+.app-footer{
+  position:fixed; left:0; right:0; bottom:0; z-index:15;
+  display:flex; align-items:center; justify-content:center;
+  min-height:30px; padding:6px 20px;
+  background:var(--bg); border-top:1px solid var(--hairline);
 }
+/* Nothing to show (both IP lookups failed) collapses the footer down to
+   nothing rather than leaving an empty hairline-bordered strip -- :has()
+   support is safe to rely on here (Safari 15.4+/Chrome 105+, both long
+   since current by this app's one-user, evergreen-browser reality). */
+.app-footer:has(> .network-status:empty){ display:none; }
+#module-content{ padding-bottom:42px; }
+
 .session-timer{
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); white-space:nowrap;
 }
@@ -135,14 +201,18 @@
 .network-status{
   min-width:0;
   font-size:11px; letter-spacing:.01em; color:var(--ink-grey); text-align:center;
-  word-break:break-word;
+  word-break:normal;
 }
 .network-status:empty{ display:none; }
 
-/* Plain IPv4/IPv6/VPN line, no frame — colors inherit via currentColor
-   so this reads correctly both here (light, on --ink-grey) and on the
-   dark gate (see #gate .gate-network-status below, on
-   --gate-text-soft). */
+/* IPv4 / IPv6 / VPN, run inline in one line -- back to a plain row
+   (2026-07-31) now that this lives in its own dedicated footer strip
+   with the full width to itself: stacking these vertically was a
+   workaround for the top-bar collision, not the goal in itself, and a
+   vertical stack would just make a "thin footer" tall instead. Colors
+   inherit via currentColor so this reads correctly both here (light, on
+   --ink-grey) and on the dark gate (see #gate .gate-network-status
+   below, on --gate-text-soft). */
 .net-pill{
   display:inline-flex; flex-wrap:wrap; align-items:center; justify-content:center;
   gap:4px 14px; padding:4px 0; opacity:.82;
@@ -152,32 +222,13 @@
 .net-shield{ flex:0 0 auto; }
 .net-item.net-vpn{ color:#2f9e6e; }
 
-/* ---- side nav: hidden by default, slides in from the left ---- */
-.side-nav{
-  position:fixed; top:0; left:0; bottom:0; z-index:20;
-  width:260px; max-width:80vw;
-  background:var(--bg); border-right:1px solid var(--hairline);
-  padding:76px 20px 28px;
-  transform:translateX(-100%); transition:transform .2s ease;
-  overflow-y:auto;
-}
-.side-nav.open{ transform:none; }
-.side-nav-backdrop{
-  position:fixed; inset:0; z-index:19;
-  background:rgba(0,0,0,.25);
-  opacity:0; pointer-events:none; transition:opacity .2s ease;
-}
-.side-nav-backdrop.open{ opacity:1; pointer-events:auto; }
-
 .nav{ display:flex; flex-wrap:wrap; gap:8px; }
-.side-nav .nav{ flex-direction:column; flex-wrap:nowrap; }
 .nav button{
   position:relative;
   background:none;border:1px solid var(--hairline);border-radius:8px;padding:6px 14px;
   font-family:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer;
   transition:border-color .12s ease, color .12s ease, background .12s ease;
 }
-.side-nav .nav button{ text-align:left; padding:10px 14px; }
 /* Hover feedback was missing entirely -- every other clickable control
    in the top bar (.icon-btn, .btn) already gives some, so an inactive
    nav button was the one thing in the row that looked clickable only by
@@ -195,23 +246,29 @@
   position:absolute; top:4px; right:4px; width:7px; height:7px; border-radius:50%;
   background:var(--status-warn); border:1.5px solid var(--bg);
 }
-.side-nav .nav-badge{ top:50%; right:10px; transform:translateY(-50%); }
 .nav button.active .nav-badge{ border-color:var(--clay); }
 
-/* ---- Edge tabs (2026-07-25): on a wide-enough screen, navigation
-   (Brief/Sarek/Portfolio, built by module-registry.js's buildNav) plus
-   Log (a bespoke drawer, see shell/log-drawer.js) sit as a stack of
-   small vertical tabs pinned to the right edge of the viewport, instead
-   of inline buttons in the top bar -- shell.js's placeNavForViewport()
-   physically moves #module-nav from #side-nav into #nav-edge-tabs once
-   the viewport crosses this same breakpoint. Settings/sign-out get the
-   mirrored treatment on the left (pure CSS repositioning, no reparenting
-   needed -- see further down). Below that breakpoint everything reverts
-   to the old phone layout: nav lives in the hamburger drawer, settings/
-   sign-out are plain top-bar icons -- a phone screen doesn't have edge
-   real estate to spare for a permanent tab stack on *two* sides. (ToDo
-   was part of this same stack too until 2026-07-25, when it moved back
-   inside the Morning Brief module as a collapsible card instead.) */
+/* ---- Edge tabs (2026-07-25; mobile/desktop split removed 2026-07-31):
+   navigation (Brief/Sarek/Portfolio, built by module-registry.js's
+   buildNav) plus Log (a bespoke drawer, see shell/log-drawer.js) sit as a
+   stack of small vertical tabs pinned to the right edge of the viewport,
+   instead of inline buttons in the top bar -- on every screen size now,
+   not just wide ones. Settings/sign-out get the mirrored treatment on the
+   left, desktop-only (pure CSS repositioning, no reparenting needed --
+   see further down); on a phone they stay plain top-bar icons instead,
+   since unlike the nav tabs they were never hidden behind a drawer that
+   could go unreachable, and two permanent edge stacks plus a top bar is
+   tight on a narrow screen. (ToDo was part of this same right-edge stack
+   too until 2026-07-25, when it moved back inside the Morning Brief
+   module as a collapsible card instead.)
+
+   Nav used to live in a hamburger-triggered #side-nav drawer below 860px
+   instead of here -- removed 2026-07-31. That drawer's one open/close
+   trigger sat in .top-bar-group, a grid cell that grows tall/reflows
+   whenever #top-bar-service-status (its sibling cell) expands on a narrow
+   screen, which could push the only way to reach the nav out of reach.
+   Living here instead, position:fixed and outside that grid entirely,
+   nav can't be affected by anything else happening in the top bar. */
 .edge-tab-stack{
   position:fixed; top:50%; transform:translateY(-50%); z-index:16;
   display:flex; flex-direction:column; gap:8px;
@@ -273,12 +330,11 @@
 .edge-tab.edge-tab-drawer{ background:#2F6FE4; }
 
 @media (min-width:860px){
-  #nav-toggle-btn{ display:none; }
   /* Settings/sign-out stay physically inside .top-bar-group in the DOM
      (so mobile keeps them exactly where they've always been -- see
      auth.js/shell.js, nothing about their wiring changes) but escape its
      layout entirely here, becoming their own small left-edge tab stack. */
-  #open-settings-btn, #signout-btn{
+  #open-settings-btn{
     display:inline-block; position:fixed; left:0; z-index:16;
     /* Same backwards-from-usual radius as .edge-tab-stack.left .edge-tab
        above, for the same reason: rotate(180deg) flips which physical
@@ -289,13 +345,13 @@
     box-shadow:0 1px 2px rgba(16,24,40,.06), 0 6px 16px rgba(16,24,40,.12);
     transition:box-shadow .15s ease, filter .15s ease;
   }
-  #open-settings-btn:hover, #signout-btn:hover{
+  #open-settings-btn:hover{
     filter:brightness(1.12); box-shadow:0 2px 6px rgba(16,24,40,.1), 0 10px 22px rgba(16,24,40,.16);
     transform:rotate(180deg) translateX(-3px); /* real screen-space +3px (away from the left edge) -- rotate(180deg) flips a local translateX's sign */
   }
-  #open-settings-btn:focus-visible, #signout-btn:focus-visible{ outline:2px solid #fff; outline-offset:-4px; }
-  #open-settings-btn svg, #signout-btn svg{ display:none; } /* icon only makes sense un-rotated in the top bar */
-  #open-settings-btn .edge-tab-label, #signout-btn .edge-tab-label{ display:inline; }
+  #open-settings-btn:focus-visible{ outline:2px solid #fff; outline-offset:-4px; }
+  #open-settings-btn svg{ display:none; } /* icon only makes sense un-rotated in the edge tab */
+  #open-settings-btn .edge-tab-label{ display:inline; }
   /* Settings opens a drawer (drawer-blue, same as Log); sign-out
      triggers a confirm prompt, not a panel, so it stays neutral. `top`
      (a layout property, resolved before `transform`) positions each box
@@ -305,7 +361,8 @@
      first version had settings and sign-out swapped top-to-bottom for
      exactly that reason). */
   #open-settings-btn{ top:calc(50% - 100px); background:#2F6FE4; }
-  #signout-btn{ top:calc(50% + 8px); background:var(--ink); }
+  #signout-btn{ width:auto; padding:0 12px; gap:7px; color:var(--ink); background:rgba(255,255,255,.55); }
+  #signout-btn .edge-tab-label{ display:inline; }
 }
 
 .btn{
@@ -384,11 +441,13 @@ body.has-custom-bg .item-sentence,
 body.has-custom-bg .act-note,
 body.has-custom-bg .day-date,
 body.has-custom-bg .quiet-line{ color:#4A473F; }
-body.has-custom-bg .top-bar{ background:rgba(10,9,8,.55); border-bottom-color:rgba(228,227,220,.2); }
-body.has-custom-bg .side-nav{background:rgba(252,252,251,.92);}
+body.has-custom-bg .top-bar{ background:rgba(232,230,224,.94); border-bottom-color:#D2CFC7; }
+body.has-custom-bg .app-footer{ background:rgba(232,230,224,.94); border-top-color:#D2CFC7; }
 body.has-custom-bg .session-timer,
 body.has-custom-bg .network-status,
-body.has-custom-bg .topbar-clock{ color:#EDECE6; }
+body.has-custom-bg .topbar-clock{ color:#5F5C55; }
+body.has-custom-bg .session-timer,
+body.has-custom-bg .network-status{ color:#68655E; }
 body.has-custom-bg .session-timer.session-timer-warn{ color:#ffb454; }
 
 @media (max-width:640px){
@@ -546,6 +605,19 @@ h2.section-heading{
   position:absolute; top:18px; right:18px; background:none; border:none; cursor:pointer;
   font-size:20px; color:var(--ink-grey); line-height:1;
 }
+.admin-invite-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; }
+.admin-invite-row .btn{ white-space:nowrap; }
+.admin-users-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:18px; }
+.admin-users-head .panel-subhead{ margin:0; }
+.admin-users-list{ display:grid; margin-top:8px; }
+.admin-user-row{
+  display:grid; grid-template-columns:minmax(0,1fr) 116px; gap:12px; align-items:center;
+  padding:12px 0; border-top:1px solid var(--hairline);
+}
+.admin-user-row strong,.admin-user-row span{ display:block; overflow-wrap:anywhere; }
+.admin-user-row strong{ font-size:13px; color:var(--ink); }
+.admin-user-row span{ margin-top:4px; color:var(--ink-soft); font-size:11px; line-height:1.4; }
+.security-panel .admin-role-select{ padding:7px 8px; font-size:12px; }
 
 /* ---- Sign-out confirmation (see auth.js) -- a small centered dialog
    rather than the browser's native confirm(), so it matches the rest of
@@ -652,6 +724,7 @@ h2.section-heading{
 
 @media (max-width:640px){
   .security-panel{width:100%;}
+  .admin-invite-row,.admin-user-row{ grid-template-columns:1fr; }
   .log-drawer{width:100%;}
   .bottom-bar{ gap:18px; padding:12px 20px; }
 }

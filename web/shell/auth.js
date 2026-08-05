@@ -32,6 +32,7 @@ const BACKGROUND_TIMEOUT_MS = 5 * 60 * 1000; // 5 min hidden re-triggers a lock
 // of just assuming "no" because the in-memory timer never got the chance
 // to expire.
 const LAST_ACTIVE_KEY = "tor-dash:last-active";
+const LAST_MODULE_KEY = "tor-dash:last-module";
 
 function markActive() {
   localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
@@ -57,6 +58,31 @@ let sessionTimerEl = null;
 let tickInterval = null;
 
 export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: timerEl, onAuthenticated, onSignedOut }) {
+  const pageUrl = new URL(window.location.href);
+  const recoveryMode = pageUrl.searchParams.get("recovery") === "1";
+  const authHash = new URLSearchParams(pageUrl.hash.replace(/^#/, ""));
+  const isAuthCallback = recoveryMode && (
+    authHash.has("access_token") ||
+    authHash.has("refresh_token") ||
+    pageUrl.searchParams.has("code")
+  );
+
+  // A magic-link session is established during client startup, before the
+  // normal user-activity listeners can run. Mark this deliberate recovery
+  // action so the idle guard does not reject the brand-new session as stale.
+  if (isAuthCallback) {
+    markActive();
+    // Recovery is an exceptional entry path, so it should not resurrect a
+    // stale module remembered on this origin (the removed legacy packlist
+    // was the concrete failure). Normal sign-ins and ordinary reloads still
+    // preserve the user's active module through module-registry.js.
+    try {
+      localStorage.setItem(LAST_MODULE_KEY, "command-center");
+    } catch {
+      // The registry already falls back to Command when storage is blocked.
+    }
+  }
+
   // One network lookup per gate view, shared by every log call below
   // (view, attempt, outcome) instead of each re-fetching it independently.
   const networkStatusPromise = fetchNetworkStatus();
@@ -64,6 +90,11 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
 
   const triggerPasskeySignIn = async (method) => {
     gateMsg.textContent = "Waiting for your security key…";
+    // The red plasma edge is an in-progress signal, not part of the
+    // resting sign-in screen. Keep it visible for exactly as long as the
+    // browser is waiting for WebAuthn, regardless of whether sign-in was
+    // started by tapping the button or swiping up.
+    gateEl.classList.add("auth-pending");
     logAccessEvent(supabase, "signin_attempt", { method, statusPromise: networkStatusPromise });
     // WebAuthn requires the document to actually have focus at call time.
     // Tapping the button naturally focuses it; a swipe on the plain
@@ -85,7 +116,14 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
     // the brand new session right back out again -- every sign-in looked
     // like it silently failed.
     markActive();
-    const { error } = await supabase.auth.signInWithPasskey();
+    let error;
+    try {
+      ({ error } = await supabase.auth.signInWithPasskey());
+    } finally {
+      // Also covers an unexpected rejected promise, not only Supabase's
+      // normal `{ error }` response shape.
+      gateEl.classList.remove("auth-pending");
+    }
     if (error) {
       gateMsg.textContent = `Couldn't sign in: ${error.message}`;
       logAccessEvent(supabase, "signin_failure", { method, detail: error.message, statusPromise: networkStatusPromise });
@@ -97,6 +135,30 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
 
   document.getElementById("passkey-signin-btn").addEventListener("click", () => triggerPasskeySignIn("tap"));
   wireSwipeToSignIn(gateEl, () => triggerPasskeySignIn("swipe"));
+
+  const recoveryForm = document.getElementById("gate-recovery-form");
+  const recoveryEmail = document.getElementById("gate-recovery-email");
+  const recoveryMsg = document.getElementById("gate-recovery-msg");
+  if (recoveryForm) recoveryForm.hidden = !recoveryMode;
+  if (recoveryMode && recoveryForm && recoveryEmail && recoveryMsg) {
+    recoveryForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      recoveryMsg.textContent = "Skickar…";
+      const redirectUrl = new URL(window.location.href);
+      redirectUrl.search = "?recovery=1";
+      redirectUrl.hash = "";
+      const { error } = await supabase.auth.signInWithOtp({
+        email: recoveryEmail.value.trim(),
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: redirectUrl.toString(),
+        },
+      });
+      recoveryMsg.textContent = error
+        ? `Kunde inte skicka länken: ${error.message}`
+        : "Länken är skickad. Öppna den i samma webbläsare.";
+    });
+  }
 
   // "Vill du verkligen logga ut?" -- a real click on the sign-out edge
   // tab is easy to trigger by accident (it's a permanent fixture now,
@@ -120,6 +182,10 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
   // getSession() call alongside this, which is what caused the dup-render
   // race in the previous version.
   supabase.auth.onAuthStateChange((_event, session) => {
+    // Supabase can publish the new session synchronously from inside
+    // signInWithPasskey(), before that promise has returned. Clear the
+    // pending treatment here too so it cannot survive either outcome.
+    gateEl.classList.remove("auth-pending");
     if (session) {
       // A restored session (page load/reopen) whose last known activity
       // is already older than the idle timeout is exactly the "still

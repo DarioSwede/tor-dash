@@ -2,9 +2,8 @@
 // refresh (see the "tor-dash brief refresh" Claude Routine, set up
 // outside this repo — this file only owns the setting it reads at each
 // firing). Stored in dashboard_settings (owner-only, same table/pattern
-// as dashboard-background.js's background/top_bar_layout keys) rather
-// than a dedicated table -- one more small settings blob doesn't need
-// its own migration.
+// as dashboard-background.js's background key) rather than a dedicated
+// table -- one more small settings blob doesn't need its own migration.
 //
 // The Routine itself fires on a fixed hourly cadence (the simplest
 // schedule a cron trigger can express) and, on every firing, reads this

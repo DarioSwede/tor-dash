@@ -12,7 +12,7 @@ handles, is the sources that *can't* be read client-side: Swedish telcos
 and banks, which publish driftinformation as plain HTML with no CORS
 headers and no JSON API.
 
-Sources: Telia (HTML scrape), Gmail (Google's Workspace status JSON feed --
+Sources: Telia and OpenInfra (HTML scrapes), Gmail (Google's Workspace status JSON feed --
 real JSON, but not Statuspage and not CORS-open, so it can't be read from
 the browser either) and Loopia mail (a live reachability check of the mail
 server for torbjornzimmerman.se -- IMAPS greeting, falling back to webmail
@@ -20,7 +20,7 @@ over HTTPS, falling back to DNS).
 
 Usage:
     python3 scripts/status_check.py                  # all sources below
-    python3 scripts/status_check.py --only telia
+    python3 scripts/status_check.py --only openinfra
 
 Prints one JSON array to stdout, ready to drop into the brief payload as
 `service_status`:
@@ -55,6 +55,7 @@ IMPORTANT -- read before trusting this
    check needs its hosts on it or it returns "unknown" every run -- same
    constraint push_snapshot.py documents for *.supabase.co:
      Telia        telia.se                       (HTTPS)
+     OpenInfra    openinfra.com                  (HTTPS)
      Gmail        www.google.com                 (HTTPS)
      Loopia mail  mailcluster.loopia.se:993      (raw TCP -- the real check)
                   webmail.loopia.se              (HTTPS -- weaker fallback)
@@ -170,6 +171,61 @@ def check_telia(timeout=20):
         "name": "Telia", "level": "unknown",
         "text": "Okänt svar från driftinformation",
         "link": TELIA_LINK,
+    }
+
+
+# ---------------------------------------------------------------------------
+# OpenInfra -- official status page, but no documented public API.
+#
+# The page currently states "Vi har förnärvarande inga driftstörningar".
+# Match the meaning rather than that typo, and fail closed if the wording or
+# page structure changes. The generic word "driftstörningar" alone must not
+# count as a fault because it also appears in the all-clear sentence.
+# ---------------------------------------------------------------------------
+
+OPENINFRA_LINK = "https://openinfra.com/inga-driftstorningar/"
+
+_OPENINFRA_RULES = [
+    ("ok", [
+        r"inga\s+driftst(ö|o)rningar",
+        r"inga\s+k(ä|a)nda\s+driftst(ö|o)rningar",
+        r"inga\s+p(å|a)g(å|a)ende\s+st(ö|o)rningar",
+    ]),
+    ("down", [
+        r"omfattande\s+driftst(ö|o)rning",
+        r"st(ö|o)rre\s+driftst(ö|o)rning",
+    ]),
+    ("warn", [
+        r"p(å|a)g(å|a)ende\s+driftst(ö|o)rning",
+        r"p(å|a)g(å|a)ende\s+st(ö|o)rning",
+        r"planerat\s+underh(å|a)ll",
+    ]),
+]
+
+
+def check_openinfra(timeout=20):
+    try:
+        html = _fetch(OPENINFRA_LINK, timeout)
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError) as exc:
+        return {
+            "name": "OpenInfra", "level": "unknown",
+            "text": f"Kunde inte nå driftinformation ({exc.__class__.__name__})",
+            "link": OPENINFRA_LINK,
+        }
+
+    text = _strip_html(html)
+    for level, patterns in _OPENINFRA_RULES:
+        if any(re.search(pattern, text) for pattern in patterns):
+            return {
+                "name": "OpenInfra",
+                "level": level,
+                "text": _TEXT_BY_LEVEL[level],
+                "link": OPENINFRA_LINK,
+            }
+    return {
+        "name": "OpenInfra", "level": "unknown",
+        "text": "Okänt svar från driftinformation",
+        "link": OPENINFRA_LINK,
     }
 
 
@@ -363,12 +419,18 @@ def check_loopia(timeout=20):
         }
 
 
-CHECKS = {"telia": check_telia, "gmail": check_gmail, "loopia": check_loopia}
+CHECKS = {
+    "telia": check_telia,
+    "openinfra": check_openinfra,
+    "gmail": check_gmail,
+    "loopia": check_loopia,
+}
 
 SERVICE_META = {
     "gmail": {"category": "Kommunikation", "priority": 5, "method": "Google Workspace statusflöde"},
     "loopia": {"category": "Kommunikation", "priority": 5, "method": "IMAPS → HTTPS → DNS"},
     "telia": {"category": "Anslutning", "priority": 4, "method": "Telias driftinformationssida"},
+    "openinfra": {"category": "Anslutning", "priority": 4, "method": "OpenInfras officiella statussida"},
 }
 
 
@@ -380,6 +442,7 @@ def _friendly_unknown(key, result):
         "gmail": "Googles statusflöde kunde inte verifieras från kontrollmiljön",
         "loopia": "Loopias mailtjänst kunde inte verifieras från kontrollmiljön",
         "telia": "Telias driftinformation kunde inte verifieras från kontrollmiljön",
+        "openinfra": "OpenInfras driftinformation kunde inte verifieras från kontrollmiljön",
     }[key]
     result["text"] = reason
     return result

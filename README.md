@@ -54,6 +54,88 @@ envelopes in `calendar_snapshots`; titles, locations, calendar names and dates
 are never stored in plaintext. The browser can decrypt its envelope only after
 YubiKey/passkey sign-in, using its non-extractable local private key.
 
+### Automatic local preview
+
+Run `scripts/install-local-preview.sh` once to install the macOS LaunchAgent.
+It serves `web/` at `http://127.0.0.1:4173/`, starts automatically at login,
+and restarts if the process stops. The installer copies the current preview
+into `~/Library/Application Support/TorDash/preview` because macOS background
+services cannot reliably read project files from Documents. Run the installer
+again after local code changes, or `scripts/uninstall-local-preview.sh` to
+remove it.
+
+## Top bar & navigation
+
+The `.top-bar` (hamburger-turned-nothing/settings/sign-out, the driftstatus
+strip) and the `.app-footer` (IPv4/IPv6/VPN — see below) are each defined
+once in `web/index.html` and styled once in `web/shell/shell.css` — they
+are **shared components rendered identically on every module**, not
+something each module can restyle. If either one ever looks different
+going into a particular module, that module itself is doing something (a
+negative margin, an overlay) that visually collides with it — neither
+shared component's CSS has a per-module branch to cause that on its own.
+Worth re-checking this file first before assuming the top bar/footer
+itself needs a module-specific fix.
+
+**2026-07-31 changes** (Dario: "topmenyn ska stämma" — the top bar didn't
+read as consistent going into/out of Sarek):
+
+- **Sarek gear lost its separate dark "expedition" theme.**
+  `web/modules/sarek-gear/module.css` used to define its own `--sk-*` dark
+  palette (near-black background, pale green text/accents) "distinct from
+  the shell's default palette" by design — see git history before this date
+  for the original. That read as a mismatch, not a deliberate contrast, once
+  actually used next to the shared light top bar every other module sits
+  under. Every `--sk-*` custom property now just points at the shared
+  tokens.css variables (`--sk-green: var(--clay)`, etc.) instead of its own
+  hex values — the ~65 `.sk-*` rules themselves were left alone, only the
+  variable definitions and a handful of hardcoded dark hex colors changed.
+  Sarek now looks like the rest of the app; nothing about its layout,
+  structure or the packlist logic in `module.js` changed.
+- **Nav (Brief/Sarek/Portfolio/Command) always lives in the fixed
+  right-edge tab stack now** (`#nav-edge-tabs`, see shell.css's
+  `.edge-tab-stack`), on every screen width — not just >=860px. It used to
+  fall back to a hamburger-triggered off-canvas drawer (`#side-nav`) below
+  that breakpoint, which has been deleted (`shell.js`, `shell.css`,
+  `index.html` — search git history for `side-nav` if any of this needs
+  reviving). Reason: that drawer's only trigger button lived in
+  `.top-bar-group`, a CSS grid cell that grows/reflows whenever
+  `#top-bar-service-status` (driftstatus, a sibling cell in the same grid
+  row) expands on a narrow screen — so opening driftstatus on mobile could
+  push the one way to reach the nav drawer out of easy reach. The edge-tab
+  stack is `position:fixed`, entirely outside that grid, so it's immune —
+  same reasoning the settings/sign-out edge tabs already relied on, just
+  extended to the module nav and to every screen size instead of only
+  desktop. Net effect: nav looks the same on phone and desktop now (vertical
+  tabs pinned to the right edge); nothing about *what* the driftstatus strip
+  itself does changed.
+- **IPv4/IPv6/VPN moved out of `.top-bar` entirely, into a new
+  `.app-footer`** (`position:fixed`, bottom of the viewport, own hairline
+  border — see `web/shell/shell.css`). It briefly lived as a third
+  top-bar column stacked vertically in the corner earlier the same day,
+  which was itself a fix for it colliding with the driftstatus strip —
+  but on Command (driftstatus's widest state) it kept colliding anyway,
+  so it got its own dedicated strip instead of fighting for top-bar space
+  at all. `#module-content` got matching `padding-bottom` so a module's
+  last bit of content never sits underneath the fixed footer.
+  `network.js`, which builds the actual IPv4/IPv6/VPN markup, wasn't
+  touched either time — only where that markup gets mounted, and how it
+  lays out internally, changed.
+- **Removed the "Växla sida för utloggning och IP-information" setting.**
+  That toggle (`dashboard-background.js`'s `loadTopBarLayout` /
+  `wireTopBarLayoutSetting`, `body.top-bar-swapped` in shell.css) swapped
+  which side of the top bar the icon group vs. the IP info sat on. With
+  IP info moved to its own footer, there was only ever one thing left in
+  the top bar to swap sides with nothing — kept it would've been a dead,
+  confusing checkbox. Its old value is still sitting harmlessly in
+  `dashboard_settings` under key `top_bar_layout`; not worth a migration
+  to clean up for a single-user app.
+- **Explicitly left alone:** the driftstatus widget itself
+  (`#top-bar-service-status`, populated by `command-center/module.js`,
+  cleared on unmount) is still Command-only by design — Dario confirmed
+  Sarek shouldn't get a copy of it, this doc note was the ask, not a
+  feature request.
+
 ## Workflow
 
 - **Restore point before any large/risky change.** Before a big visual
@@ -67,6 +149,32 @@ YubiKey/passkey sign-in, using its non-extractable local private key.
   fine and is just as easy to restore from, so that's the standard here.)
   Small, easily-reversible tweaks (a color, a spacing value, a copy change)
   don't need one — use judgment.
+
+## Custom domain (`dashboard.utiskogen.se`)
+
+The Pages artifact contains `web/CNAME` with the intended hostname. Because
+this repository deploys through a custom GitHub Actions workflow, the actual
+domain must still be saved under **GitHub → Settings → Pages → Custom
+domain**. In Loopia's DNS editor, create `dashboard` as a `CNAME` with TTL
+`3600` and data `darioswede.github.io` (no scheme and no `/tor-dash`). Enable
+**Enforce HTTPS** in GitHub after the certificate is ready.
+
+Do not activate that redirect until the passkey migration is prepared.
+WebAuthn passkeys are bound to their relying-party domain; changing the
+Supabase Passkeys RP ID from `darioswede.github.io` to
+`dashboard.utiskogen.se` invalidates the currently enrolled passkeys. Create
+and test a temporary recovery sign-in path first, then change the RP ID and
+allowed origin in **Supabase → Authentication → Passkeys**, open the new
+domain through the recovery path, and enroll a new passkey. Only then remove
+the recovery path. The `log-access` Edge Function must also be redeployed so
+its additive CORS allowlist for both origins takes effect.
+
+The temporary recovery form is only shown at `?recovery=1`, uses
+`signInWithOtp({ shouldCreateUser: false })`, and redirects back to the same
+origin. Before using it, add both
+`https://darioswede.github.io/tor-dash/?recovery=1` and
+`https://dashboard.utiskogen.se/?recovery=1` to Supabase Auth's redirect URL
+allow list. Remove this form after the new-domain passkey has been verified.
 
 ## One-time setup
 
@@ -201,7 +309,7 @@ read client-side from its public, CORS-open `/api/v2/summary.json`. Adding
 another such service is one line in that list; nothing here changes.
 
 `service_status` is only for sources the browser *can't* read — currently
-Telia, Gmail and Loopia. Fill it from `scripts/status_check.py`:
+Telia, OpenInfra, Gmail and Loopia. Fill it from `scripts/status_check.py`:
 ```
 python3 scripts/status_check.py                     # -> JSON array, paste in as service_status
 python3 scripts/status_check.py --only gmail
@@ -213,6 +321,7 @@ server-side, and how much to trust it:
 |---|---|---|
 | Gmail | Google's Workspace dashboard, not Statuspage, and not CORS-open | Good — real documented JSON feed, not a scrape |
 | Telia | HTML only, no CORS, no API | Scrape; matches visible phrases, not markup |
+| OpenInfra | HTML only, no CORS, no API | Scrape; only an explicit official all-clear is reported as green |
 | Loopia mail | Needs a raw TCP socket, which no browser has | Best of the three *when the network allows it* — it talks to the actual mail server instead of reading about it |
 
 **Loopia mail** answers a deliberately narrow question — "is the mailbox for

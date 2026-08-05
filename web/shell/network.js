@@ -97,7 +97,7 @@ export async function renderNetworkStatus(targetEl) {
   targetEl.style.display = "";
   // classList.add rather than a hard-coded className: this same function
   // renders into both #network-status (class "network-status", inside
-  // the dashboard's .top-bar) and #gate-network-status (class
+  // the dashboard's .app-footer) and #gate-network-status (class
   // "gate-network-status", on the signed-out gate) -- overwriting
   // className outright would clobber whichever of those two it actually
   // is.
