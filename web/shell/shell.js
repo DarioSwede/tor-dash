@@ -87,7 +87,7 @@ function boot() {
         await adminPanel.forSession(session);
         await refreshDeviceList();
         await refreshPasskeyList();
-        const preferredInitialId = "command-center";
+        const preferredInitialId = "start";
         const ctx = {
           supabase,
           session,
