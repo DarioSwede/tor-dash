@@ -50,7 +50,12 @@ let logDrawer = null;
 // settings/sign-out already get this treatment on desktop. #module-nav
 // itself is never rebuilt here, just parented once -- module-registry.js
 // doesn't need to know where it lives.
-navEdgeTabs.appendChild(navEl);
+// 2026-10-28: nav moved again, into the top project bar (#project-bar)
+// next to the external project links, as plain name-only buttons -- see
+// shell.css's "Top navigation" block. It is still a block sibling of
+// .top-bar, outside that grid, so the reflow problem described above
+// still can't reach it. #nav-edge-tabs now only holds the Log tab.
+document.getElementById("project-bar").appendChild(navEl);
 
 // Keeps the browser chrome (status bar area) matching whichever screen
 // is actually showing -- see index.html's meta tag comment for why this

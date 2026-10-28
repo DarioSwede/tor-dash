@@ -729,33 +729,58 @@ h2.section-heading{
   .bottom-bar{ gap:18px; padding:12px 20px; }
 }
 
-/* ---- Projektrad (2026-10-28), see shell/project-links.js: a plain
-   block sibling under the sticky .top-bar, deliberately kept out of that
-   grid. Scrolls sideways on a narrow phone instead of wrapping, and keeps
-   clear of the fixed edge-tab stacks with side padding. */
+/* ---- Top navigation (2026-10-28): every link -- the Tor Dash sections
+   (built by module-registry.js into #module-nav) and the external
+   projects (shell/project-links.js) -- sits in one row of plain, name-only
+   buttons right under the top bar, on a transparent background so the
+   dashboard image shows through. Supersedes the right-edge nav tabs from
+   2026-07-31; Log and Settings stay edge tabs since they open drawers,
+   not pages. Kept as a block sibling of .top-bar, never a cell inside its
+   grid (see that grid's collision history above), and it scrolls sideways
+   on a narrow phone instead of wrapping. No backdrop-filter, on purpose:
+   see the has-custom-bg comment above about iOS Safari. */
 .project-bar{
-  display:flex; align-items:center; gap:6px; flex-wrap:nowrap;
+  display:flex; align-items:center; gap:8px; flex-wrap:nowrap;
   overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
-  padding:8px 56px 8px 20px;
-  border-bottom:1px solid var(--hairline);
-  font-size:13px;
+  padding:6px 56px 10px 20px; background:transparent; font-size:13.5px;
 }
 .project-bar::-webkit-scrollbar{ display:none; }
-.project-bar:empty{ display:none; }
-.project-bar-label{
-  color:var(--ink-soft); font-weight:600; letter-spacing:.04em;
-  text-transform:uppercase; font-size:11px; margin-right:6px; white-space:nowrap;
-}
+.project-bar .nav{ display:contents; }
+.project-bar-sep{ flex:0 0 1px; align-self:stretch; margin:4px 6px; background:var(--hairline); }
+.project-bar .nav button,
 .project-bar-link{
-  white-space:nowrap; text-decoration:none; color:var(--ink);
-  padding:5px 11px; border-radius:999px; border:1px solid var(--hairline);
-  background:var(--bg); transition:border-color .15s ease, color .15s ease;
+  position:relative; flex:0 0 auto; white-space:nowrap; text-decoration:none;
+  font-family:inherit; font-size:13.5px; font-weight:500; letter-spacing:.01em; line-height:1;
+  padding:9px 16px; border-radius:999px; cursor:pointer;
+  background:transparent; color:var(--ink); border:1px solid rgba(46,44,39,.28);
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
 }
-.project-bar-link:hover{ border-color:var(--clay); color:var(--clay); }
+.project-bar .nav button:not(.active):hover,
+.project-bar-link:hover{ background:rgba(46,44,39,.06); border-color:var(--ink); color:var(--ink); }
+.project-bar .nav button.active{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+.project-bar .nav button:focus-visible,
 .project-bar-link:focus-visible{ outline:2px solid var(--clay); outline-offset:2px; }
-body.has-custom-bg .project-bar{ background:rgba(232,230,224,.94); }
+.project-bar .nav-badge{ top:3px; right:5px; }
+
+/* Over a dashboard image: the whole header goes transparent and the
+   buttons turn into light outlines on the photo. */
+body.has-custom-bg .top-bar{ background:transparent; border-bottom-color:transparent; }
+body.has-custom-bg .session-timer,
+body.has-custom-bg .topbar-clock{ color:rgba(255,255,255,.72); }
+body.has-custom-bg .project-bar-sep{ background:rgba(255,255,255,.3); }
+body.has-custom-bg .project-bar .nav button,
+body.has-custom-bg .project-bar-link,
+body.has-custom-bg #signout-btn,
+body.has-custom-bg #open-settings-btn:not(:hover){
+  background:rgba(10,14,24,.18); color:#fff; border-color:rgba(255,255,255,.38);
+}
+body.has-custom-bg .project-bar .nav button:not(.active):hover,
+body.has-custom-bg .project-bar-link:hover,
+body.has-custom-bg #signout-btn:hover{ background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.75); color:#fff; }
+body.has-custom-bg .project-bar .nav button.active{ background:#fff; color:#141A26; border-color:#fff; }
+body.has-custom-bg .project-bar .nav-badge{ border-color:transparent; }
 @media (min-width:860px){
   .project-bar{ padding-left:64px; }
+  #signout-btn{ border-radius:999px; }
+  body.has-custom-bg #open-settings-btn:not(:hover){ background:#2F6FE4; border-color:transparent; }
 }
-.project-bar-home{ background:var(--ink); color:#fff; border-color:var(--ink); }
-.project-bar-home:hover{ background:var(--clay); border-color:var(--clay); color:#fff; }
