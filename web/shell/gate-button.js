@@ -7,7 +7,7 @@
 // so it's a real "remove the button" option, not a trap.
 
 const GATE_BUTTON_KEY = "gate_button";
-const DEFAULT_VALUE = { text: "Sign in with security key", hidden: false };
+const DEFAULT_VALUE = { text: "Logga in", hidden: false };
 const SAVE_DEBOUNCE_MS = 500;
 
 async function fetchGateButton(supabase) {

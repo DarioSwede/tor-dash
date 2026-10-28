@@ -12,7 +12,14 @@
 // module doesn't cover, not as a forced override of a module's own look.
 
 const KEY = "background";
-const DEFAULT_VALUE = { color: null, showImage: false, imageUrl: null };
+// Built-in signed-in background (2026-10-28): the comsec seal the sign-in
+// fades into (see auth.js and shell.css's gate redesign). It is used
+// unless an image has been uploaded in Settings *after* this change --
+// uploads now record `source: "upload"`, so an older saved image (which
+// predates the field) no longer overrides it. Turning "show image" off in
+// Settings still falls back to a plain color.
+const BUILTIN_IMAGE_URL = new URL("../assets/comsec.jpg", import.meta.url).href;
+const DEFAULT_VALUE = { color: null, showImage: true, imageUrl: null, source: null };
 const DEFAULT_COLOR_SWATCH = "#fcfcfb"; // matches --bg in tokens.css, just for the <input type="color"> UI
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
 const SAVE_DEBOUNCE_MS = 500;
@@ -29,6 +36,7 @@ async function fetchValue(supabase) {
       color: typeof value.color === "string" ? value.color : null,
       showImage: Boolean(value.showImage),
       imageUrl: typeof value.imageUrl === "string" ? value.imageUrl : null,
+      source: value.source === "upload" ? "upload" : null,
     };
   }
   return DEFAULT_VALUE;
@@ -62,9 +70,10 @@ function getBgLayer() {
 function applyValue(value) {
   const layer = getBgLayer();
   layer.style.backgroundColor = value.color || "";
-  const active = Boolean(value.showImage && value.imageUrl);
+  const url = value.source === "upload" && value.imageUrl ? value.imageUrl : BUILTIN_IMAGE_URL;
+  const active = Boolean(value.showImage);
   if (active) {
-    layer.style.backgroundImage = `url("${value.imageUrl}")`;
+    layer.style.backgroundImage = `url("${url}")`;
   } else {
     layer.style.backgroundImage = "";
   }
@@ -88,6 +97,9 @@ function applyValue(value) {
 // Only meaningful once signed in — dashboard_settings is owner-only
 // (RLS), so calling this before auth just returns the default anyway.
 export async function loadDashboardBackground(supabase) {
+  // Paint the built-in image immediately, so the dashboard opens on the
+  // same picture the sign-in just faded into, then apply the saved value.
+  applyValue({ color: null, showImage: true, imageUrl: null, source: null });
   applyValue(await fetchValue(supabase));
 }
 
@@ -110,7 +122,7 @@ export async function uploadDashboardBackground(supabase, file) {
   const url = `${pub.publicUrl}?t=${Date.now()}`; // cache-bust re-uploads of the same filename
 
   const current = await fetchValue(supabase);
-  const value = { ...current, showImage: true, imageUrl: url };
+  const value = { ...current, showImage: true, imageUrl: url, source: "upload" };
   const { error: saveError } = await saveValue(supabase, value);
   if (saveError) throw saveError;
 

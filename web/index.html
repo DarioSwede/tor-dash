@@ -23,7 +23,7 @@
      were still in effect). Neither file is referenced with a build-time
      hash since there's no build step -- bump this number by hand
      whenever shell.css changes and this stops being purely cosmetic. -->
-<link rel="stylesheet" href="shell/shell.css?v=9">
+<link rel="stylesheet" href="shell/shell.css?v=10">
 </head>
 <body>
 
@@ -35,10 +35,12 @@
        focused". Works regardless of whether the button itself is hidden. -->
   <div id="gate" tabindex="-1">
     <div class="gate-vignette" aria-hidden="true"></div>
+    <!-- Fades in over the gate after a granted sign-in, see auth.js. -->
+    <div class="gate-unlock-bg" aria-hidden="true"></div>
     <div class="gate-network-status" id="gate-network-status"></div>
     <div class="gate-content">
       <p class="gate-eyebrow" id="gate-eyebrow"></p>
-      <button id="passkey-signin-btn" class="gate-btn-primary">Sign in with security key</button>
+      <button id="passkey-signin-btn" class="gate-btn-primary">Logga in</button>
       <div class="gate-msg" id="gate-msg"></div>
       <!-- Temporary, deliberately hidden recovery route for the custom-domain
            passkey migration. auth.js reveals it only on ?recovery=1 and

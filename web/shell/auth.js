@@ -116,15 +116,24 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
     // the brand new session right back out again -- every sign-in looked
     // like it silently failed.
     markActive();
+    // Set before the call: Supabase can publish the session synchronously
+    // from inside signInWithPasskey(), and verifyOwnerThenOpen reads this
+    // to decide between the unlock sequence and a plain open.
+    playUnlock = true;
     let error;
     try {
       ({ error } = await supabase.auth.signInWithPasskey());
-    } finally {
-      // Also covers an unexpected rejected promise, not only Supabase's
-      // normal `{ error }` response shape.
-      gateEl.classList.remove("auth-pending");
+    } catch (e) {
+      // An unexpected rejected promise, not only Supabase's normal
+      // `{ error }` response shape.
+      error = e;
     }
     if (error) {
+      // The red rim only stops here on failure. On success it keeps
+      // pulsing through the owner check, until verifyOwnerThenOpen turns
+      // it green (or off, for a refused account).
+      playUnlock = false;
+      gateEl.classList.remove("auth-pending");
       gateMsg.textContent = `Couldn't sign in: ${error.message}`;
       logAccessEvent(supabase, "signin_failure", { method, detail: error.message, statusPromise: networkStatusPromise });
     } else {
@@ -199,6 +208,14 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
   // this only makes the failure honest and visible. A network/RPC error
   // (as opposed to an explicit `false`) does not lock the owner out.
   let ownerCheckToken = 0;
+  let playUnlock = false;
+  const UNLOCK_GREEN_MS = 650;
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const UNLOCK_FADE_MS = reducedMotion ? 300 : 1600;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const resetGateState = () => {
+    gateEl.classList.remove("auth-pending", "auth-granted", "auth-unlock");
+  };
   const verifyOwnerThenOpen = async (session) => {
     const token = ++ownerCheckToken;
     let isOwner = true;
@@ -214,6 +231,8 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
     }
     if (token !== ownerCheckToken) return; // superseded by a newer auth event
     if (!isOwner) {
+      playUnlock = false;
+      resetGateState();
       gateMsg.textContent =
         "Det här kontot har inte behörighet till Tor Dash. Logga in med ägarkontots säkerhetsnyckel.";
       logAccessEvent(supabase, "signin_failure", {
@@ -228,20 +247,39 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
         "Det här kontot har inte behörighet till Tor Dash. Logga in med ägarkontots säkerhetsnyckel.";
       return;
     }
-    gateEl.style.display = "none";
-    appEl.style.display = "block";
+    const animate = playUnlock;
+    playUnlock = false;
+    // Start loading the dashboard straight away (it stays hidden), so the
+    // modules are already filling in while the unlock plays out.
     startReauthGuard(supabase, timerEl);
     onAuthenticated(session);
+    if (animate) {
+      // Red -> green, then the comsec image fades in over the gate.
+      gateEl.classList.remove("auth-pending");
+      gateEl.classList.add("auth-granted");
+      await wait(UNLOCK_GREEN_MS);
+      if (token !== ownerCheckToken) return;
+      gateEl.classList.add("auth-unlock");
+      await wait(UNLOCK_FADE_MS);
+      if (token !== ownerCheckToken) return;
+    }
+    gateEl.style.display = "none";
+    resetGateState();
+    appEl.style.display = "block";
+    if (animate) {
+      appEl.classList.remove("app-arrive");
+      void appEl.offsetWidth; // restart the animation on repeat sign-ins
+      appEl.classList.add("app-arrive");
+    }
   };
 
   // The single source of truth for session state — no duplicate
   // getSession() call alongside this, which is what caused the dup-render
   // race in the previous version.
   supabase.auth.onAuthStateChange((_event, session) => {
-    // Supabase can publish the new session synchronously from inside
-    // signInWithPasskey(), before that promise has returned. Clear the
-    // pending treatment here too so it cannot survive either outcome.
-    gateEl.classList.remove("auth-pending");
+    // The pending (red) treatment is no longer cleared here on a new
+    // session: it keeps pulsing until the owner check answers, and
+    // verifyOwnerThenOpen hands it over to green. Signed out clears it.
     if (session) {
       // A restored session (page load/reopen) whose last known activity
       // is already older than the idle timeout is exactly the "still
@@ -257,7 +295,9 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
       // The gate stays visible until the owner check has answered.
       setTimeout(() => verifyOwnerThenOpen(session), 0);
     } else {
-      ownerCheckToken++; // cancel any owner check still in flight
+      ownerCheckToken++; // cancel any owner check or unlock still in flight
+      playUnlock = false;
+      resetGateState();
       gateEl.style.display = "flex";
       appEl.style.display = "none";
       stopReauthGuard();
