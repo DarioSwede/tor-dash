@@ -381,7 +381,7 @@ export default {
         listRoot.innerHTML = "";
         listRoot.appendChild(el(
           "div", "empty-state",
-          `Kunde inte hämta loggen: ${error.message}. Kör supabase/migrations/0009_access_log.sql om du inte redan gjort det.`
+          `Kunde inte hämta loggen: ${error.message}. Kontrollera att du är inloggad med ägarkontot.`
         ));
         return;
       }

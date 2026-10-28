@@ -103,7 +103,7 @@ export default {
     const loaded = await loadPortfolio(supabase);
     if (!alive) return;
     if (!loaded) {
-      container.appendChild(el("div", "empty-state", "Kunde inte hämta portföljen. Kör migrationen supabase/migrations/0013_portfolio.sql om du inte redan gjort det."));
+      container.appendChild(el("div", "empty-state", "Kunde inte hämta portföljen. Antingen saknar kontot ägarbehörighet eller så svarade inte databasen – logga ut och in med ägarnyckeln och försök igen."));
       return;
     }
     const { rowId } = loaded;

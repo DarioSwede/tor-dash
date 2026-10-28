@@ -167,7 +167,7 @@ export default {
         return;
       }
       if (!data) {
-        briefRoot.appendChild(el("div", "empty-state", "Ingen brief ännu."));
+        briefRoot.appendChild(el("div", "empty-state", "Ingen brief hittades. Finns det briefer men inget visas saknar kontot troligen ägarbehörighet."));
         return;
       }
 
