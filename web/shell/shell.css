@@ -739,7 +739,7 @@ h2.section-heading{
    grid (see that grid's collision history above), and it scrolls sideways
    on a narrow phone instead of wrapping. No backdrop-filter, on purpose:
    see the has-custom-bg comment above about iOS Safari. */
-.project-bar{
+.project-bar{ position:relative; z-index:2;
   display:flex; align-items:center; gap:8px; flex-wrap:nowrap;
   overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
   padding:6px 56px 10px 20px; background:transparent; font-size:13.5px;

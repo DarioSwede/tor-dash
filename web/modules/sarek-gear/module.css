@@ -12,7 +12,11 @@
   --sk-bg:var(--bg); --sk-panel:#fff; --sk-line:var(--hairline); --sk-text:var(--ink);
   --sk-muted:var(--ink-soft); --sk-green:var(--clay); --sk-gold:var(--status-warn); --sk-red:var(--status-danger);
   background:var(--bg);
-  color:var(--sk-text); margin:-32px; padding:0; min-height:calc(100vh - 60px);
+  color:var(--sk-text); margin:0; padding:0; min-height:calc(100vh - 60px);
+  /* margin was -32px (cancelling an old #module-content padding that no
+     longer exists), which pulled the page up over the top navigation row
+     -- fixed 2026-10-28. */
+  border-radius:16px 16px 0 0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
 }
 .module-sarek-gear button,.module-sarek-gear input,.module-sarek-gear select{ font:inherit; color:inherit; }
