@@ -22,6 +22,7 @@ import { lookupIp } from "./ip-lookup.js";
 import { wireBriefScheduleSetting } from "./brief-schedule.js";
 import { mountLogDrawer } from "./log-drawer.js";
 import { wireAdminPanel } from "./admin.js";
+import { mountProjectLinks } from "./project-links.js";
 
 const gateEl = document.getElementById("gate");
 const appEl = document.getElementById("app");
@@ -80,6 +81,7 @@ function boot() {
     onAuthenticated: async (session) => {
       setThemeColor("#FCFCFB"); // --bg, tokens.css
       renderNetworkStatus(document.getElementById("network-status"));
+      mountProjectLinks(document.getElementById("project-bar"));
       loadDashboardBackground(supabase);
       try {
         await adminPanel.forSession(session);

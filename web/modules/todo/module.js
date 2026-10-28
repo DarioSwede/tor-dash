@@ -65,7 +65,7 @@ export async function mountTodoPanel(container, ctx) {
       openRoot.innerHTML = "";
       openRoot.appendChild(el(
         "div", "empty-state",
-        `Kunde inte hämta todos: ${error.message}. Kör supabase/migrations/0017_todos.sql om du inte redan gjort det.`
+        `Kunde inte hämta todos: ${error.message}. Kontrollera att du är inloggad med ägarkontot.`
       ));
       return;
     }

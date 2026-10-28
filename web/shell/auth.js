@@ -178,6 +178,51 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
   document.getElementById("signout-confirm-no").addEventListener("click", () => setSignoutConfirmOpen(false));
   signoutBackdrop.addEventListener("click", () => setSignoutConfirmOpen(false));
 
+  // Owner gate (2026-10-28). The shared Supabase project also holds
+  // accounts for Packlista/Fyndindex/IDV, so a valid session is not the
+  // same thing as "Tor". RLS already hides every protected row from a
+  // non-owner, but the shell used to open anyway and every module then
+  // misreported the empty result ("Ingen brief ännu", "Kör migrationen…").
+  // Now the shell asks public.is_owner() first and refuses non-owner
+  // sessions on the gate with a clear message. RLS stays the real guard;
+  // this only makes the failure honest and visible. A network/RPC error
+  // (as opposed to an explicit `false`) does not lock the owner out.
+  let ownerCheckToken = 0;
+  const verifyOwnerThenOpen = async (session) => {
+    const token = ++ownerCheckToken;
+    let isOwner = true;
+    try {
+      const { data, error } = await supabase.rpc("is_owner");
+      if (error) {
+        console.warn("Owner check failed, relying on RLS:", error.message);
+      } else {
+        isOwner = data === true;
+      }
+    } catch (e) {
+      console.warn("Owner check threw, relying on RLS:", e);
+    }
+    if (token !== ownerCheckToken) return; // superseded by a newer auth event
+    if (!isOwner) {
+      gateMsg.textContent =
+        "Det här kontot har inte behörighet till Tor Dash. Logga in med ägarkontots säkerhetsnyckel.";
+      logAccessEvent(supabase, "signin_failure", {
+        method: "owner-check",
+        detail: "Inloggat konto saknar ägarbehörighet",
+        statusPromise: networkStatusPromise,
+      });
+      await supabase.auth.signOut();
+      // signOut() fires onAuthStateChange(null), which resets the gate --
+      // restore the explanation afterwards so it stays readable.
+      gateMsg.textContent =
+        "Det här kontot har inte behörighet till Tor Dash. Logga in med ägarkontots säkerhetsnyckel.";
+      return;
+    }
+    gateEl.style.display = "none";
+    appEl.style.display = "block";
+    startReauthGuard(supabase, timerEl);
+    onAuthenticated(session);
+  };
+
   // The single source of truth for session state — no duplicate
   // getSession() call alongside this, which is what caused the dup-render
   // race in the previous version.
@@ -196,11 +241,12 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
         supabase.auth.signOut();
         return;
       }
-      gateEl.style.display = "none";
-      appEl.style.display = "block";
-      startReauthGuard(supabase, timerEl);
-      onAuthenticated(session);
+      // Deferred: Supabase documents that awaiting another supabase call
+      // directly inside onAuthStateChange can deadlock the auth client.
+      // The gate stays visible until the owner check has answered.
+      setTimeout(() => verifyOwnerThenOpen(session), 0);
     } else {
+      ownerCheckToken++; // cancel any owner check still in flight
       gateEl.style.display = "flex";
       appEl.style.display = "none";
       stopReauthGuard();

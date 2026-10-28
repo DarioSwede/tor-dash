@@ -528,7 +528,7 @@ export default {
     await load();
     if (!alive) return; // superseded by a newer module instance while load() was in flight
     if (!rowId) {
-      root.appendChild(el("div", "empty-state", "Kunde inte hämta packlistan. Kör migrationen supabase/migrations/0005_sarek_packlist.sql om du inte redan gjort det."));
+      root.appendChild(el("div", "empty-state", "Kunde inte hämta packlistan. Antingen saknar kontot ägarbehörighet eller så svarade inte databasen – logga ut och in med ägarnyckeln och försök igen."));
       return;
     }
     renderTab();

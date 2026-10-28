@@ -114,7 +114,7 @@ export async function mountArchivePanel(container, ctx, opts = {}) {
       listRoot.innerHTML = "";
       listRoot.appendChild(el(
         "div", "empty-state",
-        `Kunde inte hämta arkivet: ${error.message}. Kör supabase/migrations/0018_archive.sql om du inte redan gjort det.`
+        `Kunde inte hämta arkivet: ${error.message}. Kontrollera att du är inloggad med ägarkontot.`
       ));
       return;
     }
