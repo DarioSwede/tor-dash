@@ -9,6 +9,13 @@
 export const MODULES_BASE_URL = import.meta.url;
 
 export const MODULES = [
+  // Start (2026-10-28): the portal Tor lands on after signing in -- see
+  // that module's header comment.
+  {
+    id: "start",
+    path: "./start/module.js",
+    css: "./start/module.css",
+  },
   {
     id: "command-center",
     path: "./command-center/module.js",

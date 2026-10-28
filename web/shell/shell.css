@@ -757,3 +757,5 @@ body.has-custom-bg .project-bar{ background:rgba(232,230,224,.94); }
 @media (min-width:860px){
   .project-bar{ padding-left:64px; }
 }
+.project-bar-home{ background:var(--ink); color:#fff; border-color:var(--ink); }
+.project-bar-home:hover{ background:var(--clay); border-color:var(--clay); color:#fff; }

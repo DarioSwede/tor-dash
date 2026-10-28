@@ -77,7 +77,7 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
     // was the concrete failure). Normal sign-ins and ordinary reloads still
     // preserve the user's active module through module-registry.js.
     try {
-      localStorage.setItem(LAST_MODULE_KEY, "command-center");
+      localStorage.setItem(LAST_MODULE_KEY, "start");
     } catch {
       // The registry already falls back to Command when storage is blocked.
     }
@@ -130,6 +130,17 @@ export function wireGate(supabase, { gateEl, appEl, gateMsg, sessionTimerEl: tim
     } else {
       gateMsg.textContent = "";
       logAccessEvent(supabase, "signin_success", { method, statusPromise: networkStatusPromise });
+      // A deliberate sign-in lands on the Start portal (2026-10-28).
+      // Reloads while signed in still restore the last open section via
+      // module-registry.js; only a fresh key tap resets to Start. This runs
+      // before the deferred owner check opens the shell (see
+      // verifyOwnerThenOpen), so the registry already sees it.
+      try {
+        localStorage.setItem(LAST_MODULE_KEY, "start");
+      } catch {
+        // Storage blocked: the registry falls back to Start anyway.
+      }
+      if (location.hash) history.replaceState(null, "", location.pathname + location.search);
     }
   };
 
