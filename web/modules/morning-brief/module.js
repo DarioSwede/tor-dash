@@ -32,7 +32,7 @@
 //    backup/pre-nav-redesign-2026-07-25 for the previous looks if either
 //    round ever needs reverting.
 
-import { setLastSeenBrief } from "../../shell/last-seen.js";
+import { setLastSeenBrief, getLastSeenBrief } from "../../shell/last-seen.js";
 import { mountTodoPanel } from "../todo/module.js";
 import { mountArchivePanel } from "../archive/module.js";
 import { mountStatusCard } from "./status-check.js";
@@ -136,6 +136,19 @@ export default {
   id: "morning-brief",
   navLabel: "Brief",
 
+  // Nav dot (2026-10-28): a brief newer than the last one opened on this
+  // device. Same rule as the Log tab: a device that has never opened the
+  // brief has nothing to compare against, so no dot rather than "all new".
+  async getBadgeCount(ctx) {
+    const lastSeen = getLastSeenBrief();
+    if (!lastSeen) return 0;
+    const { count, error } = await ctx.supabase
+      .from("briefing_snapshots")
+      .select("id", { count: "exact", head: true })
+      .gt("created_at", lastSeen);
+    return error ? 0 : (count || 0);
+  },
+
   unmount() {
     clearInterval(clockInterval);
     clockInterval = null;
@@ -172,6 +185,9 @@ export default {
       }
 
       let payload = data.payload;
+      // Seeing the newest brief clears its nav dot, even when this device
+      // can't decrypt it -- otherwise the dot could never go away here.
+      setLastSeenBrief(data.created_at);
       if (!payload && data.payload_encrypted) {
         payload = await decryptPayload(data.payload_encrypted);
         if (myRequest !== requestSeq) return; // check again — the decrypt await can also be superseded
@@ -184,7 +200,6 @@ export default {
         }
       }
       render(payload);
-      setLastSeenBrief(data.created_at);
     }
 
     // Non-interactive line for a `section.plain` item (see the README's

@@ -87,15 +87,21 @@ export function mountLogDrawer(edgeTabStackEl, ctx) {
   // module-registry.js's getBadgeCount system provides for the other
   // modules -- computed independently here since Log isn't part of that
   // registry any more.
-  import(MODULE_JS_URL.href).then(async (m) => {
-    mod = m.default;
-    if (typeof mod.getBadgeCount !== "function") return;
+  // Re-checked every 5 minutes too (2026-10-28), like the nav buttons.
+  async function refreshBadge() {
+    if (!mod || typeof mod.getBadgeCount !== "function" || document.hidden) return;
+    if (drawer.classList.contains("open")) return; // open = being looked at
     try {
       const count = await mod.getBadgeCount(ctx);
-      if (count > 0) badge.style.display = "";
+      badge.style.display = count > 0 ? "" : "none";
     } catch (e) {
       console.error("getBadgeCount(access-log) failed:", e);
     }
+  }
+  import(MODULE_JS_URL.href).then((m) => {
+    mod = m.default;
+    refreshBadge();
+    setInterval(refreshBadge, 5 * 60 * 1000);
   });
 
   return { close };
