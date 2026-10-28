@@ -3,6 +3,7 @@ import { mountStatusCard } from "../morning-brief/status-check.js";
 
 let clockTimer = null;
 let statusCancel = null;
+let timelineResizeObserver = null;
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -69,11 +70,16 @@ function timeLabel(value) {
 function renderMissionStatus(data) {
   const root = node("div", "cc-mission");
   const summary = node("div", "cc-health-summary");
-  const score = node("strong", "cc-health-score", String(data.score));
-  score.appendChild(node("small", null, "/100"));
+  const hasScore = Number.isFinite(data.score);
+  const score = node(
+    "strong",
+    `cc-health-score${hasScore ? "" : " cc-health-score-pending"}`,
+    hasScore ? String(data.score) : "—"
+  );
+  if (hasScore) score.appendChild(node("small", null, "/100"));
   const copy = node("div", "cc-health-copy");
   copy.append(
-    node("strong", null, data.score >= 85 ? "Systemen mår bra" : data.score >= 60 ? "Begränsad lägesbild" : "Åtgärd kan krävas"),
+    node("strong", null, !hasScore ? "Väntar på första kontroll" : data.score >= 85 ? "Systemen mår bra" : data.score >= 60 ? "Begränsad lägesbild" : "Åtgärd kan krävas"),
     node("span", null, `${data.verifiedCount}/${data.services.length} tjänster verifierade`)
   );
   summary.append(score, copy);
@@ -244,13 +250,13 @@ function renderTimeline(calendar) {
   detail.hidden = true;
   todayBtn.type = "button";
   [
-    ["7 dagar", 120],
-    ["14 dagar", 72],
-    ["Månad", 38],
-  ].forEach(([label, scale], index) => {
+    ["7 dagar", 7],
+    ["14 dagar", 14],
+    ["Månad", 31],
+  ].forEach(([label, days], index) => {
     const button = node("button", `cc-timeline-btn${index === 1 ? " active" : ""}`, label);
     button.type = "button";
-    button.dataset.scale = String(scale);
+    button.dataset.days = String(days);
     zoomGroup.appendChild(button);
   });
   controls.append(zoomGroup, todayBtn);
@@ -258,6 +264,15 @@ function renderTimeline(calendar) {
 
   if (calendar.sourceState === "locked") {
     shell.appendChild(node("p", "cc-calendar-notice", "Mac-kalendern är krypterad för en annan webbadress. Öppna livesidan eller registrera den här adressen som en egen enhet."));
+  } else if (calendar.sourceState === "ready" && calendar.syncedAt && !calendar.isCurrent) {
+    const syncedLabel = new Intl.DateTimeFormat("sv-SE", {
+      day: "numeric",
+      month: "long",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/Stockholm",
+    }).format(new Date(calendar.syncedAt));
+    shell.appendChild(node("p", "cc-calendar-notice", `Kalendern synkades senast ${syncedLabel}. Tidslinjen kan vara inaktuell.`));
   }
 
   if (!calendar.anchorDate || !calendar.events.length) {
@@ -356,6 +371,7 @@ function renderTimeline(calendar) {
     showEventDetail(bar);
   });
 
+  let visibleDays = 14;
   let dayWidth = 72;
   function updateEventLabels() {
     tracks.querySelectorAll(".cc-timeline-event").forEach((bar) => {
@@ -366,12 +382,14 @@ function renderTimeline(calendar) {
     });
   }
 
-  function applyScale(nextWidth, keepCenter = true) {
+  function applyScale(nextDays, keepCenter = true) {
     const oldWidth = dayWidth;
     const centerDay = keepCenter
       ? (viewport.scrollLeft + viewport.clientWidth / 2) / oldWidth
       : indexFor(calendar.anchorDate) + .5;
-    dayWidth = nextWidth;
+    visibleDays = nextDays;
+    const availableWidth = viewport.clientWidth || oldWidth * visibleDays;
+    dayWidth = Math.max(22, availableWidth / visibleDays);
     board.style.setProperty("--cc-day-width", `${dayWidth}px`);
     board.style.width = `${totalDays * dayWidth}px`;
     todayLine.style.left = `${(indexFor(calendar.anchorDate) + .5) * dayWidth}px`;
@@ -386,14 +404,14 @@ function renderTimeline(calendar) {
   }
 
   function centerToday() {
-    applyScale(dayWidth, false);
+    applyScale(visibleDays, false);
   }
 
   zoomGroup.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-scale]");
+    const button = event.target.closest("button[data-days]");
     if (!button) return;
     zoomGroup.querySelectorAll("button").forEach((item) => item.classList.toggle("active", item === button));
-    applyScale(Number(button.dataset.scale));
+    applyScale(Number(button.dataset.days));
   });
   todayBtn.addEventListener("click", centerToday);
 
@@ -433,8 +451,23 @@ function renderTimeline(calendar) {
   });
 
   requestAnimationFrame(() => {
-    applyScale(dayWidth, false);
+    const compact = window.matchMedia("(max-width: 760px)").matches;
+    visibleDays = compact ? 7 : 14;
+    const active = zoomGroup.querySelector(`button[data-days="${visibleDays}"]`);
+    zoomGroup.querySelectorAll("button").forEach((item) => item.classList.toggle("active", item === active));
+    applyScale(visibleDays, false);
   });
+  timelineResizeObserver?.disconnect();
+  if (typeof ResizeObserver !== "undefined") {
+    let previousWidth = 0;
+    timelineResizeObserver = new ResizeObserver(([entry]) => {
+      const nextWidth = Math.round(entry.contentRect.width);
+      if (!nextWidth || nextWidth === previousWidth) return;
+      previousWidth = nextWidth;
+      applyScale(visibleDays);
+    });
+    timelineResizeObserver.observe(viewport);
+  }
   return shell;
 }
 
@@ -519,6 +552,8 @@ export default {
     clockTimer = null;
     statusCancel?.();
     statusCancel = null;
+    timelineResizeObserver?.disconnect();
+    timelineResizeObserver = null;
     document.body.classList.remove("status-panel-open");
     document.getElementById("top-bar-service-status")?.replaceChildren();
   },

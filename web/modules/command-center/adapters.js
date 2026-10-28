@@ -29,17 +29,28 @@ const MOCK = {
 };
 
 function localDateIso(date = new Date()) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Stockholm",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
 }
 
 function currentDateLabel(date = new Date()) {
   const label = new Intl.DateTimeFormat("sv-SE", {
-    weekday: "long", day: "numeric", month: "long",
+    weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Stockholm",
   }).format(date);
   return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function isRecentCalendarSync(timestamp, now = Date.now()) {
+  const syncedAt = Date.parse(timestamp || "");
+  if (!Number.isFinite(syncedAt)) return false;
+  const age = now - syncedAt;
+  return age >= -5 * 60 * 1000 && age <= 45 * 60 * 1000;
 }
 
 async function stockholmWeather() {
@@ -243,7 +254,7 @@ function calendarSummary(brief, feedEvents = []) {
 
   const normalizedTitle = (title) => String(title || "")
     .toLocaleLowerCase("sv-SE")
-    .replace(/[^\\p{L}\\p{N}]+/gu, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
   const overlaps = (left, right) => left.start <= right.end && right.start <= left.end;
   const feedTitles = feedEvents.map((event) => ({ title: normalizedTitle(event.title), event }));
@@ -309,12 +320,15 @@ function missionStatus(brief, history = []) {
     };
   });
 
-  const weights = services.reduce((sum, item) => sum + item.priority, 0);
+  const verifiedServices = services.filter((item) => item.verified);
+  const weights = verifiedServices.reduce((sum, item) => sum + item.priority, 0);
   const points = { ok: 100, warn: 60, down: 0, unknown: 50 };
-  const score = Math.round(services.reduce((sum, item) => sum + points[item.level] * item.priority, 0) / weights);
+  const score = weights
+    ? Math.round(verifiedServices.reduce((sum, item) => sum + points[item.level] * item.priority, 0) / weights)
+    : null;
   return {
     score,
-    verifiedCount: services.filter((item) => item.verified).length,
+    verifiedCount: verifiedServices.length,
     services,
   };
 }
@@ -329,16 +343,25 @@ function buildHeadline({ brief, briefDate, calendar, todos, mission }) {
   const warnings = mission.services.filter((item) => item.level === "warn").length;
   const unknown = mission.services.filter((item) => item.level === "unknown").length;
   const todayEvents = calendar.events.filter((event) => event.start <= today && event.end >= today);
-  const isVacation = todayEvents.some((event) => /semester|ledighet|vacation/i.test(`${event.title} ${event.meta || ""}`));
+  const isVacation = todayEvents.some((event) => /semester|ledig|vacation/i.test(`${event.title} ${event.meta || ""}`));
 
   if (down) {
     return `${down} ${down === 1 ? "kritisk tjänst har" : "kritiska tjänster har"} störningar. Prioritera felsökning före övrigt arbete.`;
   }
 
+  if (isVacation) return "Semestern är igång — njut av ledigheten.";
+
+  const tomorrow = new Date(`${today}T12:00:00+01:00`);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const tomorrowIso = localDateIso(tomorrow);
+  const vacationTomorrow = calendar.events.some((event) =>
+    /semester|ledig|vacation/i.test(`${event.title || ""} ${event.meta || ""}`)
+    && event.start === tomorrowIso
+  );
+  if (vacationTomorrow) return "Semestern börjar imorgon — varva ner.";
+
   const parts = [];
-  if (isVacation) {
-    parts.push("Semesterläge.");
-  } else if (todayEvents.length) {
+  if (todayEvents.length) {
     parts.push(`${todayEvents.length} ${todayEvents.length === 1 ? "kalenderhändelse" : "kalenderhändelser"} idag.`);
   } else {
     parts.push("Lugnt kalenderläge idag.");
@@ -395,21 +418,27 @@ export async function loadCommandCenter(ctx) {
     : { events: [], state: "unavailable" };
   const statusRows = statusResult.status === "fulfilled" ? statusResult.value : [];
   const weather = weatherResult.status === "fulfilled" ? weatherResult.value : null;
-  const focus = attentionItems(brief, todos);
-  const mission = missionStatus(brief, statusRows);
-  const calendar = {
-    ...calendarSummary(brief, calendarFeed.events),
-    sourceState: calendarFeed.state,
-    syncedAt: calendarFeed.syncedAt || null,
-  };
   const todayLabel = currentDateLabel();
   const briefDate = brief?.forDate || brief?.createdAt?.slice(0, 10) || null;
-  const staleSuffix = briefDate && briefDate !== localDateIso()
-    ? ` · Brief från ${new Intl.DateTimeFormat("sv-SE", {
+  const currentBrief = briefDate === localDateIso() ? brief : null;
+  const focus = attentionItems(currentBrief, todos);
+  const mission = missionStatus(currentBrief, statusRows);
+  const calendarIsCurrent = calendarFeed.state === "ready" && isRecentCalendarSync(calendarFeed.syncedAt);
+  const calendar = {
+    ...calendarSummary(currentBrief, calendarFeed.events),
+    sourceState: calendarFeed.state,
+    syncedAt: calendarFeed.syncedAt || null,
+    isCurrent: calendarIsCurrent,
+  };
+  const staleBriefLabel = briefDate && briefDate !== localDateIso()
+    ? `Brief ${new Intl.DateTimeFormat("sv-SE", {
       day: "numeric", month: "long",
     }).format(new Date(`${briefDate}T12:00:00`))}`
     : "";
-  const headline = buildHeadline({ brief, briefDate, calendar, todos, mission });
+  const staleSuffix = staleBriefLabel
+    ? ` · ${calendarIsCurrent ? "Livekalender · " : ""}${staleBriefLabel}`
+    : "";
+  const headline = buildHeadline({ brief: currentBrief, briefDate, calendar, todos, mission });
 
   return {
     brief: {
