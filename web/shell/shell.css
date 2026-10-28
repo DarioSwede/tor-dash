@@ -742,7 +742,7 @@ h2.section-heading{
 .project-bar{ position:relative; z-index:2;
   display:flex; align-items:center; gap:8px; flex-wrap:nowrap;
   overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
-  padding:6px 56px 10px 20px; background:transparent; font-size:13.5px;
+  padding:6px 12px 10px 20px; background:transparent; font-size:13.5px;
 }
 .project-bar::-webkit-scrollbar{ display:none; }
 .project-bar .nav{ display:contents; }
@@ -874,4 +874,66 @@ body.has-custom-bg .project-bar .nav-badge{ border-color:transparent; }
 }
 @media (max-width:420px){
   #gate .gate-content{ padding:32px 24px 24px; }
+}
+
+/* ---- 2026-10-28, round 2: sign-out at the far right of the navigation
+   row, and the two side tabs (Inställningar left, Log right) restyled to
+   match the row's outline buttons instead of solid colored blocks. */
+.project-bar #signout-btn{
+  margin-left:auto; flex:0 0 auto; position:sticky; right:0;
+  display:inline-flex; align-items:center; gap:7px;
+  width:auto; height:auto; padding:9px 16px; border-radius:999px;
+  font-family:inherit; font-size:13.5px; font-weight:500; line-height:1;
+  background:var(--bg); color:var(--ink); border:1px solid rgba(46,44,39,.28);
+}
+.project-bar #signout-btn svg{ width:15px; height:15px; }
+.project-bar #signout-btn .edge-tab-label{ display:inline; }
+.project-bar #signout-btn:hover{ border-color:var(--ink); }
+/* sticky + an (almost) opaque fill so on a narrow phone, where the row
+   scrolls sideways, the other buttons slide underneath it. */
+body.has-custom-bg .project-bar #signout-btn{
+  background:rgba(8,11,18,.88); color:#fff; border-color:rgba(255,255,255,.38);
+}
+body.has-custom-bg .project-bar #signout-btn:hover{ background:rgba(40,46,58,.95); border-color:rgba(255,255,255,.75); }
+
+/* Side tabs: same outline language as the row, vertical, floating a
+   little off the screen edge instead of glued to it. */
+.edge-tab-stack.right{ right:10px; }
+.edge-tab-stack .edge-tab,
+.edge-tab-stack.right .edge-tab,
+.edge-tab-stack.left .edge-tab{
+  position:relative; min-height:76px; padding:16px 9px; border-radius:999px;
+  font-size:13.5px; font-weight:500; letter-spacing:.01em;
+  background:var(--bg); color:var(--ink); border:1px solid rgba(46,44,39,.28);
+  box-shadow:none;
+}
+.edge-tab-stack .edge-tab:hover{ filter:none; box-shadow:none; border-color:var(--ink); }
+.edge-tab-stack.right .edge-tab:hover{ transform:none; }
+.edge-tab-stack .edge-tab .nav-badge{ top:6px; right:50%; transform:translateX(50%); }
+body.has-custom-bg .edge-tab-stack .edge-tab{
+  background:rgba(10,14,24,.18); color:#fff; border-color:rgba(255,255,255,.38);
+}
+body.has-custom-bg .edge-tab-stack .edge-tab:hover{ background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.75); }
+@media (min-width:860px){
+  #open-settings-btn,
+  body.has-custom-bg #open-settings-btn:not(:hover){
+    left:10px; min-height:76px; padding:16px 9px; border-radius:999px;
+    font-weight:500; letter-spacing:.01em; box-shadow:none;
+    background:var(--bg); color:var(--ink); border:1px solid rgba(46,44,39,.28);
+  }
+  #open-settings-btn:hover{
+    filter:none; box-shadow:none; transform:rotate(180deg);
+    background:var(--bg); border-color:var(--ink);
+  }
+  body.has-custom-bg #open-settings-btn:not(:hover){
+    background:rgba(10,14,24,.18); color:#fff; border-color:rgba(255,255,255,.38);
+  }
+  body.has-custom-bg #open-settings-btn:hover{
+    background:rgba(255,255,255,.14); color:#fff; border-color:rgba(255,255,255,.75);
+  }
+}
+@media (max-width:859px){
+  /* Sign-out stays pinned to the right edge while the row scrolls under it. */
+  .project-bar{ padding-right:0; }
+  .project-bar #signout-btn{ box-shadow:-14px 0 14px -6px rgba(4,6,10,.9); }
 }

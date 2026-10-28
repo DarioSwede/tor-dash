@@ -24,6 +24,8 @@ let navEl = null;
 let ctx = null;
 let activationToken = 0; // guards against overlapping activate() calls (see below)
 let hashListenerWired = false;
+let badgePollTimer = null;
+const BADGE_POLL_MS = 5 * 60 * 1000;
 const LAST_MODULE_KEY = "tor-dash:last-module";
 
 async function loadModule(entry) {
@@ -164,6 +166,17 @@ export async function initModules(navElement, contentElement, sharedCtx, preferr
   // state even for tabs not visited yet this session -- not just the one
   // that happens to get activated first.
   await Promise.all(Array.from(registry.entries()).map(([id, mod]) => refreshBadge(id, mod)));
+
+  // Re-check the unseen dots every few minutes, so a brief (or anything
+  // else with a getBadgeCount) that arrives while the dashboard is open
+  // lights up its button without a reload.
+  if (!badgePollTimer) {
+    badgePollTimer = setInterval(async () => {
+      if (document.hidden || !registry.size) return;
+      await Promise.all(Array.from(registry.entries()).map(([id, mod]) => refreshBadge(id, mod)));
+      buildNav();
+    }, BADGE_POLL_MS);
+  }
 
   if (!hashListenerWired) {
     hashListenerWired = true;

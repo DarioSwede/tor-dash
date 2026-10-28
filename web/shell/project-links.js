@@ -33,4 +33,9 @@ export function mountProjectLinks(container) {
     a.setAttribute("aria-label", `${label} (öppnas i ny flik)`);
     container.appendChild(a);
   }
+
+  // Sign-out sits last in the row, pushed to the far right (2026-10-28).
+  // Moved, not cloned, so auth.js's existing click wiring still applies.
+  const signout = document.getElementById("signout-btn");
+  if (signout) container.appendChild(signout);
 }
