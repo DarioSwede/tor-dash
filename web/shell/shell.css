@@ -784,3 +784,94 @@ body.has-custom-bg .project-bar .nav-badge{ border-color:transparent; }
   #signout-btn{ border-radius:999px; }
   body.has-custom-bg #open-settings-btn:not(:hover){ background:#2F6FE4; border-color:transparent; }
 }
+
+/* ================= gate, 2026-10-28 redesign =================
+   Anonymous and dark: no gate image (the uploaded gate background from
+   appearance.js is deliberately not shown), just a faint breathing glow
+   and one frosted card with the sign-in button. Sequence, driven by
+   auth.js:
+     .auth-pending  red plasma rim pulses while the key is being tapped
+                    and the owner check runs
+     .auth-granted  the rim turns green
+     .auth-unlock   the comsec image fades in over everything, the card
+                    fades out, then the dashboard opens on that same image
+   No backdrop-filter: there is nothing behind the card to blur. */
+#gate{ background:#040507; }
+#gate .gate-vignette{ display:none; }
+#gate::after{
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 50%, rgba(70,96,140,.10), rgba(0,0,0,0) 70%),
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,.6) 100%);
+  animation:gate-breathe 9s ease-in-out infinite alternate;
+}
+@keyframes gate-breathe{ from{ opacity:.55; } to{ opacity:1; } }
+
+#gate .gate-content{
+  max-width:380px; width:calc(100% - 40px); padding:40px 36px 30px;
+  border-radius:22px;
+  background:linear-gradient(160deg, rgba(255,255,255,.075) 0%, rgba(255,255,255,.025) 55%, rgba(255,255,255,.01) 100%);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.07);
+  transition:opacity .9s ease, transform .9s ease, border-color .6s ease, box-shadow .6s ease;
+}
+#gate .gate-eyebrow{ margin-bottom:26px; }
+#gate .gate-btn-primary{
+  width:100%; padding:13px 18px; border-radius:999px;
+  background:#EDEEF0; color:#0B0D12; border:1px solid #EDEEF0;
+  font-size:14.5px; font-weight:600; letter-spacing:.04em;
+  transition:background .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+#gate .gate-btn-primary:hover{
+  background:#fff; border-color:#fff; box-shadow:0 0 0 4px rgba(255,255,255,.06);
+}
+#gate .gate-btn-primary:active{ transform:scale(.985); }
+#gate .gate-btn-primary:focus-visible{ outline:2px solid rgba(255,255,255,.6); outline-offset:3px; }
+#gate .gate-msg{ color:rgba(216,214,206,.62); font-size:12.5px; margin-top:18px; }
+
+/* Red: waiting. The card edge picks up the same glow as the rim. */
+#gate.auth-pending .gate-content{
+  border-color:rgba(255,60,45,.45);
+  box-shadow:0 30px 80px rgba(0,0,0,.65), 0 0 40px rgba(200,20,20,.18), inset 0 1px 0 rgba(255,255,255,.07);
+}
+#gate.auth-pending .gate-btn-primary{ pointer-events:none; opacity:.75; }
+
+/* Green: granted. Same rim geometry as the red one, steady glow. */
+#gate.auth-granted::before{
+  content:""; position:absolute; inset:0; z-index:3; pointer-events:none;
+  box-shadow:
+    inset 0 0 4px 2px rgba(230,255,240,.95),
+    inset 0 0 14px 5px rgba(40,255,140,.85),
+    inset 0 0 34px 10px rgba(0,170,80,.65),
+    inset 0 0 68px 18px rgba(0,90,40,.35);
+  animation:gate-plasma-granted .9s ease-out both;
+}
+@keyframes gate-plasma-granted{
+  from{ opacity:.5; filter:brightness(1.6) saturate(1.4); }
+  to{ opacity:1; filter:none; }
+}
+#gate.auth-granted .gate-content{
+  border-color:rgba(60,255,150,.40);
+  box-shadow:0 30px 80px rgba(0,0,0,.65), 0 0 40px rgba(20,200,100,.16), inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+/* Unlock: comsec fades in above the dark gate, card and rim fade away. */
+#gate .gate-unlock-bg{
+  position:absolute; inset:0; z-index:4; pointer-events:none; opacity:0;
+  background:#05070b url("../assets/comsec.jpg") center/cover no-repeat;
+  transition:opacity 1.6s ease;
+}
+#gate.auth-unlock .gate-unlock-bg{ opacity:1; }
+#gate.auth-unlock .gate-content{ opacity:0; transform:scale(.97); }
+#gate.auth-unlock::before{ opacity:0 !important; transition:opacity 1.2s ease; }
+
+/* The dashboard arrives on the same image it faded in from. */
+#app.app-arrive{ animation:app-arrive .7s ease-out both; }
+@keyframes app-arrive{ from{ opacity:0; } to{ opacity:1; } }
+
+@media (prefers-reduced-motion:reduce){
+  #gate::after, #gate.auth-granted::before, #app.app-arrive{ animation:none; }
+  #gate .gate-unlock-bg{ transition-duration:.3s; }
+}
+@media (max-width:420px){
+  #gate .gate-content{ padding:32px 24px 24px; }
+}
