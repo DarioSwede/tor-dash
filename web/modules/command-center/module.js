@@ -389,7 +389,8 @@ function renderTimeline(calendar) {
       : indexFor(calendar.anchorDate) + .5;
     visibleDays = nextDays;
     const availableWidth = viewport.clientWidth || oldWidth * visibleDays;
-    dayWidth = Math.max(22, availableWidth / visibleDays);
+    dayWidth = availableWidth / visibleDays;
+    board.dataset.visibleDays = String(visibleDays);
     board.style.setProperty("--cc-day-width", `${dayWidth}px`);
     board.style.width = `${totalDays * dayWidth}px`;
     todayLine.style.left = `${(indexFor(calendar.anchorDate) + .5) * dayWidth}px`;
