@@ -6,6 +6,7 @@ on:
       - "web/**"
       - "scripts/**"
       - "supabase/functions/**"
+      - "supabase/migrations/**"
       - ".github/workflows/validate.yml"
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - "web/**"
       - "scripts/**"
       - "supabase/functions/**"
+      - "supabase/migrations/**"
       - ".github/workflows/validate.yml"
 
 permissions:
